@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { sources, sourceChunks } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   extractText,
@@ -35,8 +35,8 @@ async function processSource(sourceId: string, filePath: string) {
     const rawText = await extractText(filePath);
     const text = normalizeText(rawText);
 
-    if (!text) {
-      // File has no content
+    if (!text || text.length < 10) {
+      // File has no or insufficient content to process meaningfully
       await db
         .update(sources)
         .set({ rawContent: text || "", isProcessed: true })

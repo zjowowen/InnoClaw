@@ -13,19 +13,24 @@ import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+function unescapeCitationFilename(raw: string): string {
+  return raw.replace(/\\(["\\])/g, "$1");
+}
+
 /**
  * Parse [Source N: "filename"] or [Source N] into styled citation badges.
  */
 function CitationText({ text }: { text: string }) {
-  // Match [Source N: "filename"] or [Source N]
-  const parts = text.split(/(\[Source\s+\d+(?::\s*"[^"]*")?\])/g);
+  // Match [Source N: "filename"] or [Source N], allowing escaped quotes inside filenames
+  const parts = text.split(/(\[Source\s+\d+(?::\s*"(?:[^"\\]|\\.)*")?\])/g);
   return (
     <>
       {parts.map((part, i) => {
-        const match = part.match(/^\[Source\s+(\d+)(?::\s*"([^"]*)")?\]$/);
+        const match = part.match(/^\[Source\s+(\d+)(?::\s*"((?:[^"\\]|\\.)*)")?\]$/);
         if (match) {
           const num = match[1];
-          const fileName = match[2];
+          const rawFileName = match[2];
+          const fileName = rawFileName ? unescapeCitationFilename(rawFileName) : undefined;
           return (
             <span
               key={i}
@@ -44,23 +49,36 @@ function CitationText({ text }: { text: string }) {
 }
 
 /**
+ * Create a custom ReactMarkdown component that processes citation badges.
+ */
+function renderWithProcessedChildren(
+  Tag: keyof React.JSX.IntrinsicElements
+): (props: { children?: React.ReactNode }) => React.JSX.Element {
+  return function Component({ children, ...rest }: { children?: React.ReactNode }) {
+    return (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      <Tag {...(rest as any)}>
+        {processChildren(children)}
+      </Tag>
+    );
+  };
+}
+
+/**
  * Custom ReactMarkdown components that render source citations as badges.
  */
 const markdownComponents: Components = {
-  p: ({ children }) => {
-    return (
-      <p>
-        {processChildren(children)}
-      </p>
-    );
-  },
-  li: ({ children }) => {
-    return (
-      <li>
-        {processChildren(children)}
-      </li>
-    );
-  },
+  p: renderWithProcessedChildren("p"),
+  li: renderWithProcessedChildren("li"),
+  h1: renderWithProcessedChildren("h1"),
+  h2: renderWithProcessedChildren("h2"),
+  h3: renderWithProcessedChildren("h3"),
+  h4: renderWithProcessedChildren("h4"),
+  h5: renderWithProcessedChildren("h5"),
+  h6: renderWithProcessedChildren("h6"),
+  blockquote: renderWithProcessedChildren("blockquote"),
+  th: renderWithProcessedChildren("th"),
+  td: renderWithProcessedChildren("td"),
 };
 
 function processChildren(children: React.ReactNode): React.ReactNode {
