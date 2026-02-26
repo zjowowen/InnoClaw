@@ -67,7 +67,7 @@ cp .env.example .env.local
 # 这些目录必须在服务器上真实存在
 WORKSPACE_ROOTS=D:/Data/research,D:/Data/projects
 
-# [可选] OpenAI API Key（用于 embedding 向量化 + AI 对话）
+# [可选] OpenAI API Key（用于 AI 对话）
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 
 # [可选] Anthropic API Key（如需使用 Claude 模型）
@@ -77,6 +77,12 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
 # OPENAI_BASE_URL=https://api.your-provider.com/v1
 # ANTHROPIC_BASE_URL=https://api.your-provider.com
 
+# [可选] 独立的 Embedding API 配置（如与对话模型使用不同的服务商/密钥）
+# 若不配置，默认使用 OPENAI_API_KEY 和 OPENAI_BASE_URL
+# EMBEDDING_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
+# EMBEDDING_BASE_URL=https://api.your-embedding-provider.com/v1
+# EMBEDDING_MODEL=text-embedding-3-small
+
 # [可选] GitHub Personal Access Token（如需克隆/拉取私有仓库）
 # 需要 repo scope 权限
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
@@ -85,7 +91,8 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
 **重要说明：**
 - `WORKSPACE_ROOTS` 指定的目录必须已经存在于服务器上，应用不会自动创建
 - 不配置任何 API Key 时，工作空间、文件管理、GitHub 克隆等功能正常可用，仅 AI 对话和笔记生成功能会禁用
-- 配置了 `OPENAI_API_KEY` 后，同步文件时会自动生成向量嵌入（embedding），支持 RAG 检索增强对话
+- 配置了 `OPENAI_API_KEY` 或 `EMBEDDING_API_KEY` 后，同步文件时会自动生成向量嵌入（embedding），支持 RAG 检索增强对话
+- Embedding API 支持独立配置：如果你的对话模型代理不支持 embedding 接口（如仅提供 Gemini 聊天模型的代理），可以通过 `EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL` 指向一个单独的 embedding 服务
 - `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` 支持指向任何兼容 OpenAI / Anthropic 协议的第三方服务（如自部署代理、国内中转等）
 - 所有 Key 和 URL 仅在服务器端使用，不会暴露给前端浏览器
 
@@ -314,16 +321,113 @@ src/
 
 ---
 
+## RAG 管道架构 / RAG Pipeline Architecture
+
+本项目的核心功能是基于 RAG（检索增强生成）的 AI 对话。以下是 RAG 管道的完整工作流程：
+
+### 索引阶段（点击"同步"时触发）
+
+```
+工作空间文件 → 文本提取 → 文本分块 → 向量嵌入 → SQLite 存储
+```
+
+1. **文件扫描** — 遍历工作空间文件夹，筛选支持的文件类型（`.pdf`, `.txt`, `.md`, `.html`, `.json`, `.csv`, 代码文件等）
+2. **变更检测** — 通过 MD5 哈希比对文件内容，仅处理新增或修改的文件
+3. **文本提取** — 从各类文件中提取纯文本内容（`src/lib/files/text-extractor.ts`）
+4. **文本分块** — 将长文本切分为较小的片段（`src/lib/rag/chunker.ts`）
+5. **向量嵌入** — 将每个文本块发送至 Embedding API，生成高维向量（`src/lib/rag/embeddings.ts`）
+6. **持久化存储** — 文本块存入 `source_chunks` 表，向量以 BLOB 格式存入 `chunk_embeddings` 表（`src/lib/rag/vector-store.ts`）
+
+### 检索阶段（用户提问时触发）
+
+```
+用户问题 → 问题向量化 → 余弦相似度搜索 → Top-K 相关片段
+```
+
+1. **问题向量化** — 使用同一 Embedding 模型将用户问题转为向量
+2. **相似度搜索** — 在该工作空间的所有文本块向量中，通过纯 JS 余弦相似度计算找到最相关的片段（`src/lib/rag/retriever.ts`）
+3. **返回结果** — 默认返回相似度最高的 8 个文本块，附带来源文件名和路径
+
+### 生成阶段（LLM 基于上下文回答）
+
+```
+系统提示词 + 检索到的文本块 + 用户问题 → LLM → 流式回答（含来源引用）
+```
+
+1. **构建提示词** — 将检索到的文本块内容和来源信息注入系统提示词（`src/app/api/chat/route.ts`）
+2. **调用 LLM** — 通过 Vercel AI SDK 调用配置的对话模型（支持 OpenAI 兼容接口 / Anthropic）
+3. **流式输出** — LLM 的回答以流式方式返回，包含 `[Source: 文件名]` 格式的来源引用
+
+### 数据流图
+
+```
+                    索引阶段（同步）
+                    ═══════════════
+   文件 ──→ 提取文本 ──→ 分块 ──→ 向量嵌入 ──→ SQLite
+                                     │         （文本块 + 向量）
+                                     │
+                    查询阶段（对话）   │
+                    ═══════════════   │
+   用户 ──→ 问题向量化 ─────────────┘
+               │
+               ▼
+         余弦相似度搜索（纯 JS 计算）
+               │
+               ▼
+         Top-8 相关文本块 + 来源元数据
+               │
+               ▼
+         LLM 提示词：系统提示 + 文本块 + 用户问题
+               │
+               ▼
+         流式回答，附带 [Source: 文件名] 来源引用
+```
+
+### Embedding API 配置
+
+Embedding（向量嵌入）和对话模型可以使用不同的 API 服务商。这在以下场景中非常有用：
+
+- 对话模型使用的代理不支持 `/embeddings` 接口
+- 希望使用更高质量或更低成本的专用 embedding 模型
+- 对话和 embedding 需要不同的 API Key
+
+| 环境变量 | 说明 | 默认值 |
+|----------|------|--------|
+| `EMBEDDING_API_KEY` | Embedding API 密钥 | 回退至 `OPENAI_API_KEY` |
+| `EMBEDDING_BASE_URL` | Embedding API 地址 | 回退至 `OPENAI_BASE_URL` |
+| `EMBEDDING_MODEL` | Embedding 模型名称 | `text-embedding-3-small` |
+
+**配置示例：** 使用 Gemini 代理进行对话，同时使用独立的 Gemini Embedding 模型：
+
+```env
+# 对话模型（通过 OpenAI 兼容代理调用 Gemini）
+OPENAI_API_KEY=sk-your-chat-key
+OPENAI_BASE_URL=http://your-proxy:3888/v1
+
+# Embedding 模型（独立配置）
+EMBEDDING_API_KEY=sk-your-embedding-key
+EMBEDDING_BASE_URL=http://your-proxy:3888/v1
+EMBEDDING_MODEL=google/gemini-embedding-001
+```
+
+---
+
 ## 常见问题 / FAQ
 
 **Q: 不配置 API Key 可以使用吗？**
 A: 可以。工作空间管理、文件浏览、上传、编辑、GitHub 克隆等功能均不需要 API Key。只有 AI 对话和笔记生成功能会被禁用，界面上会显示相应提示。
 
 **Q: 如何使用第三方兼容服务（如国内中转/自部署代理）？**
-A: 在 `.env.local` 中设置 `OPENAI_BASE_URL` 或 `ANTHROPIC_BASE_URL` 即可。只要服务兼容对应的 API 协议即可正常使用。例如：
+A: 在 `.env.local` 中设置 `OPENAI_BASE_URL` 或 `ANTHROPIC_BASE_URL` 即可。只要服务兼容对应的 API 协议即可正常使用。如果代理不支持 embedding 接口，可以通过 `EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL` 单独配置 embedding 服务。例如：
 ```env
+# 对话模型
 OPENAI_BASE_URL=https://api.your-proxy.com/v1
-OPENAI_API_KEY=sk-your-key
+OPENAI_API_KEY=sk-your-chat-key
+
+# Embedding 模型（独立配置）
+EMBEDDING_API_KEY=sk-your-embedding-key
+EMBEDDING_BASE_URL=https://api.your-embedding-proxy.com/v1
+EMBEDDING_MODEL=google/gemini-embedding-001
 ```
 
 **Q: 支持哪些文件格式？**
