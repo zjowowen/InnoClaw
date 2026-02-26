@@ -95,7 +95,7 @@ export async function retrieveRelevantChunks(
   //    a large number of filename matches cannot crowd out semantic retrieval.
   if (fileNameChunks.length === 0) return embeddingChunks.slice(0, topK);
 
-  const minEmbeddingSlots = topK > 1 ? Math.max(Math.floor(topK / 2), 1) : 0;
+  const minEmbeddingSlots = topK > 1 ? Math.floor(topK / 2) : 0;
   const filenameSlots = Math.min(fileNameChunks.length, topK - minEmbeddingSlots);
 
   const seen = new Set<string>();
