@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
 
     if (!sourcePath || !destPath || typeof sourcePath !== "string" || typeof destPath !== "string") {
       return NextResponse.json(
-        { error: "Missing sourcePath or destPath" },
+        { error: "sourcePath and destPath must be non-empty strings" },
         { status: 400 }
       );
     }
