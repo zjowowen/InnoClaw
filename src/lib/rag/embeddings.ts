@@ -1,7 +1,16 @@
 import { embed, embedMany } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 
-const embeddingModel = openai.embedding("text-embedding-3-small");
+// Create a dedicated OpenAI-compatible provider for embeddings.
+// This allows using a separate API key / base URL / model for embeddings
+// (e.g. a Gemini embedding model behind an OpenAI-compatible proxy).
+const embeddingProvider = createOpenAI({
+  apiKey: process.env.EMBEDDING_API_KEY || process.env.OPENAI_API_KEY || "",
+  baseURL: process.env.EMBEDDING_BASE_URL || process.env.OPENAI_BASE_URL,
+});
+
+const embeddingModelId = process.env.EMBEDDING_MODEL || "text-embedding-3-small";
+const embeddingModel = embeddingProvider.embedding(embeddingModelId);
 
 /**
  * Generate embedding for a single text
