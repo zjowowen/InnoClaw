@@ -189,9 +189,12 @@ export async function copyFileOrDir(
   const resolvedSrc = path.resolve(validatedSrc);
   const resolvedDest = path.resolve(validatedDest);
 
+  const normalizedSrc = resolvedSrc.replace(/\\/g, "/").toLowerCase();
+  const normalizedDest = resolvedDest.replace(/\\/g, "/").toLowerCase();
+
   if (
-    resolvedDest === resolvedSrc ||
-    resolvedDest.startsWith(resolvedSrc + path.sep)
+    normalizedDest === normalizedSrc ||
+    normalizedDest.startsWith(normalizedSrc + "/")
   ) {
     throw new Error(
       `Cannot copy a directory into itself or one of its subdirectories: ${resolvedSrc} -> ${resolvedDest}`

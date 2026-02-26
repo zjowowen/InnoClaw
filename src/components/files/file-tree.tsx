@@ -348,8 +348,8 @@ function TreeNode({
 
     if (sourcePath === destPath) return;
     if (isDirectory && sourcePath === entry.path) return;
-    const normalizedTarget = targetDir.replace(/\\/g, "/");
-    const normalizedSource = sourcePath.replace(/\\/g, "/");
+    const normalizedTarget = targetDir.replace(/\\/g, "/").toLowerCase();
+    const normalizedSource = sourcePath.replace(/\\/g, "/").toLowerCase();
     if (normalizedTarget === normalizedSource || normalizedTarget.startsWith(normalizedSource + "/")) return;
 
     try {
