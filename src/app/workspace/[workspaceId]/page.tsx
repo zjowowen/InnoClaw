@@ -8,8 +8,7 @@ import {
 } from "@/components/ui/resizable";
 import { Header } from "@/components/layout/header";
 import { FileBrowser } from "@/components/files/file-browser";
-import { ChatPanel } from "@/components/chat/chat-panel";
-import { NotesPanel } from "@/components/notes/notes-panel";
+import { AgentPanel } from "@/components/agent/agent-panel";
 import { FilePreviewPanel } from "@/components/preview/file-preview-panel";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { useWorkspace } from "@/lib/hooks/use-workspaces";
@@ -71,9 +70,10 @@ export default function WorkspacePage({
               <ResizablePanel defaultSize={65} minSize={20} className="overflow-hidden">
                 <ResizablePanelGroup orientation="horizontal">
                   <ResizablePanel defaultSize={60} minSize={10} className="overflow-hidden">
-                    <ChatPanel
+                    <AgentPanel
                       workspaceId={workspaceId}
                       workspaceName={workspace.name}
+                      folderPath={workspace.folderPath}
                     />
                   </ResizablePanel>
 
