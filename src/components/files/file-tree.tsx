@@ -116,11 +116,10 @@ function TreeNode({
 
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Clean up click timer on unmount to prevent memory leak
   useEffect(() => {
     return () => {
-      if (clickTimer.current) {
-        clearTimeout(clickTimer.current);
-      }
+      if (clickTimer.current) clearTimeout(clickTimer.current);
     };
   }, []);
 
