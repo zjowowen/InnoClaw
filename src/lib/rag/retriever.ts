@@ -94,7 +94,7 @@ export async function retrieveRelevantChunks(
  * Matches common extensions or quoted names to avoid a full-table scan on every request.
  */
 function looksLikeFileReference(query: string): boolean {
-  return /\.\w{1,5}\b/.test(query) || /"[^"]+"|'[^']+'/.test(query);
+  return /\w+\.\w{1,5}\b/.test(query) || /"[^"]+"|'[^']+'/.test(query);
 }
 
 /**
