@@ -18,11 +18,31 @@ function unescapeCitationFilename(raw: string): string {
 }
 
 /**
+ * Normalize grouped citations like [Source 1; Source 2; Source 3: "file.pdf"]
+ * into individual citations: [Source 1: "file.pdf"][Source 2: "file.pdf"][Source 3: "file.pdf"]
+ */
+function normalizeGroupedCitations(text: string): string {
+  return text.replace(
+    /\[(Source\s+\d+(?:\s*;\s*Source\s+\d+)+)(?::\s*"((?:[^"\\]|\\.)*)")?\]/g,
+    (_, sourcesPart: string, filename: string | undefined) => {
+      const sourceRefs = sourcesPart.split(/\s*;\s*/);
+      return sourceRefs
+        .map((ref) =>
+          filename ? `[${ref.trim()}: "${filename}"]` : `[${ref.trim()}]`
+        )
+        .join("");
+    }
+  );
+}
+
+/**
  * Parse [Source N: "filename"] or [Source N] into styled citation badges.
  */
 function CitationText({ text }: { text: string }) {
+  // First, normalize any grouped citations into individual ones
+  const normalized = normalizeGroupedCitations(text);
   // Match [Source N: "filename"] or [Source N], allowing escaped quotes inside filenames
-  const parts = text.split(/(\[Source\s+\d+(?::\s*"(?:[^"\\]|\\.)*")?\])/g);
+  const parts = normalized.split(/(\[Source\s+\d+(?::\s*"(?:[^"\\]|\\.)*")?\])/g);
   return (
     <>
       {parts.map((part, i) => {
