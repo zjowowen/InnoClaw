@@ -186,18 +186,15 @@ export async function copyFileOrDir(
   }
 
   // Prevent copying a directory into itself or its subdirectories
-  const resolvedSrc = path.resolve(validatedSrc);
-  const resolvedDest = path.resolve(validatedDest);
-
-  const normalizedSrc = resolvedSrc.replace(/\\/g, "/").toLowerCase();
-  const normalizedDest = resolvedDest.replace(/\\/g, "/").toLowerCase();
+  const normalizedSrc = validatedSrc.replace(/\\/g, "/").toLowerCase();
+  const normalizedDest = validatedDest.replace(/\\/g, "/").toLowerCase();
 
   if (
     normalizedDest === normalizedSrc ||
     normalizedDest.startsWith(normalizedSrc + "/")
   ) {
     throw new Error(
-      `Cannot copy a directory into itself or one of its subdirectories: ${resolvedSrc} -> ${resolvedDest}`
+      `Cannot copy a directory into itself or one of its subdirectories: ${validatedSrc} -> ${validatedDest}`
     );
   }
 
