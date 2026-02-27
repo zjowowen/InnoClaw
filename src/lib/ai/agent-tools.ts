@@ -9,7 +9,10 @@ import {
   listDirectory as fsListDirectory,
 } from "@/lib/files/filesystem";
 
-export function createAgentTools(workspaceCwd: string) {
+export function createAgentTools(
+  workspaceCwd: string,
+  allowedTools?: string[] | null
+) {
   const validatedCwd = validatePath(workspaceCwd);
 
   /**
@@ -25,7 +28,7 @@ export function createAgentTools(workspaceCwd: string) {
     return validatePath(resolved);
   }
 
-  return {
+  const allTools = {
     bash: tool({
       description:
         "Execute a shell command in the workspace directory. Use for running builds, tests, git operations, package management, etc.",
@@ -170,4 +173,32 @@ export function createAgentTools(workspaceCwd: string) {
       },
     }),
   };
+
+  // Filter tools if allowedTools is specified
+  if (allowedTools === undefined || allowedTools === null) {
+    return allTools;
+  }
+
+  if (allowedTools.length === 0) {
+    return {};
+  }
+
+  // Validate that all requested tools exist
+  const allToolNames = new Set(Object.keys(allTools));
+  const unknownTools = allowedTools.filter((name) => !allToolNames.has(name));
+
+  if (unknownTools.length > 0) {
+    console.warn(
+      `[agent-tools] Unknown tools in allowedTools: ${unknownTools.join(", ")}. Known tools: ${Array.from(allToolNames).join(", ")}`
+    );
+  }
+
+  const filtered: Record<string, (typeof allTools)[keyof typeof allTools]> =
+    {};
+  for (const name of allowedTools) {
+    if (name in allTools) {
+      filtered[name] = allTools[name as keyof typeof allTools];
+    }
+  }
+  return filtered;
 }
