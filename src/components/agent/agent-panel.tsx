@@ -392,9 +392,8 @@ export function AgentPanel({
     agentBody.cwd = folderPath;
   }, [workspaceId, folderPath, agentBody]);
 
-  useEffect(() => {
-    agentBody.mode = mode;
-  }, [mode, agentBody]);
+  // Ensure mode is always in sync with the current UI state at send-time.
+  agentBody.mode = mode;
 
   // Create transport once with the mutable body reference
   const transport = useMemo(
