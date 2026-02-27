@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
@@ -260,13 +260,19 @@ function SelectableOptions({
   };
 
   return (
-    <div className="my-2 space-y-2">
+    <div
+      className="my-2 space-y-2"
+      role={type === "single" ? "radiogroup" : "group"}
+      aria-label={t("selectionOptions")}
+    >
       {options.map((option, idx) => {
         const isSelected = selected.has(idx);
         return (
           <button
             key={idx}
             type="button"
+            role={type === "single" ? "radio" : "checkbox"}
+            aria-checked={isSelected}
             disabled={confirmed || disabled}
             onClick={() => toggle(idx)}
             className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
@@ -311,6 +317,42 @@ function SelectableOptions({
         <p className="text-xs text-muted-foreground">
           {t("selectionConfirmed")}
         </p>
+      )}
+    </div>
+  );
+}
+
+function AssistantMessageContent({
+  content,
+  messageId,
+  isLoading,
+  sendMessage,
+}: {
+  content: string;
+  messageId: string;
+  isLoading: boolean;
+  sendMessage: (msg: { text: string }) => void;
+}) {
+  const t = useTranslations("chat");
+  const segments = useMemo(() => parseMessageSegments(content), [content]);
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none">
+      {segments.map((seg) =>
+        seg.type === "text" ? (
+          <ReactMarkdown key={`${messageId}-t${seg.offset}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
+        ) : (
+          <SelectableOptions
+            key={`${messageId}-s${seg.offset}`}
+            type={seg.selectType}
+            options={seg.options}
+            disabled={isLoading}
+            onConfirm={(selected) => {
+              const text = selected.map((s, i) => `${i + 1}. ${s}`).join("\n");
+              const prefix = t(seg.selectType === "single" ? "selectionSingle" : "selectionMulti");
+              sendMessage({ text: `${prefix}\n${text}` });
+            }}
+          />
+        )
       )}
     </div>
   );
@@ -424,25 +466,12 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                   }`}
                 >
                   {message.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      {parseMessageSegments(getMessageText(message)).map((seg) =>
-                        seg.type === "text" ? (
-                          <ReactMarkdown key={`${message.id}-t${seg.offset}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
-                        ) : (
-                          <SelectableOptions
-                            key={`${message.id}-s${seg.offset}`}
-                            type={seg.selectType}
-                            options={seg.options}
-                            disabled={isLoading}
-                            onConfirm={(selected) => {
-                              const text = selected.map((s, i) => `${i + 1}. ${s}`).join("\n");
-                              const prefix = t(seg.selectType === "single" ? "selectionSingle" : "selectionMulti");
-                              sendMessage({ text: `${prefix}\n${text}` });
-                            }}
-                          />
-                        )
-                      )}
-                    </div>
+                    <AssistantMessageContent
+                      content={getMessageText(message)}
+                      messageId={message.id}
+                      isLoading={isLoading}
+                      sendMessage={sendMessage}
+                    />
                   ) : (
                     <p>{getMessageText(message)}</p>
                   )}

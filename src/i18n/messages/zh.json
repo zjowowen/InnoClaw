@@ -14,7 +14,8 @@
     "back": "返回",
     "refresh": "刷新",
     "error": "错误",
-    "success": "成功"
+    "success": "成功",
+    "modified": "已修改"
   },
   "home": {
     "title": "我的工作空间",
@@ -44,6 +45,15 @@
     "newFolder": "新建文件夹",
     "rename": "重命名",
     "delete": "删除",
+    "copy": "复制",
+    "cutItem": "剪切",
+    "paste": "粘贴",
+    "copyPath": "复制路径",
+    "copied": "已复制「{name}」",
+    "cut": "已剪切「{name}」",
+    "pasted": "粘贴成功",
+    "moved": "移动成功",
+    "pathCopied": "路径已复制到剪贴板",
     "deleteConfirm": "确定要删除「{name}」吗？",
     "fileName": "文件名",
     "folderName": "文件夹名",
@@ -82,6 +92,7 @@
       "keyThemes": "主要主题是什么？",
       "overview": "给我一个概述"
     },
+    "selectionOptions": "选择选项",
     "confirmSelection": "确认选择",
     "selectionConfirmed": "已确认选择",
     "selectionSingle": "我选择了以下选项：",
