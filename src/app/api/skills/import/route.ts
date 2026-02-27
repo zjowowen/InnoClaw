@@ -396,13 +396,19 @@ export async function POST(request: NextRequest) {
         }
         // Block private/loopback IP ranges
         const hostname = parsed.hostname;
+        const isPrivate172 = (() => {
+          const m = hostname.match(/^172\.(\d+)\./);
+          if (!m) return false;
+          const octet = parseInt(m[1], 10);
+          return octet >= 16 && octet <= 31;
+        })();
         if (
           hostname === "localhost" ||
           hostname === "127.0.0.1" ||
           hostname === "::1" ||
           hostname.startsWith("10.") ||
           hostname.startsWith("192.168.") ||
-          hostname.startsWith("172.") ||
+          isPrivate172 ||
           hostname.startsWith("169.254.") ||
           hostname === "0.0.0.0" ||
           hostname.endsWith(".local") ||
