@@ -52,7 +52,10 @@
     "rootPaths": "可用根路径",
     "dragDrop": "拖放文件到此处，或点击浏览",
     "saving": "保存中...",
-    "saved": "已保存"
+    "saved": "已保存",
+    "pdfPreviewFailed": "无法预览此 PDF 文件",
+    "molPreviewFailed": "无法预览此分子结构文件",
+    "downloadFile": "下载"
   },
   "git": {
     "clone": "克隆仓库",
@@ -78,7 +81,11 @@
       "summarize": "总结我的文件",
       "keyThemes": "主要主题是什么？",
       "overview": "给我一个概述"
-    }
+    },
+    "confirmSelection": "确认选择",
+    "selectionConfirmed": "已确认选择",
+    "selectionSingle": "我选择了以下选项：",
+    "selectionMulti": "我选择了以下选项："
   },
   "notes": {
     "title": "笔记",
@@ -106,5 +113,21 @@
     "notConfigured": "未配置",
     "apiKeys": "API 密钥与端点",
     "apiKeysDesc": "在 .env.local 中配置 API 密钥和自定义 Base URL。"
+  },
+  "terminal": {
+    "title": "终端",
+    "placeholder": "输入命令...",
+    "running": "执行中..."
+  },
+  "preview": {
+    "title": "预览",
+    "emptyState": "选择一个文件以预览",
+    "unsupported": "此文件类型不支持预览"
+  },
+  "agent": {
+    "title": "Claude Code",
+    "placeholder": "让我帮你编程...",
+    "emptyState": "我可以读写文件、运行命令、搜索代码。问我任何问题！",
+    "disabledState": "AI 代理需要配置 API Key。请在 .env.local 中设置 OPENAI_API_KEY 或 ANTHROPIC_API_KEY。"
   }
 }

@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { FileTree } from "./file-tree";
-import { FileEditor } from "./file-editor";
 import { UploadZone } from "./upload-zone";
 import { toast } from "sonner";
 import {
@@ -24,12 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 interface FileBrowserProps {
   workspaceId: string;
@@ -57,7 +50,6 @@ export function FileBrowser({
   const [newName, setNewName] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [pulling, setPulling] = useState(false);
-  const [editingFile, setEditingFile] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => {
@@ -137,33 +129,6 @@ export function FileBrowser({
   };
 
   const handleFileOpen = (path: string) => {
-    const ext = path.split(".").pop()?.toLowerCase();
-    const editableExts = [
-      "txt",
-      "md",
-      "json",
-      "csv",
-      "html",
-      "css",
-      "js",
-      "ts",
-      "tsx",
-      "jsx",
-      "py",
-      "yaml",
-      "yml",
-      "xml",
-      "toml",
-      "ini",
-      "cfg",
-      "env",
-      "sh",
-      "bat",
-    ];
-
-    if (ext && editableExts.includes(ext)) {
-      setEditingFile(path);
-    }
     onFileSelect(path);
   };
 
@@ -225,15 +190,17 @@ export function FileBrowser({
       </div>
 
       {/* File Tree */}
-      <ScrollArea className="flex-1">
-        <FileTree
-          key={refreshKey}
-          rootPath={folderPath}
-          onFileOpen={handleFileOpen}
-          onRefresh={refresh}
-          selectedPath={selectedFilePath}
-        />
-      </ScrollArea>
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <FileTree
+            key={refreshKey}
+            rootPath={folderPath}
+            onFileOpen={handleFileOpen}
+            onRefresh={refresh}
+            selectedPath={selectedFilePath}
+          />
+        </ScrollArea>
+      </div>
 
       {/* Upload Dialog */}
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
@@ -310,26 +277,6 @@ export function FileBrowser({
         </DialogContent>
       </Dialog>
 
-      {/* File Editor Sheet */}
-      <Sheet open={!!editingFile} onOpenChange={() => setEditingFile(null)}>
-        <SheetContent side="bottom" className="h-[70vh]">
-          <SheetHeader>
-            <SheetTitle>
-              {editingFile?.split("/").pop() ||
-                editingFile?.split("\\").pop() ||
-                ""}
-            </SheetTitle>
-          </SheetHeader>
-          {editingFile && (
-            <FileEditor
-              filePath={editingFile}
-              onSaved={() => {
-                refresh();
-              }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

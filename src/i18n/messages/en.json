@@ -52,7 +52,10 @@
     "rootPaths": "Available root paths",
     "dragDrop": "Drag and drop files here, or click to browse",
     "saving": "Saving...",
-    "saved": "Saved"
+    "saved": "Saved",
+    "pdfPreviewFailed": "Unable to preview this PDF",
+    "molPreviewFailed": "Unable to preview this molecular structure file",
+    "downloadFile": "Download"
   },
   "git": {
     "clone": "Clone Repository",
@@ -78,7 +81,11 @@
       "summarize": "Summarize my files",
       "keyThemes": "What are the key themes?",
       "overview": "Give me an overview"
-    }
+    },
+    "confirmSelection": "Confirm Selection",
+    "selectionConfirmed": "Selection confirmed",
+    "selectionSingle": "I selected the following option:",
+    "selectionMulti": "I selected the following options:"
   },
   "notes": {
     "title": "Notes",
@@ -106,5 +113,21 @@
     "notConfigured": "Not configured",
     "apiKeys": "API Keys & Endpoints",
     "apiKeysDesc": "Configure API keys and custom Base URLs in the .env.local file on the server."
+  },
+  "terminal": {
+    "title": "Terminal",
+    "placeholder": "Type a command...",
+    "running": "Running..."
+  },
+  "preview": {
+    "title": "Preview",
+    "emptyState": "Select a file to preview",
+    "unsupported": "Preview not available for this file type"
+  },
+  "agent": {
+    "title": "Claude Code",
+    "placeholder": "Ask me to code...",
+    "emptyState": "I can read, write, and execute code in your workspace. Ask me anything!",
+    "disabledState": "AI agent requires an API key. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env.local."
   }
 }

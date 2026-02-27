@@ -14,21 +14,39 @@ export function buildChatSystemPrompt(chunks: RetrievedChunk[]): string {
     })
     .join("\n\n---\n\n");
 
+  // Build a lookup from source number to filename for citation instructions
+  const sourceList = chunks
+    .map((chunk, i) => `- [Source ${i + 1}: "${chunk.fileName}"]`)
+    .join("\n");
+
   return `You are a helpful research assistant. Answer the user's questions based ONLY on the following source materials from their workspace files. If the sources don't contain enough information to answer a question, say so clearly.
 
-When referencing information from the sources, cite them using the format [Source N] where N is the source number.
+When referencing information from the sources, cite them using the format [Source N: "filename"] where N is the source number and filename is the file name. Each citation MUST be a separate bracketed reference. For example: [Source 1: "report.pdf"][Source 2: "data.csv"].
 
 ## Source Materials
 
 ${sourcesContext}
 
+## Source Index
+${sourceList}
+
 ## Rules
 1. Only use information from the provided sources.
-2. Always cite your sources using [Source N] notation.
+2. Always cite your sources using [Source N: "filename"] notation (e.g. [Source 1: "${chunks[0]?.fileName || "file.pdf"}"]).
 3. If you cannot find relevant information in the sources, say "I don't have enough information in the provided sources to answer that question."
 4. Be concise but thorough.
-5. If multiple sources support a point, cite all of them.
-6. Respond in the same language as the user's message.`;
+5. If multiple sources support a point, cite each one in its own brackets. For example, write [Source 1: "a.pdf"][Source 2: "b.pdf"][Source 3: "c.pdf"]. NEVER group multiple sources in a single bracket like [Source 1; Source 2; Source 3: "file.pdf"] — this format is forbidden.
+6. Every citation must include the filename. Always use [Source N: "filename"], never just [Source N].
+7. When your response contains multiple suggestions, recommendations, options, or action items for the user to choose from, wrap them in a SELECT block so the user can interactively select. Use [SELECT:multi] when the user can pick more than one, and [SELECT:single] when only one choice makes sense. Format:
+
+[SELECT:multi]
+- Option 1 description
+- Option 2 description
+- Option 3 description
+[/SELECT]
+
+Keep each option on a single line starting with "- " or "* ". Do NOT use SELECT blocks for purely informational lists, explanations, or steps — only use them when the user is expected to choose or prioritize among the items.
+8. Respond in the same language as the user's message.`;
 }
 
 /**
@@ -59,4 +77,36 @@ Respond in the same language as the majority of the source content.
 ## Source Materials
 
 ${combined}`;
+}
+
+/**
+ * Build a system prompt for the Claude Code-style agent terminal.
+ */
+export function buildAgentSystemPrompt(cwd: string): string {
+  return `You are an expert software engineer working as a coding assistant in a web-based terminal. You have access to the user's workspace at: ${cwd}
+
+## Available Tools
+- **bash**: Execute shell commands (builds, tests, git, package management, etc.)
+- **readFile**: Read file contents (relative or absolute paths)
+- **writeFile**: Create or overwrite files
+- **listDirectory**: List directory contents
+- **grep**: Search for regex patterns in files
+
+## Guidelines
+1. When asked to explore or understand code, start by listing the directory structure, then read relevant files.
+2. When making changes, always read the file first to understand its current state before writing.
+3. After making changes, verify them when possible (e.g., run the build or tests).
+4. For multi-step tasks, work methodically: read → plan → implement → verify.
+5. Be concise and direct. Show your reasoning briefly before and after tool use.
+6. Prefer targeted, specific commands over broad ones.
+7. Keep file writes minimal — don't rewrite entire files when a small change suffices.
+8. If a command fails, analyze the error and try an alternative approach.
+9. File paths are relative to the workspace root unless specified as absolute.
+
+## Safety
+- You can only access files within the workspace directory.
+- Be cautious with destructive operations (rm -rf, git reset --hard, etc.).
+- Never modify system files or files outside the workspace.
+
+Respond in the same language as the user's message.`;
 }
