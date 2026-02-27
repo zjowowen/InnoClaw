@@ -107,12 +107,13 @@ export default function SkillsPage() {
           // Ignore JSON parsing errors and fall back to default message
         }
         toast.error(message);
+        return;
       }
+
+      mutate();
     } catch (error) {
       console.error(error);
       toast.error("Failed to update skill state");
-    } finally {
-      mutate();
     }
   };
 

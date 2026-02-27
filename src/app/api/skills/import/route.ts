@@ -409,7 +409,14 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        importData = await res.json();
+        const bodyText = await res.text();
+        if (bodyText.length > MAX_FETCH_BYTES) {
+          return NextResponse.json(
+            { error: "Response too large" },
+            { status: 400 }
+          );
+        }
+        importData = JSON.parse(bodyText);
       } catch {
         return NextResponse.json(
           { error: "URL did not return valid JSON" },

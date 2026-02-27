@@ -7,7 +7,6 @@ import { buildSkillSystemPrompt } from "@/lib/ai/skill-prompt";
 import { db } from "@/lib/db";
 import { skills } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import type { Skill } from "@/types";
 import { parseSkillRow } from "@/lib/db/skills-utils";
 
 export async function POST(req: NextRequest) {
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
         return new Response("Skill not found", { status: 404 });
       }
 
-      const skill = parseSkillRow(skillRows[0]) as Skill;
+      const skill = parseSkillRow(skillRows[0]);
       systemPrompt = buildSkillSystemPrompt(skill, cwd, paramValues || {});
       tools = createAgentTools(cwd, skill.allowedTools);
     } else {
