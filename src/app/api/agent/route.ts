@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       systemPrompt = buildPlanSystemPrompt(cwd);
       tools = createAgentTools(cwd, ["bash", "readFile", "listDirectory", "grep"]);
     } else if (mode === "ask") {
-      // Ask mode: read-only tools, answer questions about code
+      // Ask mode: read-only tools, can read files but never write or execute
       systemPrompt = buildAskSystemPrompt(cwd);
       tools = createAgentTools(cwd, ["readFile", "listDirectory", "grep"]);
     } else {
@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: modelMessages,
       tools,
+      abortSignal: req.signal,
       stopWhen: stepCountIs(10),
       onError({ error }) {
         console.error("Agent stream error:", error);

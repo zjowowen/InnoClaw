@@ -95,6 +95,8 @@
       "overview": "Give me an overview"
     },
     "selectionOptions": "Selection options",
+    "selectOne": "Select one option",
+    "selectMultiple": "Select one or more options",
     "confirmSelection": "Confirm Selection",
     "selectionConfirmed": "Selection confirmed",
     "selectionSingle": "I selected the following option:",

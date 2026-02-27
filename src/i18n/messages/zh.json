@@ -95,6 +95,8 @@
       "overview": "给我一个概述"
     },
     "selectionOptions": "选择选项",
+    "selectOne": "请选择一项",
+    "selectMultiple": "请选择一项或多项",
     "confirmSelection": "确认选择",
     "selectionConfirmed": "已确认选择",
     "selectionSingle": "我选择了以下选项：",
