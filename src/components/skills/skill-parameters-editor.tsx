@@ -53,7 +53,7 @@ export function SkillParametersEditor({
     <div className="space-y-3">
       {parameters.map((param, index) => (
         <div
-          key={index}
+          key={`${param.name}-${param.label}-${param.type}`}
           className="rounded-md border p-3 space-y-2"
         >
           <div className="flex items-center gap-2">

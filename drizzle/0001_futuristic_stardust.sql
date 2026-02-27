@@ -13,3 +13,4 @@ CREATE TABLE `skills` (
 	`updated_at` text DEFAULT (datetime('now')) NOT NULL,
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade
 );
+CREATE UNIQUE INDEX IF NOT EXISTS `skills_slug_workspace_id_unique` ON `skills`(`slug`, `workspace_id`);

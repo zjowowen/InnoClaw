@@ -8,21 +8,7 @@ import { db } from "@/lib/db";
 import { skills } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { Skill } from "@/types";
-
-function parseSkillRow(row: Record<string, unknown>): Skill {
-  return {
-    ...row,
-    steps: typeof row.steps === "string" ? JSON.parse(row.steps) : null,
-    allowedTools:
-      typeof row.allowedTools === "string"
-        ? JSON.parse(row.allowedTools)
-        : null,
-    parameters:
-      typeof row.parameters === "string"
-        ? JSON.parse(row.parameters)
-        : null,
-  } as Skill;
-}
+import { parseSkillRow } from "@/lib/db/skills-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,7 +42,7 @@ export async function POST(req: NextRequest) {
         return new Response("Skill not found", { status: 404 });
       }
 
-      const skill = parseSkillRow(skillRows[0]);
+      const skill = parseSkillRow(skillRows[0]) as Skill;
       systemPrompt = buildSkillSystemPrompt(skill, cwd, paramValues || {});
       tools = createAgentTools(cwd, skill.allowedTools);
     } else {
