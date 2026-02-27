@@ -41,7 +41,7 @@ import type { Skill } from "@/types";
 
 type AgentMode = "agent" | "plan" | "ask";
 
-const MODE_TRANSLATION_KEYS: Record<AgentMode, "modeAgent" | "modePlan" | "modeAsk"> = {
+const MODE_LABEL_KEYS: Record<AgentMode, "modeAgent" | "modePlan" | "modeAsk"> = {
   agent: "modeAgent",
   plan: "modePlan",
   ask: "modeAsk",
@@ -386,12 +386,11 @@ export function AgentPanel({
     []
   );
 
-  // Keep body in sync with props and mode
+  // Keep body in sync with props without render-side effects
   useEffect(() => {
     agentBody.workspaceId = workspaceId;
     agentBody.cwd = folderPath;
-    agentBody.mode = mode;
-  }, [workspaceId, folderPath, mode, agentBody]);
+  }, [workspaceId, folderPath, agentBody]);
 
   // Create transport once with the mutable body reference
   const transport = useMemo(
@@ -460,14 +459,18 @@ export function AgentPanel({
     setInput("");
     setActiveSkill(null);
 
-    await sendMessage(
-      {
-        text: `/${skill.slug}${Object.keys(paramValues).length > 0 ? " " + Object.entries(paramValues).map(([k, v]) => `${k}="${v}"`).join(" ") : ""}`,
-      },
-      {
-        body: { skillId: skill.id, paramValues },
-      }
-    );
+    // Inject skill context into the mutable body before sending
+    agentBody.skillId = skill.id;
+    agentBody.paramValues = paramValues;
+    agentBody.mode = mode;
+
+    await sendMessage({
+      text: `/${skill.slug}${Object.keys(paramValues).length > 0 ? " " + Object.entries(paramValues).map(([k, v]) => `${k}="${v}"`).join(" ") : ""}`,
+    });
+
+    // Clear skill context after sending
+    delete agentBody.skillId;
+    delete agentBody.paramValues;
   };
 
   const handleSend = async () => {
@@ -496,6 +499,7 @@ export function AgentPanel({
 
     setInput("");
     setShowAutocomplete(false);
+    agentBody.mode = mode;
     await sendMessage({ text });
   };
 
@@ -576,7 +580,7 @@ export function AgentPanel({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-[#7aa2f7] hover:bg-[#30363d] transition-colors">
-                {t(MODE_TRANSLATION_KEYS[mode])}
+                {t(MODE_LABEL_KEYS[mode])}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
