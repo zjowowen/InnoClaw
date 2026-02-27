@@ -41,13 +41,20 @@ function isPrivateOrInternalHost(hostname: string): boolean {
     lower === "::" ||
     lower.startsWith("fc") || // fc00::/7 (ULA)
     lower.startsWith("fd") || // fc00::/7 (ULA)
-    lower.startsWith("fe80") || // fe80::/10 (link-local)
+    /^fe[89ab]/i.test(lower) || // fe80::/10 (link-local)
     lower.startsWith("::ffff:127.") || // IPv4-mapped loopback
     lower.startsWith("::ffff:10.") || // IPv4-mapped private
     lower.startsWith("::ffff:192.168.") || // IPv4-mapped private
     lower.startsWith("::ffff:169.254.") // IPv4-mapped link-local
   ) {
     return true;
+  }
+
+  // IPv4-mapped 172.16.0.0/12
+  const m172mapped = lower.match(/^::ffff:172\.(\d+)\./);
+  if (m172mapped) {
+    const octet = parseInt(m172mapped[1], 10);
+    if (octet >= 16 && octet <= 31) return true;
   }
 
   // Common internal hostnames
