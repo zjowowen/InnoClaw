@@ -260,7 +260,11 @@ function SelectableOptions({
   };
 
   return (
-    <div className="my-2 space-y-2" role={type === "single" ? "radiogroup" : "group"}>
+    <div
+      className="my-2 space-y-2"
+      role={type === "single" ? "radiogroup" : "group"}
+      aria-label={t("selectionOptions")}
+    >
       {options.map((option, idx) => {
         const isSelected = selected.has(idx);
         return (
@@ -271,7 +275,6 @@ function SelectableOptions({
             aria-checked={isSelected}
             disabled={confirmed || disabled}
             onClick={() => toggle(idx)}
-            aria-label={option}
             className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
               isSelected
                 ? "border-primary bg-primary/5"
