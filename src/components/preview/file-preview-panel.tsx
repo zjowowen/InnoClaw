@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, X, Save, FileDown, AlertCircle } from "lucide-react";
@@ -94,11 +93,14 @@ function TextPreview({ filePath }: { filePath: string }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/files/write", {
+      const res = await fetch("/api/files/write", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: filePath, content }),
       });
+      if (!res.ok) {
+        throw new Error("Failed to save file");
+      }
       setModified(false);
       toast.success(t("saved"));
     } catch {
@@ -120,7 +122,7 @@ function TextPreview({ filePath }: { filePath: string }) {
     <div className="flex h-full flex-col gap-2 p-3">
       <div className="flex items-center justify-end gap-2">
         {modified && (
-          <span className="text-xs text-muted-foreground">Modified</span>
+          <span className="text-xs text-muted-foreground">{tCommon("modified")}</span>
         )}
         <Button size="sm" onClick={handleSave} disabled={saving || !modified}>
           <Save className="mr-2 h-4 w-4" />

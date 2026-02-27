@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
@@ -132,32 +132,82 @@ function processChildren(children: React.ReactNode): React.ReactNode {
 // --- Selectable options support ---
 
 type MessageSegment =
-  | { type: "text"; content: string }
-  | { type: "select"; selectType: "single" | "multi"; options: string[] };
+  | { type: "text"; content: string; offset: number }
+  | { type: "select"; selectType: "single" | "multi"; options: string[]; offset: number };
 
-const SELECT_BLOCK_RE = /\[SELECT:(single|multi)\]\n([\s\S]*?)\n?\[\/SELECT\]/g;
+const MAX_SELECT_BLOCK_LENGTH = 10000;
 
 function parseMessageSegments(text: string): MessageSegment[] {
   const segments: MessageSegment[] = [];
-  let lastIndex = 0;
+  const selectStartToken = "[SELECT:";
+  const selectEndToken = "[/SELECT]";
+  let cursor = 0;
 
-  for (const match of text.matchAll(SELECT_BLOCK_RE)) {
-    const matchStart = match.index!;
-    if (matchStart > lastIndex) {
-      segments.push({ type: "text", content: text.slice(lastIndex, matchStart) });
+  while (cursor < text.length) {
+    const startIdx = text.indexOf(selectStartToken, cursor);
+
+    if (startIdx === -1) {
+      if (cursor < text.length) {
+        segments.push({ type: "text", content: text.slice(cursor), offset: cursor });
+      }
+      break;
     }
-    const selectType = match[1] as "single" | "multi";
-    const optionsRaw = match[2];
+
+    if (startIdx > cursor) {
+      segments.push({ type: "text", content: text.slice(cursor, startIdx), offset: cursor });
+    }
+
+    const headerEndIdx = text.indexOf("]", startIdx + selectStartToken.length);
+    if (headerEndIdx === -1) {
+      segments.push({ type: "text", content: text.slice(startIdx), offset: startIdx });
+      break;
+    }
+
+    const selectTypeStr = text.slice(startIdx + selectStartToken.length, headerEndIdx).trim();
+
+    if (selectTypeStr !== "single" && selectTypeStr !== "multi") {
+      segments.push({ type: "text", content: text.slice(startIdx, headerEndIdx + 1), offset: startIdx });
+      cursor = headerEndIdx + 1;
+      continue;
+    }
+
+    let contentStartIdx = headerEndIdx + 1;
+    if (text[contentStartIdx] === "\n") {
+      contentStartIdx += 1;
+    }
+
+    const endIdx = text.indexOf(selectEndToken, contentStartIdx);
+
+    if (endIdx === -1) {
+      segments.push({ type: "text", content: text.slice(startIdx), offset: startIdx });
+      break;
+    }
+
+    if (endIdx - contentStartIdx > MAX_SELECT_BLOCK_LENGTH) {
+      // Treat this oversized SELECT block as plain text and continue parsing after it.
+      segments.push({
+        type: "text",
+        content: text.slice(startIdx, endIdx + selectEndToken.length),
+        offset: startIdx,
+      });
+      cursor = endIdx + selectEndToken.length;
+      continue;
+    }
+
+    const optionsRaw = text.slice(contentStartIdx, endIdx);
     const options = optionsRaw
       .split("\n")
       .map((line) => line.replace(/^[-*]\s*/, "").trim())
       .filter((line) => line.length > 0);
-    segments.push({ type: "select", selectType, options });
-    lastIndex = matchStart + match[0].length;
-  }
 
-  if (lastIndex < text.length) {
-    segments.push({ type: "text", content: text.slice(lastIndex) });
+    segments.push({
+      type: "select",
+      selectType: selectTypeStr as "single" | "multi",
+      options,
+      offset: startIdx,
+    });
+
+    cursor = endIdx + selectEndToken.length;
   }
 
   return segments;
@@ -210,13 +260,19 @@ function SelectableOptions({
   };
 
   return (
-    <div className="my-2 space-y-2">
+    <div
+      className="my-2 space-y-2"
+      role={type === "single" ? "radiogroup" : "group"}
+      aria-label={t("selectionOptions")}
+    >
       {options.map((option, idx) => {
         const isSelected = selected.has(idx);
         return (
           <button
             key={idx}
             type="button"
+            role={type === "single" ? "radio" : "checkbox"}
+            aria-checked={isSelected}
             disabled={confirmed || disabled}
             onClick={() => toggle(idx)}
             className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
@@ -261,6 +317,42 @@ function SelectableOptions({
         <p className="text-xs text-muted-foreground">
           {t("selectionConfirmed")}
         </p>
+      )}
+    </div>
+  );
+}
+
+function AssistantMessageContent({
+  content,
+  messageId,
+  isLoading,
+  sendMessage,
+}: {
+  content: string;
+  messageId: string;
+  isLoading: boolean;
+  sendMessage: (msg: { text: string }) => void;
+}) {
+  const t = useTranslations("chat");
+  const segments = useMemo(() => parseMessageSegments(content), [content]);
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none">
+      {segments.map((seg) =>
+        seg.type === "text" ? (
+          <ReactMarkdown key={`${messageId}-t${seg.offset}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
+        ) : (
+          <SelectableOptions
+            key={`${messageId}-s${seg.offset}`}
+            type={seg.selectType}
+            options={seg.options}
+            disabled={isLoading}
+            onConfirm={(selected) => {
+              const text = selected.map((s, i) => `${i + 1}. ${s}`).join("\n");
+              const prefix = t(seg.selectType === "single" ? "selectionSingle" : "selectionMulti");
+              sendMessage({ text: `${prefix}\n${text}` });
+            }}
+          />
+        )
       )}
     </div>
   );
@@ -374,24 +466,12 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                   }`}
                 >
                   {message.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      {parseMessageSegments(getMessageText(message)).map((seg, si) =>
-                        seg.type === "text" ? (
-                          <ReactMarkdown key={si} components={markdownComponents}>{seg.content}</ReactMarkdown>
-                        ) : (
-                          <SelectableOptions
-                            key={si}
-                            type={seg.selectType}
-                            options={seg.options}
-                            disabled={isLoading}
-                            onConfirm={(selected) => {
-                              const text = selected.map((s, i) => `${i + 1}. ${s}`).join("\n");
-                              sendMessage({ text: `我选择了以下${seg.selectType === "single" ? "选项" : "选项"}：\n${text}` });
-                            }}
-                          />
-                        )
-                      )}
-                    </div>
+                    <AssistantMessageContent
+                      content={getMessageText(message)}
+                      messageId={message.id}
+                      isLoading={isLoading}
+                      sendMessage={sendMessage}
+                    />
                   ) : (
                     <p>{getMessageText(message)}</p>
                   )}

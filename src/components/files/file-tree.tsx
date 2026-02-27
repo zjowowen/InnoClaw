@@ -43,7 +43,7 @@ let clipboardListeners: Array<() => void> = [];
 
 function setClipboard(data: ClipboardData | null) {
   globalClipboard = data;
-  clipboardListeners.forEach((fn) => fn());
+  [...clipboardListeners].forEach((fn) => fn());
 }
 
 function useClipboard() {
@@ -159,11 +159,31 @@ function TreeNode({
 
   // Re-fetch children silently when refreshKey changes and folder is expanded
   useEffect(() => {
-    if (expanded && isDirectory) {
-      fetchChildren();
+    if (!expanded || !isDirectory) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const res = await fetch(
+          `/api/files/browse?path=${encodeURIComponent(entry.path)}`
+        );
+        if (res.ok && !cancelled) {
+          setChildren(await res.json());
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, isDirectory, entry.path, refreshKey]);
 
   const toggleExpand = () => {
     if (!isDirectory) return;
@@ -348,7 +368,9 @@ function TreeNode({
 
     if (sourcePath === destPath) return;
     if (isDirectory && sourcePath === entry.path) return;
-    if (targetDir.startsWith(sourcePath + "/")) return;
+    const normalizedTarget = targetDir.replace(/\\/g, "/").toLowerCase();
+    const normalizedSource = sourcePath.replace(/\\/g, "/").toLowerCase();
+    if (normalizedTarget === normalizedSource || normalizedTarget.startsWith(normalizedSource + "/")) return;
 
     try {
       const res = await fetch("/api/files/move", {
@@ -377,6 +399,14 @@ function TreeNode({
             } ${dragOver ? "bg-accent/60 ring-1 ring-primary" : ""}`}
             style={{ paddingLeft: `${depth * 16 + 8}px` }}
             onClick={handleClick}
+            tabIndex={0}
+            role="button"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleClick();
+              }
+            }}
             draggable={!renaming}
             onDragStart={(e) => {
               e.stopPropagation();

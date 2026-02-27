@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const { messages: uiMessages, workspaceId, cwd, skillId, paramValues } =
       await req.json();
 
-    if (!workspaceId || !cwd) {
+    if (!workspaceId || !cwd || typeof cwd !== "string") {
       return new Response("Missing workspaceId or cwd", { status: 400 });
     }
 

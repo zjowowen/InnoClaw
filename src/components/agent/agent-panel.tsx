@@ -45,6 +45,12 @@ interface ToolInvocationPart {
 function getToolNameFromPart(part: ToolInvocationPart): string {
   if (part.toolName) return part.toolName; // dynamic-tool
   if (part.type.startsWith("tool-")) return part.type.slice(5);
+
+  // Fallback for unexpected tool part structures to aid debugging
+  console.warn(
+    "[agent-panel] Unexpected tool part structure encountered in getToolNameFromPart:",
+    part,
+  );
   return "unknown";
 }
 

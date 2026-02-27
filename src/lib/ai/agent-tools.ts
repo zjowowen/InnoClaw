@@ -15,10 +15,17 @@ export function createAgentTools(
 ) {
   const validatedCwd = validatePath(workspaceCwd);
 
+  /**
+   * Resolves a file path relative to the workspace and validates it against
+   * allowed workspace roots.
+   * @throws {Error} If the resolved path is outside the allowed workspace roots
+   * or contains invalid characters (e.g. null bytes).
+   */
   function resolvePath(filePath: string): string {
-    return path.isAbsolute(filePath)
+    const resolved = path.isAbsolute(filePath)
       ? filePath
       : path.join(validatedCwd, filePath);
+    return validatePath(resolved);
   }
 
   const allTools = {
@@ -40,7 +47,13 @@ export function createAgentTools(
               cwd: validatedCwd,
               timeout: 30_000,
               maxBuffer: 1024 * 1024,
-              env: { ...process.env, TERM: "dumb" },
+              env: {
+                PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
+                HOME: process.env.HOME || "/tmp",
+                NODE_ENV: process.env.NODE_ENV || "production",
+                LANG: process.env.LANG || "en_US.UTF-8",
+                TERM: "dumb",
+              },
             },
             (error, stdout, stderr) => {
               resolve({

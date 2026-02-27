@@ -15,7 +15,8 @@
     "back": "Back",
     "refresh": "Refresh",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "modified": "Modified"
   },
   "home": {
     "title": "My Workspaces",
@@ -92,8 +93,11 @@
       "keyThemes": "What are the key themes?",
       "overview": "Give me an overview"
     },
+    "selectionOptions": "Selection options",
     "confirmSelection": "Confirm Selection",
-    "selectionConfirmed": "Selection confirmed"
+    "selectionConfirmed": "Selection confirmed",
+    "selectionSingle": "I selected the following option:",
+    "selectionMulti": "I selected the following options:"
   },
   "notes": {
     "title": "Notes",

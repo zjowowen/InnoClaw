@@ -179,6 +179,47 @@ export async function copyFileOrDir(
 ): Promise<void> {
   const validatedSrc = validatePath(srcPath);
   const validatedDest = validatePath(destPath);
+
+  // Prevent overwriting existing destinations
+  if (await pathExists(validatedDest)) {
+    throw new Error(`Destination already exists: ${validatedDest}`);
+  }
+
+  // Prevent copying a directory into itself or its subdirectories.
+  // Use real paths so that symbolic links are resolved before comparison.
+  let resolvedSrc: string;
+  try {
+    resolvedSrc = await fsp.realpath(validatedSrc);
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      resolvedSrc = path.resolve(validatedSrc);
+    } else {
+      throw err;
+    }
+  }
+  let resolvedDest: string;
+  try {
+    const destParent = await fsp.realpath(path.dirname(validatedDest));
+    resolvedDest = path.join(destParent, path.basename(validatedDest));
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      resolvedDest = path.resolve(validatedDest);
+    } else {
+      throw err;
+    }
+  }
+  const normalizedSrc = resolvedSrc.replace(/\\/g, "/").toLowerCase();
+  const normalizedDest = resolvedDest.replace(/\\/g, "/").toLowerCase();
+
+  if (
+    normalizedDest === normalizedSrc ||
+    normalizedDest.startsWith(normalizedSrc + "/")
+  ) {
+    throw new Error(
+      `Cannot copy a directory into itself or one of its subdirectories: ${validatedSrc} -> ${validatedDest}`
+    );
+  }
+
   await fsp.cp(validatedSrc, validatedDest, { recursive: true });
 }
 
