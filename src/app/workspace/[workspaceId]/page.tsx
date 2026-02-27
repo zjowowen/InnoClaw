@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Header } from "@/components/layout/header";
 import { FileBrowser } from "@/components/files/file-browser";
 import { AgentPanel } from "@/components/agent/agent-panel";
+import { NotesPanel } from "@/components/notes/notes-panel";
 import { FilePreviewPanel } from "@/components/preview/file-preview-panel";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
-import { NotesPanel } from "@/components/notes/notes-panel";
 import { useWorkspace } from "@/lib/hooks/use-workspaces";
 import { Skeleton } from "@/components/ui/skeleton";
 

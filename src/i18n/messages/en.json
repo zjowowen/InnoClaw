@@ -14,7 +14,8 @@
     "back": "Back",
     "refresh": "Refresh",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "modified": "Modified"
   },
   "home": {
     "title": "My Workspaces",
@@ -44,6 +45,15 @@
     "newFolder": "New Folder",
     "rename": "Rename",
     "delete": "Delete",
+    "copy": "Copy",
+    "cutItem": "Cut",
+    "paste": "Paste",
+    "copyPath": "Copy Path",
+    "copied": "\"{name}\" copied",
+    "cut": "\"{name}\" cut",
+    "pasted": "Pasted successfully",
+    "moved": "Moved successfully",
+    "pathCopied": "Path copied to clipboard",
     "deleteConfirm": "Are you sure you want to delete \"{name}\"?",
     "fileName": "File name",
     "folderName": "Folder name",
@@ -82,6 +92,7 @@
       "keyThemes": "What are the key themes?",
       "overview": "Give me an overview"
     },
+    "selectionOptions": "Selection options",
     "confirmSelection": "Confirm Selection",
     "selectionConfirmed": "Selection confirmed",
     "selectionSingle": "I selected the following option:",
