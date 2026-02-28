@@ -381,12 +381,12 @@ export function AgentPanel({
   // Mutable body object — allows injecting skillId/paramValues before each send
   const agentBody = useMemo(
     () =>
-      ({ workspaceId, cwd: folderPath }) as Record<string, unknown>,
+      ({ workspaceId, cwd: folderPath, mode: "agent" }) as Record<string, unknown>,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  // Keep body in sync with props without render-side effects
+  // Keep body in sync with props
   useEffect(() => {
     agentBody.workspaceId = workspaceId;
     agentBody.cwd = folderPath;
@@ -499,7 +499,7 @@ export function AgentPanel({
 
     setInput("");
     setShowAutocomplete(false);
-    agentBody.mode = mode;
+    agentBody.mode = mode; // ensure mode is current before every request
     await sendMessage({ text });
   };
 
@@ -508,6 +508,14 @@ export function AgentPanel({
   };
 
   const handleClear = () => {
+    setMessages([]);
+    setInput("");
+  };
+
+  // Switch mode: update body synchronously and clear stale conversation
+  const handleModeChange = (newMode: AgentMode) => {
+    setMode(newMode);
+    agentBody.mode = newMode; // synchronous — guarantees next request uses correct mode
     setMessages([]);
     setInput("");
   };
@@ -587,7 +595,7 @@ export function AgentPanel({
             <DropdownMenuContent align="start" className="w-52">
               <DropdownMenuLabel className="text-xs">{t("modeLabel")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={mode} onValueChange={(v) => setMode(v as AgentMode)}>
+              <DropdownMenuRadioGroup value={mode} onValueChange={(v) => handleModeChange(v as AgentMode)}>
                 <DropdownMenuRadioItem value="agent">
                   <div className="flex flex-col">
                     <span>{t("modeAgent")}</span>

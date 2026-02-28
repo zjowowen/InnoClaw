@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, AlertCircle, FileText, Check, Circle } from "lucide-react";
+import { Send, Bot, User, AlertCircle, FileText, Check, Circle, Copy, CheckCheck } from "lucide-react";
 import ReactMarkdown, { Components } from "react-markdown";
+import type { PluggableList } from "unified";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import rehypeHighlight from "rehype-highlight";
 import useSWR from "swr";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -40,9 +45,7 @@ function normalizeGroupedCitations(text: string): string {
  * Parse [Source N: "filename"] or [Source N] into styled citation badges.
  */
 function CitationText({ text }: { text: string }) {
-  // First, normalize any grouped citations into individual ones
   const normalized = normalizeGroupedCitations(text);
-  // Match [Source N: "filename"] or [Source N], allowing escaped quotes inside filenames
   const parts = normalized.split(/(\[Source\s+\d+(?::\s*"(?:[^"\\]|\\.)*")?\])/g);
   return (
     <>
@@ -69,6 +72,41 @@ function CitationText({ text }: { text: string }) {
   );
 }
 
+// --- Code block with copy button and language label ---
+
+function CodeBlock({ children, className, ...rest }: React.HTMLAttributes<HTMLElement>) {
+  const [copied, setCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
+
+  // Extract language from className like "hljs language-python"
+  const langMatch = className?.match(/language-(\w+)/);
+  const lang = langMatch?.[1];
+
+  const handleCopy = useCallback(() => {
+    const text = codeRef.current?.textContent ?? "";
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+
+  return (
+    <div className="code-block-wrapper">
+      {lang && <span className="code-lang-label">{lang}</span>}
+      <button
+        onClick={handleCopy}
+        className="code-copy-btn rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+        title="Copy code"
+        type="button"
+      >
+        {copied ? <CheckCheck className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+      <code ref={codeRef} className={className} {...rest}>
+        {children}
+      </code>
+    </div>
+  );
+}
+
 /**
  * Create a custom ReactMarkdown component that processes citation badges.
  */
@@ -86,7 +124,7 @@ function renderWithProcessedChildren(
 }
 
 /**
- * Custom ReactMarkdown components that render source citations as badges.
+ * Custom ReactMarkdown components with GFM, math, syntax highlighting support.
  */
 const markdownComponents: Components = {
   p: renderWithProcessedChildren("p"),
@@ -100,6 +138,23 @@ const markdownComponents: Components = {
   blockquote: renderWithProcessedChildren("blockquote"),
   th: renderWithProcessedChildren("th"),
   td: renderWithProcessedChildren("td"),
+  // Code blocks: wrap <pre> children with copy button
+  pre({ children }) {
+    return <pre>{children}</pre>;
+  },
+  code({ children, className, ...rest }) {
+    // If inside a <pre> (block code), render with copy button
+    const isBlock = className?.includes("hljs") || className?.includes("language-");
+    if (isBlock) {
+      return (
+        <CodeBlock className={className} {...rest}>
+          {children}
+        </CodeBlock>
+      );
+    }
+    // Inline code
+    return <code className={className} {...rest}>{children}</code>;
+  },
 };
 
 function processChildren(children: React.ReactNode): React.ReactNode {
@@ -119,7 +174,6 @@ function processChildren(children: React.ReactNode): React.ReactNode {
       return processed;
     });
   }
-  // Recursively walk React elements (e.g., <em>, <strong>, <a>)
   if (React.isValidElement(children)) {
     const props = children.props as Record<string, unknown>;
     if (props.children) {
@@ -187,7 +241,6 @@ function parseMessageSegments(text: string): MessageSegment[] {
     }
 
     if (endIdx - contentStartIdx > MAX_SELECT_BLOCK_LENGTH) {
-      // Treat this oversized SELECT block as plain text and continue parsing after it.
       segments.push({
         type: "text",
         content: text.slice(startIdx, endIdx + selectEndToken.length),
@@ -236,7 +289,6 @@ function SelectableOptions({
     setSelected((prev) => {
       const next = new Set(prev);
       if (type === "single") {
-        // Radio: only one at a time
         if (next.has(idx)) {
           next.delete(idx);
         } else {
@@ -244,7 +296,6 @@ function SelectableOptions({
           next.add(idx);
         }
       } else {
-        // Checkbox: toggle
         if (next.has(idx)) {
           next.delete(idx);
         } else {
@@ -264,12 +315,21 @@ function SelectableOptions({
 
   return (
     <div
-      className="my-2 space-y-2"
+      className="my-3 space-y-1.5 rounded-lg border border-border bg-card p-3"
       role={type === "single" ? "radiogroup" : "group"}
       aria-label={t("selectionOptions")}
     >
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        {type === "single" ? (
+          <Circle className="h-3 w-3" />
+        ) : (
+          <CheckCheck className="h-3 w-3" />
+        )}
+        <span>{t(type === "single" ? "selectOne" : "selectMultiple")}</span>
+      </div>
       {options.map((option, idx) => {
         const isSelected = selected.has(idx);
+        const isConfirmedSelected = confirmed && isSelected;
         return (
           <button
             key={idx}
@@ -278,11 +338,13 @@ function SelectableOptions({
             aria-checked={isSelected}
             disabled={confirmed || disabled}
             onClick={() => toggle(idx)}
-            className={`flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-              isSelected
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50 hover:bg-muted/50"
-            } ${confirmed ? "opacity-70 cursor-default" : "cursor-pointer"}`}
+            className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all ${
+              isConfirmedSelected
+                ? "border-green-500/50 bg-green-500/5"
+                : isSelected
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-transparent hover:border-border hover:bg-muted/50"
+            } ${confirmed && !isSelected ? "opacity-40" : ""} ${confirmed ? "cursor-default" : "cursor-pointer"}`}
           >
             {type === "multi" ? (
               <Checkbox
@@ -292,38 +354,47 @@ function SelectableOptions({
               />
             ) : (
               <div
-                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                   isSelected
                     ? "border-primary bg-primary"
-                    : "border-muted-foreground"
+                    : "border-muted-foreground/40"
                 }`}
               >
-                {isSelected && <Circle className="h-2 w-2 fill-primary-foreground text-primary-foreground" />}
+                {isSelected && <Circle className="h-1.5 w-1.5 fill-primary-foreground text-primary-foreground" />}
               </div>
             )}
-            <span className="text-sm leading-relaxed">{option}</span>
+            <span className="text-sm leading-relaxed flex-1">{option}</span>
+            {isConfirmedSelected && (
+              <Check className="h-4 w-4 shrink-0 text-green-500 mt-0.5" />
+            )}
           </button>
         );
       })}
       {!confirmed && (
-        <Button
-          size="sm"
-          disabled={selected.size === 0 || disabled}
-          onClick={handleConfirm}
-          className="mt-1"
-        >
-          <Check className="mr-1 h-3.5 w-3.5" />
-          {t("confirmSelection")}
-        </Button>
+        <div className="pt-2">
+          <Button
+            size="sm"
+            disabled={selected.size === 0 || disabled}
+            onClick={handleConfirm}
+          >
+            <Check className="mr-1 h-3.5 w-3.5" />
+            {t("confirmSelection")} {selected.size > 0 && `(${selected.size})`}
+          </Button>
+        </div>
       )}
       {confirmed && (
-        <p className="text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 pt-1 text-xs text-green-600 dark:text-green-400">
+          <Check className="h-3 w-3" />
           {t("selectionConfirmed")}
-        </p>
+        </div>
       )}
     </div>
   );
 }
+
+// Remark/rehype plugins (stable references to avoid re-renders)
+const remarkPlugins: PluggableList = [remarkGfm, remarkMath];
+const rehypePlugins: PluggableList = [rehypeKatex, rehypeHighlight];
 
 function AssistantMessageContent({
   content,
@@ -339,10 +410,17 @@ function AssistantMessageContent({
   const t = useTranslations("chat");
   const segments = useMemo(() => parseMessageSegments(content), [content]);
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
+    <div className="chat-prose max-w-none text-sm">
       {segments.map((seg) =>
         seg.type === "text" ? (
-          <ReactMarkdown key={`${messageId}-t${seg.offset}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
+          <ReactMarkdown
+            key={`${messageId}-t${seg.offset}`}
+            remarkPlugins={remarkPlugins}
+            rehypePlugins={rehypePlugins}
+            components={markdownComponents}
+          >
+            {seg.content}
+          </ReactMarkdown>
         ) : (
           <SelectableOptions
             key={`${messageId}-s${seg.offset}`}
@@ -462,7 +540,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-lg px-4 py-2 text-sm ${
                     message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted"
@@ -476,7 +554,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                       sendMessage={sendMessage}
                     />
                   ) : (
-                    <p>{getMessageText(message)}</p>
+                    <p className="whitespace-pre-wrap">{getMessageText(message)}</p>
                   )}
                 </div>
                 {message.role === "user" && (
