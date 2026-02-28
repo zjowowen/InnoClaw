@@ -30,7 +30,7 @@ function parseShellArgs(input: string): string[] {
   while (i < len) {
     const ch = input[i];
 
-    if (ch === "'" ) {
+    if (ch === "'") {
       // Single-quoted segment: take everything until closing '
       i++;
       while (i < len && input[i] !== "'") {
