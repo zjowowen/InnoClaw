@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "katex/dist/katex.min.css";
+@import "highlight.js/styles/github-dark-dimmed.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -123,4 +125,175 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ---- Chat prose typography ---- */
+.chat-prose {
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.chat-prose h1,
+.chat-prose h2,
+.chat-prose h3,
+.chat-prose h4,
+.chat-prose h5,
+.chat-prose h6 {
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+.chat-prose h1 { font-size: 1.5em; }
+.chat-prose h2 { font-size: 1.25em; }
+.chat-prose h3 { font-size: 1.1em; }
+
+.chat-prose p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.chat-prose ul,
+.chat-prose ol {
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.chat-prose ul { list-style-type: disc; }
+.chat-prose ol { list-style-type: decimal; }
+.chat-prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
+.chat-prose li > ul,
+.chat-prose li > ol { margin-top: 0.25em; margin-bottom: 0.25em; }
+
+/* Task list checkboxes (GFM) */
+.chat-prose li.task-list-item {
+  list-style-type: none;
+  margin-left: -1.25em;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.chat-prose li.task-list-item > input[type="checkbox"] {
+  margin-top: 0.35em;
+  pointer-events: none;
+}
+
+.chat-prose blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.chat-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+.chat-prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chat-prose a:hover { opacity: 0.8; }
+
+.chat-prose strong { font-weight: 600; }
+.chat-prose em { font-style: italic; }
+.chat-prose del { text-decoration: line-through; opacity: 0.7; }
+
+/* Inline code */
+.chat-prose code:not(pre code) {
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+}
+
+/* Code blocks */
+.chat-prose pre {
+  position: relative;
+  border-radius: 8px;
+  margin: 0.75em 0;
+  overflow: hidden;
+}
+.chat-prose pre code {
+  display: block;
+  padding: 1em;
+  overflow-x: auto;
+  font-size: 0.8125em;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+
+/* Tables */
+.chat-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.875em;
+}
+.chat-prose thead th {
+  background: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5em 0.75em;
+  border-bottom: 2px solid var(--border);
+}
+.chat-prose tbody td {
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid var(--border);
+}
+.chat-prose tbody tr:last-child td {
+  border-bottom: none;
+}
+.chat-prose tbody tr:hover {
+  background: var(--muted);
+}
+
+/* KaTeX display math */
+.chat-prose .katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
+
+/* Images */
+.chat-prose img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.75em 0;
+}
+
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+.code-block-wrapper .code-copy-btn {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+/* Code block language label */
+.code-block-wrapper .code-lang-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: oklch(0.4 0 0 / 50%);
+  color: oklch(0.8 0 0);
+  font-size: 0.65em;
+  padding: 0.15em 0.6em;
+  border-radius: 0 0 6px 0;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }

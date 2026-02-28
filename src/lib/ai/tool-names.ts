@@ -8,6 +8,8 @@ export const ALL_TOOLS = [
   "writeFile",
   "listDirectory",
   "grep",
+  "kubectl",
+  "submitK8sJob",
 ] as const;
 
 export type ToolName = (typeof ALL_TOOLS)[number];
