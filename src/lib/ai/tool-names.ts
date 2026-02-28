@@ -8,8 +8,16 @@ export const ALL_TOOLS = [
   "writeFile",
   "listDirectory",
   "grep",
+] as const;
+
+/**
+ * High-privilege Kubernetes tools; must be explicitly opted into.
+ */
+export const K8S_TOOLS = [
   "kubectl",
   "submitK8sJob",
 ] as const;
 
-export type ToolName = (typeof ALL_TOOLS)[number];
+export type ToolName =
+  | (typeof ALL_TOOLS)[number]
+  | (typeof K8S_TOOLS)[number];
