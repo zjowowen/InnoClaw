@@ -96,30 +96,36 @@ function CodeBlock({ children, className, ...rest }: React.HTMLAttributes<HTMLEl
     const text = codeRef.current?.textContent ?? "";
     if (!text) return;
 
+    /** Fallback: hidden textarea + execCommand('copy') */
+    const fallbackCopy = (): boolean => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.pointerEvents = "none";
+      try {
+        document.body.appendChild(textarea);
+        textarea.select();
+        return document.execCommand("copy");
+      } catch {
+        return false;
+      } finally {
+        if (textarea.parentNode) {
+          textarea.parentNode.removeChild(textarea);
+        }
+      }
+    };
+
     // Prefer modern async clipboard API when available
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(text);
       } catch {
-        // Clipboard write failed; do not show "copied" state
-        return;
+        // Async API failed; try execCommand fallback before giving up
+        if (!fallbackCopy()) return;
       }
     } else {
-      // Fallback for older browsers
-      try {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        textarea.style.pointerEvents = "none";
-        document.body.appendChild(textarea);
-        textarea.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(textarea);
-        if (!ok) return;
-      } catch {
-        return;
-      }
+      if (!fallbackCopy()) return;
     }
 
     setCopied(true);
