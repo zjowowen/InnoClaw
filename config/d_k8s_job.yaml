@@ -13,7 +13,7 @@ metadata:
     lepton.sensetime.com/submitter: '<SUBMITTER>'
     ring-controller.atlas: 'ascend-910b'
   annotations:
-    sp-block: '4'
+    sp-block: '<GPU_COUNT>'
 spec:
   schedulerName: 'volcano'
   minAvailable: 1
