@@ -41,7 +41,7 @@ import type { Skill } from "@/types";
 
 type AgentMode = "agent" | "plan" | "ask";
 
-const MODE_TRANSLATION_KEYS: Record<AgentMode, "modeAgent" | "modePlan" | "modeAsk"> = {
+const MODE_LABEL_KEYS: Record<AgentMode, "modeAgent" | "modePlan" | "modeAsk"> = {
   agent: "modeAgent",
   plan: "modePlan",
   ask: "modeAsk",
@@ -87,6 +87,8 @@ const TOOL_ICONS: Record<string, React.ReactNode> = {
   writeFile: <Pencil className="h-3.5 w-3.5" />,
   listDirectory: <FolderOpen className="h-3.5 w-3.5" />,
   grep: <Search className="h-3.5 w-3.5" />,
+  kubectl: <Terminal className="h-3.5 w-3.5" />,
+  submitK8sJob: <Terminal className="h-3.5 w-3.5" />,
 };
 
 function getToolSummary(toolName: string, args?: Record<string, unknown>): string {
@@ -102,6 +104,10 @@ function getToolSummary(toolName: string, args?: Record<string, unknown>): strin
       return String(args.dirPath || ".");
     case "grep":
       return `${args.pattern || ""}${args.include ? ` (${args.include})` : ""}`;
+    case "kubectl":
+      return String(args.subcommand || "");
+    case "submitK8sJob":
+      return `${args.jobName || ""}${args.gpuCount ? ` (${args.gpuCount} GPUs)` : ""}`;
     default:
       return JSON.stringify(args);
   }
@@ -166,6 +172,18 @@ function ToolCallBlock({ part }: { part: ToolInvocationPart }) {
             <div className="text-[#565f89]">
               Pattern: {String(args.pattern)}
               {args.include ? ` | Include: ${String(args.include)}` : null}
+            </div>
+          )}
+          {toolName === "kubectl" && args && (
+            <div className="text-[#9ece6a]">
+              $ {args.useVcctl ? "vcctl" : "kubectl"} {String(args.subcommand)}
+              {args.namespace ? ` -n ${String(args.namespace)}` : ""}
+            </div>
+          )}
+          {toolName === "submitK8sJob" && args && (
+            <div className="text-[#565f89] space-y-0.5">
+              <div>Job: <span className="text-[#7aa2f7]">{String(args.jobName)}</span> | Image: <span className="text-[#c9d1d9]">{String(args.image || "default")}</span> | GPUs: <span className="text-[#bb9af7]">{String(args.gpuCount || 4)}</span></div>
+              <div className="text-[#9ece6a]">$ {String(args.command)}</div>
             </div>
           )}
 
@@ -266,6 +284,54 @@ function renderToolResult(
           {String(result.matches || "No matches found")}
         </pre>
       );
+    case "kubectl": {
+      const kStdout = String(result.stdout || "");
+      const kStderr = String(result.stderr || "");
+      const kExitCode = Number(result.exitCode ?? 0);
+      return (
+        <div className="space-y-1">
+          {kStdout && (
+            <pre className="whitespace-pre-wrap text-[#c9d1d9] leading-relaxed">
+              {kStdout}
+            </pre>
+          )}
+          {kStderr && (
+            <pre className="whitespace-pre-wrap text-[#f7768e] leading-relaxed">
+              {kStderr}
+            </pre>
+          )}
+          {kExitCode !== 0 && (
+            <div className="text-[#f7768e]">Exit code: {kExitCode}</div>
+          )}
+        </div>
+      );
+    }
+    case "submitK8sJob": {
+      const success = Boolean(result.success);
+      const sStdout = String(result.stdout || "");
+      const sStderr = String(result.stderr || "");
+      return (
+        <div className="space-y-1">
+          <div className={success ? "text-[#9ece6a]" : "text-[#f7768e]"}>
+            {success ? "Job submitted successfully" : "Job submission failed"}
+            {result.jobName ? ` — ${String(result.jobName)}` : ""}
+          </div>
+          {sStdout && (
+            <pre className="whitespace-pre-wrap text-[#c9d1d9] leading-relaxed">
+              {sStdout}
+            </pre>
+          )}
+          {sStderr && (
+            <pre className="whitespace-pre-wrap text-[#f7768e] leading-relaxed">
+              {sStderr}
+            </pre>
+          )}
+          {result.error && (
+            <div className="text-[#f7768e]">{String(result.error)}</div>
+          )}
+        </div>
+      );
+    }
     default:
       return (
         <pre className="whitespace-pre-wrap text-[#c9d1d9]">
@@ -381,17 +447,16 @@ export function AgentPanel({
   // Mutable body object — allows injecting skillId/paramValues before each send
   const agentBody = useMemo(
     () =>
-      ({ workspaceId, cwd: folderPath }) as Record<string, unknown>,
+      ({ workspaceId, cwd: folderPath, mode: "agent" }) as Record<string, unknown>,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  // Keep body in sync with props and mode
+  // Keep body in sync with props
   useEffect(() => {
     agentBody.workspaceId = workspaceId;
     agentBody.cwd = folderPath;
-    agentBody.mode = mode;
-  }, [workspaceId, folderPath, mode, agentBody]);
+  }, [workspaceId, folderPath, agentBody]);
 
   // Create transport once with the mutable body reference
   const transport = useMemo(
@@ -460,14 +525,18 @@ export function AgentPanel({
     setInput("");
     setActiveSkill(null);
 
-    await sendMessage(
-      {
-        text: `/${skill.slug}${Object.keys(paramValues).length > 0 ? " " + Object.entries(paramValues).map(([k, v]) => `${k}="${v}"`).join(" ") : ""}`,
-      },
-      {
-        body: { skillId: skill.id, paramValues },
-      }
-    );
+    // Inject skill context into the mutable body before sending
+    agentBody.skillId = skill.id;
+    agentBody.paramValues = paramValues;
+    agentBody.mode = mode;
+
+    await sendMessage({
+      text: `/${skill.slug}${Object.keys(paramValues).length > 0 ? " " + Object.entries(paramValues).map(([k, v]) => `${k}="${v}"`).join(" ") : ""}`,
+    });
+
+    // Clear skill context after sending
+    delete agentBody.skillId;
+    delete agentBody.paramValues;
   };
 
   const handleSend = async () => {
@@ -496,6 +565,7 @@ export function AgentPanel({
 
     setInput("");
     setShowAutocomplete(false);
+    agentBody.mode = mode; // ensure mode is current before every request
     await sendMessage({ text });
   };
 
@@ -504,6 +574,14 @@ export function AgentPanel({
   };
 
   const handleClear = () => {
+    setMessages([]);
+    setInput("");
+  };
+
+  // Switch mode: update body synchronously and clear stale conversation
+  const handleModeChange = (newMode: AgentMode) => {
+    setMode(newMode);
+    agentBody.mode = newMode; // synchronous — guarantees next request uses correct mode
     setMessages([]);
     setInput("");
   };
@@ -576,14 +654,14 @@ export function AgentPanel({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-[#7aa2f7] hover:bg-[#30363d] transition-colors">
-                {t(MODE_TRANSLATION_KEYS[mode])}
+                {t(MODE_LABEL_KEYS[mode])}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-52">
               <DropdownMenuLabel className="text-xs">{t("modeLabel")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={mode} onValueChange={(v) => setMode(v as AgentMode)}>
+              <DropdownMenuRadioGroup value={mode} onValueChange={(v) => handleModeChange(v as AgentMode)}>
                 <DropdownMenuRadioItem value="agent">
                   <div className="flex flex-col">
                     <span>{t("modeAgent")}</span>
