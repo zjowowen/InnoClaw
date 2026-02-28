@@ -114,8 +114,9 @@ function CodeBlock({ children, className, ...rest }: React.HTMLAttributes<HTMLEl
         textarea.style.pointerEvents = "none";
         document.body.appendChild(textarea);
         textarea.select();
-        document.execCommand("copy");
+        const ok = document.execCommand("copy");
         document.body.removeChild(textarea);
+        if (!ok) return;
       } catch {
         return;
       }
