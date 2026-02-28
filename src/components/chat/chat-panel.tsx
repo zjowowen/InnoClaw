@@ -103,6 +103,7 @@ function CodeBlock({ children, className, ...rest }: React.HTMLAttributes<HTMLEl
       textarea.style.position = "fixed";
       textarea.style.opacity = "0";
       textarea.style.pointerEvents = "none";
+      textarea.setAttribute("aria-hidden", "true");
       try {
         document.body.appendChild(textarea);
         textarea.select();
