@@ -470,14 +470,63 @@ export function AgentPanel({
 
   const { messages, sendMessage, setMessages, stop, status } = useChat({ transport });
 
-  // Auto-clear messages when mode changes
-  const prevModeRef = useRef(mode);
+  // --- Message persistence via localStorage ---
+  const storageKey = `agent-messages:${workspaceId}:${mode}`;
+  const isRestoringRef = useRef(false);
+
+  // Restore messages from localStorage on mount / workspace change / mode change
   useEffect(() => {
-    if (prevModeRef.current !== mode) {
-      prevModeRef.current = mode;
-      setMessages([]);
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as UIMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Scrub any "in-progress" tool invocations that would confuse useChat
+          const cleaned = parsed.map((msg) => ({
+            ...msg,
+            parts: msg.parts?.map((part) => {
+              // If a tool part is stuck in non-terminal state, mark it as errored
+              if (
+                typeof part === "object" &&
+                part !== null &&
+                "type" in part &&
+                typeof (part as Record<string, unknown>).type === "string" &&
+                ((part as Record<string, unknown>).type as string).startsWith("tool") &&
+                "state" in part &&
+                (part as Record<string, unknown>).state !== "output-available" &&
+                (part as Record<string, unknown>).state !== "output-error"
+              ) {
+                return { ...part, state: "output-error", errorText: "Session ended" };
+              }
+              return part;
+            }),
+          }));
+          isRestoringRef.current = true;
+          setMessages(cleaned as UIMessage[]);
+          // Allow save effect to run after React processes the state update
+          requestAnimationFrame(() => { isRestoringRef.current = false; });
+          return;
+        }
+      }
+    } catch {
+      // ignore corrupt data
     }
-  }, [mode, setMessages]);
+    // No saved data — ensure clean slate (but don't wipe during first mount when useChat already has [])
+  }, [storageKey, setMessages]);
+
+  // Save messages to localStorage whenever they change (skip during restoration)
+  useEffect(() => {
+    if (isRestoringRef.current) return;
+    try {
+      if (messages.length === 0) {
+        localStorage.removeItem(storageKey);
+      } else {
+        localStorage.setItem(storageKey, JSON.stringify(messages));
+      }
+    } catch {
+      // storage full or unavailable — silently ignore
+    }
+  }, [messages, storageKey]);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -576,6 +625,7 @@ export function AgentPanel({
   };
 
   const handleClear = () => {
+    if (status === "streaming" || status === "submitted") stop();
     setMessages([]);
     setInput("");
   };
