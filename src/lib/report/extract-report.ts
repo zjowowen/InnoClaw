@@ -18,12 +18,11 @@ const TOOL_LABEL_MAP: Record<string, string> = {
 
 function getToolLabel(toolName: string, args: Record<string, unknown>): string {
   const prefix = TOOL_LABEL_MAP[toolName] || toolName;
-  const anyArgs = args as Record<string, unknown>;
-  const filePath = anyArgs.filePath ?? anyArgs.path;
-  const dirPath = anyArgs.dirPath ?? anyArgs.path;
+  const filePath = args.filePath ?? args.path;
+  const dirPath = args.dirPath ?? args.path;
 
-  if (toolName === "bash" && anyArgs.command) {
-    const cmd = String(anyArgs.command);
+  if (toolName === "bash" && args.command) {
+    const cmd = String(args.command);
     return `${prefix}: ${cmd.length > 80 ? cmd.slice(0, 80) + "..." : cmd}`;
   }
   if ((toolName === "readFile" || toolName === "writeFile") && filePath) {
@@ -32,8 +31,8 @@ function getToolLabel(toolName: string, args: Record<string, unknown>): string {
   if (toolName === "listDirectory" && dirPath) {
     return `${prefix}: ${dirPath}`;
   }
-  if (toolName === "grep" && anyArgs.pattern) {
-    return `${prefix}: "${anyArgs.pattern}"`;
+  if (toolName === "grep" && args.pattern) {
+    return `${prefix}: "${args.pattern}"`;
   }
   return prefix;
 }

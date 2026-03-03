@@ -111,16 +111,23 @@ kubectl version --client
 # 如未安装，根据系统架构下载安装：
 # Linux amd64
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 
 # Linux arm64
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 
 # macOS (Apple Silicon)
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/arm64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/arm64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | shasum -a 256 --check
 
 # 安装
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/kubectl
+rm -f kubectl.sha256
 
 # 验证
 kubectl version --client
@@ -219,8 +226,12 @@ FROM node:20-alpine
 
 # 安装 git（GitHub 集成需要）和 kubectl（K8s 任务提交需要）
 RUN apk add --no-cache git python3 make g++ curl \
-    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')/kubectl" \
-    && chmod +x kubectl && mv kubectl /usr/local/bin/
+    && ARCH=$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/') \
+    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl" \
+    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl.sha256" \
+    && echo "$(cat kubectl.sha256)  kubectl" | sha256sum -c \
+    && chmod +x kubectl && mv kubectl /usr/local/bin/ \
+    && rm -f kubectl.sha256
 
 WORKDIR /app
 
