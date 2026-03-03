@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import crypto from "crypto";
 import { createWechatAdapter } from "./client";
 import type { WechatBotConfig } from "../types";
 
@@ -46,6 +47,11 @@ describe("WeChat adapter", () => {
       const adapter = createWechatAdapter({ ...testConfig, encodingAESKey: "" });
       expect(adapter.isEnabled()).toBe(false);
     });
+
+    it("should return false when agentId is empty", () => {
+      const adapter = createWechatAdapter({ ...testConfig, agentId: "" });
+      expect(adapter.isEnabled()).toBe(false);
+    });
   });
 
   describe("platform", () => {
@@ -64,9 +70,6 @@ describe("WeChat adapter", () => {
 
     it("should verify correct SHA1 signature", () => {
       const adapter = createWechatAdapter(testConfig);
-      // Pre-compute: SHA1(sort(["test_token", "1234567890", "nonce123"])) =
-      // SHA1("1234567890nonce123test_token")
-      const crypto = require("crypto");
       const parts = ["test_token", "1234567890", "nonce123"].sort();
       const expected = crypto
         .createHash("sha1")

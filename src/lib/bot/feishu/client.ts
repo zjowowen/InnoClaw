@@ -7,7 +7,6 @@
  * API docs: https://open.feishu.cn/document/server-docs
  */
 
-import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 import {
@@ -125,15 +124,11 @@ function createFeishuFileHandler(config: FeishuBotConfig): FileHandler {
       }
 
       // Step 1: Upload file to get file_key
-      const fileStream = fs.createReadStream(filePath);
       const formData = new FormData();
       const fileBuffer = await fsp.readFile(filePath);
       formData.append("file", new Blob([fileBuffer]), fileName);
       formData.append("file_type", "stream");
       formData.append("file_name", fileName);
-
-      // Clean up stream
-      fileStream.destroy();
 
       const uploadRes = await fetch(
         `${FEISHU_API_BASE}/im/v1/files`,

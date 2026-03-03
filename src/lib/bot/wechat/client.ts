@@ -204,7 +204,8 @@ export function createWechatAdapter(config: WechatBotConfig): BotAdapter {
         !!config.corpId &&
         !!config.corpSecret &&
         !!config.token &&
-        !!config.encodingAESKey
+        !!config.encodingAESKey &&
+        !!config.agentId
       );
     },
 

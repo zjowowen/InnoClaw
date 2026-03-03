@@ -16,6 +16,9 @@ import type { BotAdapter, BotMessage, BotReply } from "./types";
 /** Directory where downloaded bot files are stored */
 const BOT_FILES_DIR = path.join(os.tmpdir(), "notebooklm-bot-files");
 
+/** Maximum size for reading text file content inline (100 KB) */
+const MAX_TEXT_READ_SIZE = 100_000;
+
 /**
  * Process an incoming bot message and generate replies.
  *
@@ -76,7 +79,7 @@ export async function processMessage(
           ".toml", ".env", ".gitignore", ".dockerfile",
         ];
         const ext = path.extname(message.fileName).toLowerCase();
-        if (textExtensions.includes(ext) && stat.size < 100_000) {
+        if (textExtensions.includes(ext) && stat.size < MAX_TEXT_READ_SIZE) {
           fileContent = await fsp.readFile(localPath, "utf-8");
         }
       } catch {
