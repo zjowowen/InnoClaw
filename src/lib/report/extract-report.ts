@@ -18,15 +18,18 @@ const TOOL_LABEL_MAP: Record<string, string> = {
 
 function getToolLabel(toolName: string, args: Record<string, unknown>): string {
   const prefix = TOOL_LABEL_MAP[toolName] || toolName;
+  const filePath = args.filePath ?? args.path;
+  const dirPath = args.dirPath ?? args.path;
+
   if (toolName === "bash" && args.command) {
     const cmd = String(args.command);
     return `${prefix}: ${cmd.length > 80 ? cmd.slice(0, 80) + "..." : cmd}`;
   }
-  if ((toolName === "readFile" || toolName === "writeFile") && args.path) {
-    return `${prefix}: ${args.path}`;
+  if ((toolName === "readFile" || toolName === "writeFile") && filePath) {
+    return `${prefix}: ${filePath}`;
   }
-  if (toolName === "listDirectory" && args.path) {
-    return `${prefix}: ${args.path}`;
+  if (toolName === "listDirectory" && dirPath) {
+    return `${prefix}: ${dirPath}`;
   }
   if (toolName === "grep" && args.pattern) {
     return `${prefix}: "${args.pattern}"`;
@@ -78,15 +81,21 @@ export function extractProcessSteps(messages: UIMessage[]): ReportProcessStep[] 
   for (const msg of messages) {
     if (msg.role !== "assistant") continue;
     for (const part of msg.parts ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const partType = (part as any).type as string | undefined;
       if (
-        part.type === "tool-invocation" ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (part as any).type?.startsWith?.("tool-")
+        partType === "tool-invocation" ||
+        partType === "dynamic-tool" ||
+        partType?.startsWith("tool-")
       ) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const toolPart = part as any;
-        const toolName = toolPart.toolInvocation?.toolName ?? toolPart.toolName ?? "unknown";
-        const args = toolPart.toolInvocation?.args ?? toolPart.args ?? {};
+        const toolName =
+          toolPart.toolInvocation?.toolName ??
+          toolPart.toolName ??
+          (partType?.startsWith("tool-") ? partType.slice("tool-".length) : undefined) ??
+          "unknown";
+        const args = toolPart.toolInvocation?.args ?? toolPart.input ?? toolPart.args ?? {};
         const state = toolPart.toolInvocation?.state ?? toolPart.state ?? "output-available";
 
         let status: ReportProcessStep["status"] = "completed";

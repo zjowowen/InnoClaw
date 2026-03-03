@@ -1,4 +1,34 @@
 import type { ReportData } from "@/types/report";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeStringify from "rehype-stringify";
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Convert markdown to sanitized HTML string.
+ * Used for PDF print preview where we need formatted output.
+ */
+async function markdownToSafeHtml(markdown: string): Promise<string> {
+  const result = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeSanitize)
+    .use(rehypeStringify)
+    .process(markdown);
+  return String(result);
+}
 
 export function downloadAsMarkdown(report: ReportData) {
   const blob = new Blob([report.markdownContent], { type: "text/markdown;charset=utf-8" });
@@ -12,25 +42,17 @@ export function downloadAsMarkdown(report: ReportData) {
   URL.revokeObjectURL(url);
 }
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-export function downloadAsPdf(report: ReportData) {
+export async function downloadAsPdf(report: ReportData) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
 
-  const safeTitle = escapeHtml(report.title);
+  const safeHtml = await markdownToSafeHtml(report.markdownContent);
 
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${safeTitle}</title>
+      <title>${escapeHtml(report.title)}</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -62,25 +84,19 @@ export function downloadAsPdf(report: ReportData) {
   `);
   printWindow.document.close();
 
-  // Safely set content via DOM API to prevent XSS
+  // Set sanitized HTML via DOM API (avoids inline <script> XSS)
   const contentEl = printWindow.document.getElementById("content");
   if (contentEl) {
-    contentEl.textContent = report.markdownContent;
+    contentEl.innerHTML = safeHtml;
   }
 
-  // Close via onafterprint to avoid cutting off the print dialog
   printWindow.addEventListener("afterprint", () => {
     printWindow.close();
   });
-  // Fallback: close if afterprint doesn't fire (e.g. user cancels)
-  setTimeout(() => {
-    try { printWindow.close(); } catch { /* already closed */ }
-  }, 1000);
-
   printWindow.print();
 }
 
-export async function copyShareLink(report: ReportData): Promise<boolean> {
+export async function copyReportContent(report: ReportData): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(report.markdownContent);
     return true;
