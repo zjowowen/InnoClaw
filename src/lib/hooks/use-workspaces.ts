@@ -1,11 +1,6 @@
 import useSWR from "swr";
 import type { Workspace } from "@/types";
-
-const fetcher = (url: string) =>
-  fetch(url).then((res) => {
-    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-    return res.json();
-  });
+import { fetcher } from "@/lib/fetcher";
 
 export function useWorkspaces() {
   const { data, error, isLoading, mutate } = useSWR<Workspace[]>(
