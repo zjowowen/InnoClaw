@@ -1,4 +1,10 @@
 import type { ReportData } from "@/types/report";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeStringify from "rehype-stringify";
 
 function escapeHtml(str: string): string {
   return str
@@ -7,6 +13,21 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/**
+ * Convert markdown to sanitized HTML string.
+ * Used for PDF print preview where we need formatted output.
+ */
+async function markdownToSafeHtml(markdown: string): Promise<string> {
+  const result = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeSanitize)
+    .use(rehypeStringify)
+    .process(markdown);
+  return String(result);
 }
 
 export function downloadAsMarkdown(report: ReportData) {
@@ -21,9 +42,11 @@ export function downloadAsMarkdown(report: ReportData) {
   URL.revokeObjectURL(url);
 }
 
-export function downloadAsPdf(report: ReportData) {
+export async function downloadAsPdf(report: ReportData) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
+
+  const safeHtml = await markdownToSafeHtml(report.markdownContent);
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -56,7 +79,7 @@ export function downloadAsPdf(report: ReportData) {
     <body>
       <div id="content"></div>
       <script>
-        document.getElementById("content").textContent = ${JSON.stringify(report.markdownContent)};
+        document.getElementById("content").innerHTML = ${JSON.stringify(safeHtml)};
         window.print();
         window.close();
       </script>
