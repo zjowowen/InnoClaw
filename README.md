@@ -35,7 +35,7 @@ An AI-powered research assistant web app similar to Google NotebookLM. Users ope
 
 ## 前置要求 / Prerequisites
 
-1. **Node.js 18+**（推荐 20+）
+1. **Node.js >=20.9.0**（推荐最新 LTS 版本）
 2. **npm**（随 Node.js 一起安装）
 3. **Git**（如需 GitHub 克隆/拉取功能）
 4. **AI API Key**（可选，至少配置一个才能使用 AI 对话和生成功能；不配置时其余功能正常可用）
@@ -44,7 +44,7 @@ An AI-powered research assistant web app similar to Google NotebookLM. Users ope
 **环境检查 / Environment Check：**
 
 ```bash
-# 检查 Node.js 版本（需 >= 18）
+# 检查 Node.js 版本（需 >= 20.9.0）
 node -v
 
 # 检查 npm 版本
@@ -54,7 +54,7 @@ npm -v
 git --version
 ```
 
-如果 `node -v` 显示版本低于 18，请前往 [Node.js 官网](https://nodejs.org/) 下载最新 LTS 版本。
+如果 `node -v` 显示版本低于 20.9.0，请前往 [Node.js 官网](https://nodejs.org/) 下载最新 LTS 版本。
 
 ---
 
@@ -179,7 +179,7 @@ npm run dev
 
 | # | 检查项 | 预期结果 |
 |---|--------|----------|
-| 1 | `node -v` | 输出 `v18.x.x` 或更高版本 |
+| 1 | `node -v` | 输出 `v20.9.x` 或更高版本 |
 | 2 | `npm -v` | 输出版本号（无报错） |
 | 3 | `node_modules/` 目录存在 | `npm install` 成功完成，无 ERR 报错 |
 | 4 | `./data/notebooklm.db` 文件存在 | `npx drizzle-kit migrate` 成功执行 |
@@ -235,7 +235,17 @@ npm install --registry=https://registry.npmmirror.com
 - 确认 `./data/` 目录存在（若不存在会自动创建）
 - 若数据库损坏，可删除后重新迁移：
   ```bash
+  # Linux / macOS
   rm -f ./data/notebooklm.db
+
+  # Windows PowerShell
+  Remove-Item -Path .\data\notebooklm.db -ErrorAction SilentlyContinue
+
+  # Windows CMD
+  del /F /Q .\data\notebooklm.db
+  ```
+  然后重新执行：
+  ```bash
   npx drizzle-kit migrate
   ```
 
@@ -253,7 +263,14 @@ netstat -ano | findstr :3000
 可通过环境变量指定其他端口：
 
 ```bash
+# Linux / macOS / WSL / Git Bash
 PORT=3001 npm run dev
+
+# Windows PowerShell
+$env:PORT=3001; npm run dev
+
+# Windows CMD
+set PORT=3001&& npm run dev
 ```
 
 ### 页面访问报 500 错误
