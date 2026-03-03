@@ -86,14 +86,14 @@ export function extractProcessSteps(messages: UIMessage[]): ReportProcessStep[] 
       if (
         partType === "tool-invocation" ||
         partType === "dynamic-tool" ||
-        partType?.startsWith?.("tool-")
+        partType?.startsWith("tool-")
       ) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const toolPart = part as any;
         const toolName =
           toolPart.toolInvocation?.toolName ??
           toolPart.toolName ??
-          (partType?.startsWith?.("tool-") ? partType.slice("tool-".length) : undefined) ??
+          (partType?.startsWith("tool-") ? partType.slice("tool-".length) : undefined) ??
           "unknown";
         const args = toolPart.toolInvocation?.args ?? toolPart.input ?? toolPart.args ?? {};
         const state = toolPart.toolInvocation?.state ?? toolPart.state ?? "output-available";
