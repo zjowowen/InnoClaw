@@ -424,6 +424,12 @@ NO_PROXY=localhost,127.0.0.1,10.0.0.0/8
 
 > **注意：** Node.js 的 `fetch()` 不会自动读取系统代理设置。即使操作系统或浏览器配置了代理，也需要在 `.env.local` 中显式配置 `HTTP_PROXY` 才能生效。不需要代理的环境无需配置此项。
 
+### 配置代理后报 `Proxy response (403)` / `HTTP Tunneling` 错误
+
+如果配置代理后报错 `Proxy response (403) !== 200 when HTTP Tunneling`，通常是因为代理服务器限制了 CONNECT 方法（仅允许连接 443 端口），而你的 API 端点使用了非标准端口的 HTTP 地址（如 `http://x.x.x.x:3888`）。
+
+此问题已在应用中自动处理：对于 `http://` 目标地址，应用使用 HTTP 正向代理模式（直接转发请求）而非 CONNECT 隧道模式。如果仍然遇到此错误，请确保使用的是最新版本的代码。
+
 ### 启动 `npm run dev` 后端口被占用
 
 ```bash
