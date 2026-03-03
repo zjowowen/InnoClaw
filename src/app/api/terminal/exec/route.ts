@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import path from "path";
-import os from "os";
 import { validatePath } from "@/lib/files/filesystem";
-import { buildSafeExecEnv } from "@/lib/env";
+import { buildSafeExecEnv, resolveHome } from "@/lib/env";
 
 const EXEC_TIMEOUT = 30_000; // 30 seconds
 const MAX_COMMAND_LENGTH = 4096;
@@ -52,11 +51,11 @@ export async function POST(req: NextRequest) {
     if (cdMatch || trimmed === "cd") {
       let target = cdMatch
         ? cdMatch[1].trim().replace(/^["']|["']$/g, "")
-        : os.homedir();
+        : resolveHome();
 
       // Expand a leading "~" to the user's home directory
       if (target.startsWith("~")) {
-        const homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir();
+        const homeDir = resolveHome();
         const restWithoutSep = target.slice(1).replace(/^[/\\]+/, "");
         target = path.join(homeDir, restWithoutSep);
       }
