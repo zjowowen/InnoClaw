@@ -12,7 +12,6 @@ import { FileBrowser } from "@/components/files/file-browser";
 import { AgentPanel } from "@/components/agent/agent-panel";
 import { NotesPanel } from "@/components/notes/notes-panel";
 import { FilePreviewPanel } from "@/components/preview/file-preview-panel";
-import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { useWorkspace } from "@/lib/hooks/use-workspaces";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -65,47 +64,35 @@ export default function WorkspacePage({
 
           <ResizableHandle withHandle />
 
-          {/* Right: Vertical split — Chat+Notes on top, Terminal on bottom */}
+          {/* Right: Agent + Preview/Notes horizontal split */}
           <ResizablePanel defaultSize={75} minSize={30} className="overflow-hidden">
-            <ResizablePanelGroup orientation="vertical">
-              {/* Top: Chat + Notes horizontal split */}
-              <ResizablePanel defaultSize={65} minSize={20} className="overflow-hidden">
-                <ResizablePanelGroup orientation="horizontal">
-                  <ResizablePanel defaultSize={60} minSize={10} className="overflow-hidden">
-                    <AgentPanel
-                      workspaceId={workspaceId}
-                      workspaceName={workspace.name}
-                      folderPath={workspace.folderPath}
-                    />
-                  </ResizablePanel>
-
-                  <ResizableHandle withHandle />
-
-                  <ResizablePanel defaultSize={40} minSize={10} className="overflow-hidden">
-                    <Tabs defaultValue="preview" className="flex h-full flex-col">
-                      <TabsList className="mx-2 mt-1 shrink-0">
-                        <TabsTrigger value="preview">Preview</TabsTrigger>
-                        <TabsTrigger value="notes">Notes</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="preview" className="flex-1 overflow-hidden mt-0">
-                        <FilePreviewPanel
-                          filePath={selectedFilePath}
-                          onClose={() => setSelectedFilePath(null)}
-                        />
-                      </TabsContent>
-                      <TabsContent value="notes" className="flex-1 overflow-hidden mt-0">
-                        <NotesPanel workspaceId={workspaceId} />
-                      </TabsContent>
-                    </Tabs>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+            <ResizablePanelGroup orientation="horizontal">
+              <ResizablePanel defaultSize={60} minSize={10} className="overflow-hidden">
+                <AgentPanel
+                  workspaceId={workspaceId}
+                  workspaceName={workspace.name}
+                  folderPath={workspace.folderPath}
+                />
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
-              {/* Bottom: Terminal */}
-              <ResizablePanel defaultSize={35} minSize={10} className="overflow-hidden">
-                <TerminalPanel cwd={workspace.folderPath} />
+              <ResizablePanel defaultSize={40} minSize={10} className="overflow-hidden">
+                <Tabs defaultValue="preview" className="flex h-full flex-col">
+                  <TabsList className="mx-2 mt-1 shrink-0">
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="preview" className="flex-1 overflow-hidden mt-0">
+                    <FilePreviewPanel
+                      filePath={selectedFilePath}
+                      onClose={() => setSelectedFilePath(null)}
+                    />
+                  </TabsContent>
+                  <TabsContent value="notes" className="flex-1 overflow-hidden mt-0">
+                    <NotesPanel workspaceId={workspaceId} />
+                  </TabsContent>
+                </Tabs>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
