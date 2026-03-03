@@ -2,7 +2,7 @@
  * Unit tests for cross-platform environment utilities.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import os from "os";
 
 describe("buildSafeExecEnv", () => {
@@ -89,5 +89,50 @@ describe("buildSafeExecEnv", () => {
     const env = buildSafeExecEnv({ MY_VAR: "hello" });
     expect(env.MY_VAR).toBe("hello");
     expect(env.PATH).toBeDefined();
+  });
+
+  it("should provide hardcoded SYSTEMROOT and COMSPEC fallbacks on win32", async () => {
+    Object.defineProperty(process, "platform", { value: "win32" });
+    delete process.env.SYSTEMROOT;
+    delete process.env.SystemRoot;
+    delete process.env.COMSPEC;
+    const buildSafeExecEnv = await loadModule();
+    const env = buildSafeExecEnv();
+    expect(env.SYSTEMROOT).toBe("C:\\Windows");
+    expect(env.COMSPEC).toBe("C:\\Windows\\system32\\cmd.exe");
+  });
+});
+
+describe("resolveHome", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    vi.resetModules();
+  });
+
+  async function loadResolveHome() {
+    const mod = await import("./env");
+    return mod.resolveHome;
+  }
+
+  it("should return HOME when set", async () => {
+    process.env.HOME = "/my/home";
+    const resolveHome = await loadResolveHome();
+    expect(resolveHome()).toBe("/my/home");
+  });
+
+  it("should fall back to USERPROFILE when HOME is unset", async () => {
+    delete process.env.HOME;
+    process.env.USERPROFILE = "C:\\Users\\test";
+    const resolveHome = await loadResolveHome();
+    expect(resolveHome()).toBe("C:\\Users\\test");
+  });
+
+  it("should fall back to os.homedir() when both are unset", async () => {
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+    const resolveHome = await loadResolveHome();
+    expect(resolveHome()).toBe(os.homedir());
   });
 });
