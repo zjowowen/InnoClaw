@@ -151,6 +151,12 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
 # EMBEDDING_BASE_URL=https://api.your-embedding-provider.com/v1
 # EMBEDDING_MODEL=text-embedding-3-small
 
+# [可选] HTTP 代理（内网环境需要代理才能访问外部 API 时配置）
+# 配置后所有出站请求（AI API、GitHub 等）都会走代理
+# HTTP_PROXY=http://your-proxy:3128
+# HTTPS_PROXY=http://your-proxy:3128
+# NO_PROXY=localhost,127.0.0.1,10.0.0.0/8
+
 # [可选] GitHub Personal Access Token（如需克隆/拉取私有仓库）
 # 需要 repo scope 权限
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
@@ -163,6 +169,7 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxx
 - `WORKSPACE_ROOTS` 指定的目录必须已经存在于服务器上，应用不会自动创建
 - `DATABASE_URL` 可自定义 SQLite 数据库存放路径。**如果项目位于网络/共享文件系统（NFS、CIFS 等），强烈建议配置此项指向本地文件系统路径**，否则可能因 SQLite WAL 模式不兼容而报错
 - `NEXT_BUILD_DIR` 可自定义 Next.js 构建目录（默认为项目下的 `.next`）。网络文件系统上建议配置此项指向本地路径，以避免 Turbopack 缓存持久化失败的警告
+- `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` 支持为出站请求配置 HTTP 代理。内网环境中如果 Node.js 进程无法直接访问外部 API（如 OpenAI、Anthropic），需配置此项。不需要代理的环境无需配置
 - 不配置任何 API Key 时，工作空间、文件管理、GitHub 克隆等功能正常可用，仅 AI 对话和笔记生成功能会禁用
 - 配置了 `OPENAI_API_KEY` 或 `EMBEDDING_API_KEY` 后，同步文件时会自动生成向量嵌入（embedding），支持 RAG 检索增强对话
 - Embedding API 支持独立配置：如果你的对话模型代理不支持 embedding 接口（如仅提供 Gemini 聊天模型的代理），可以通过 `EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL` 指向一个单独的 embedding 服务
@@ -400,6 +407,22 @@ NEXT_BUILD_DIR=/tmp/notebooklm-next
 ```
 
 然后重启开发服务器即可。
+
+### AI 对话报 `Connect Timeout Error` / 无法连接 API
+
+如果 AI 对话时报错 `Connect Timeout Error` 或 `Cannot connect to API`，通常是因为内网环境中 Node.js 进程无法直接访问外部 API 地址，需要配置 HTTP 代理。
+
+**解决方法：** 在 `.env.local` 中配置代理：
+
+```env
+HTTP_PROXY=http://your-proxy:3128
+HTTPS_PROXY=http://your-proxy:3128
+NO_PROXY=localhost,127.0.0.1,10.0.0.0/8
+```
+
+配置后重启开发服务器即可。`NO_PROXY` 用于指定不走代理的地址（如本地服务）。
+
+> **注意：** Node.js 的 `fetch()` 不会自动读取系统代理设置。即使操作系统或浏览器配置了代理，也需要在 `.env.local` 中显式配置 `HTTP_PROXY` 才能生效。不需要代理的环境无需配置此项。
 
 ### 启动 `npm run dev` 后端口被占用
 
