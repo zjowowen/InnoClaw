@@ -351,7 +351,8 @@ describe("Feishu adapter", () => {
       const destDir = `${os.default.tmpdir()}/feishu_test_dl_img_${Date.now()}`;
 
       mockImageGet.mockResolvedValue({
-        getReadableStream: () => Readable.from(Buffer.from("fake image data")),
+        getReadableStream: () =>
+          Readable.from([Buffer.from("fake image data")]),
       });
 
       const adapter = createFeishuAdapter(testConfig);
@@ -376,7 +377,8 @@ describe("Feishu adapter", () => {
       const destDir = `${os.default.tmpdir()}/feishu_test_dl_file_${Date.now()}`;
 
       mockMessageResourceGet.mockResolvedValue({
-        getReadableStream: () => Readable.from(Buffer.from("fake file data")),
+        getReadableStream: () =>
+          Readable.from([Buffer.from("fake file data")]),
       });
 
       const adapter = createFeishuAdapter(testConfig);
@@ -409,10 +411,20 @@ describe("Feishu adapter", () => {
       const { MAX_FILE_SIZE } = await import("../types");
       const destDir = `${os.default.tmpdir()}/feishu_test_sizelimit_${Date.now()}`;
 
-      // Create a stream of (MAX_FILE_SIZE + 1) bytes to trigger the limit
-      const bigChunk = Buffer.alloc(MAX_FILE_SIZE + 1, 0x41);
+      // Yield many small chunks that collectively exceed MAX_FILE_SIZE,
+      // avoiding a single huge Buffer allocation that could OOM in CI.
+      const chunkSize = 64 * 1024; // 64 KB
+      const totalBytes = MAX_FILE_SIZE + 1;
+      function* oversizedChunks() {
+        let remaining = totalBytes;
+        while (remaining > 0) {
+          const size = Math.min(chunkSize, remaining);
+          yield Buffer.alloc(size, 0x41);
+          remaining -= size;
+        }
+      }
       mockMessageResourceGet.mockResolvedValue({
-        getReadableStream: () => Readable.from(bigChunk),
+        getReadableStream: () => Readable.from(oversizedChunks()),
       });
 
       const adapter = createFeishuAdapter(testConfig);
