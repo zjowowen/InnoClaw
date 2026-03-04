@@ -1,5 +1,5 @@
 /**
- * Unit tests for Feishu message-router.
+ * Unit tests for Feishu message-handler.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -40,7 +40,7 @@ vi.mock("./state", () => ({
     mockReleaseProcessingLock(...args),
 }));
 
-import { routeMessage } from "./message-router";
+import { handleFeishuMessage } from "./message-handler";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,7 +104,7 @@ beforeEach(() => {
   mockSendReplies.mockResolvedValue(undefined);
 });
 
-describe("routeMessage", () => {
+describe("handleFeishuMessage", () => {
   describe("slash command handling", () => {
     it("should send interactive card when command returns a card", async () => {
       const card = { header: { title: "Status" } };
@@ -112,7 +112,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage({ text: "/status" });
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(mockParseAndHandleCommand).toHaveBeenCalledWith("oc_chat123", "/status");
       expect(adapter.sendInteractiveCard).toHaveBeenCalledWith("oc_chat123", card);
@@ -127,7 +127,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage({ text: "/help" });
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(adapter.sendText).toHaveBeenCalledWith("oc_chat123", "Help info");
       expect(adapter.sendInteractiveCard).not.toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter({ sendInteractiveCard: undefined });
       const message = createTextMessage({ text: "/status" });
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(adapter.sendText).toHaveBeenCalledWith("oc_chat123", "Fallback text");
     });
@@ -161,7 +161,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(mockAcquireProcessingLock).toHaveBeenCalledWith("oc_chat123");
       expect(mockProcessAgentMessage).toHaveBeenCalledWith({
@@ -184,7 +184,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(adapter.sendText).toHaveBeenCalledWith(
         "oc_chat123",
@@ -203,7 +203,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(mockReleaseProcessingLock).toHaveBeenCalledWith("oc_chat123");
       // Error should be caught and a generic message sent
@@ -221,7 +221,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(mockProcessMessage).toHaveBeenCalledWith(adapter, message);
       expect(mockSendReplies).toHaveBeenCalledWith(adapter, "oc_chat123", replies);
@@ -233,7 +233,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createFileMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       // File messages skip command parsing entirely
       expect(mockParseAndHandleCommand).not.toHaveBeenCalled();
@@ -248,7 +248,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       expect(adapter.sendText).toHaveBeenCalledWith(
         "oc_chat123",
@@ -265,7 +265,7 @@ describe("routeMessage", () => {
       const adapter = createMockAdapter();
       const message = createTextMessage();
 
-      await routeMessage(adapter, message, "[test]");
+      await handleFeishuMessage(adapter, message, "[test]");
 
       const sentText = (adapter.sendText as ReturnType<typeof vi.fn>).mock
         .calls[0][1] as string;
@@ -283,7 +283,7 @@ describe("routeMessage", () => {
 
       // Should not throw
       await expect(
-        routeMessage(adapter, message, "[test]")
+        handleFeishuMessage(adapter, message, "[test]")
       ).resolves.toBeUndefined();
     });
   });

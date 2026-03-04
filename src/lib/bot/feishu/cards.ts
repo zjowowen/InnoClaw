@@ -243,7 +243,6 @@ export function buildFinalCard(options: {
   });
 
   if (toolCalls.length > 0) {
-
     // Show first few tool calls in detail, collapse the rest
     const detailedCount = Math.min(toolCalls.length, 5);
     for (let i = 0; i < detailedCount; i++) {
@@ -255,7 +254,14 @@ export function buildFinalCard(options: {
     }
 
     if (toolCalls.length > 5) {
-      const remaining = summaryLines.slice(5).join(" | ");
+      const remaining = toolCalls
+        .slice(5)
+        .map((tc) => {
+          const icon =
+            tc.state === "error" ? "❌" : tc.state === "completed" ? "✅" : "⏳";
+          return `${icon} **${tc.toolName}**`;
+        })
+        .join(" | ");
       elements.push({
         tag: "div",
         text: {

@@ -1,13 +1,11 @@
 /**
- * Shared Feishu message-routing logic.
+ * Shared Feishu message handler.
  *
- * Used by both the HTTP webhook handler (`src/app/api/bot/feishu/route.ts`)
- * and the WebSocket long-connection client (`src/lib/bot/feishu/ws-client.ts`)
- * so that any change to the routing logic (new slash command, lock messaging,
- * error handling, etc.) only needs to be made in one place.
+ * Contains the dispatch logic used by both the HTTP webhook route
+ * and the WebSocket client to avoid duplicating the same flow.
  */
 
-import { type BotAdapter, type BotMessage } from "../types";
+import type { BotAdapter, BotMessage } from "../types";
 import { parseAndHandleCommand } from "./commands";
 import { processAgentMessage } from "./agent-processor";
 import { processMessage, sendReplies } from "../processor";
@@ -18,23 +16,19 @@ import {
 } from "./state";
 
 /**
- * Route a single Feishu message through the standard pipeline:
- *  1. Slash-command detection → immediate card / text reply.
- *  2. Agent processing when a workspace is bound to the chat.
- *  3. Simple AI-chat fallback for everything else.
- *
- * @param adapter  Platform adapter used to send replies.
- * @param message  The normalised bot message to process.
- * @param logTag   Short label used in console output (e.g. "[feishu-ws]").
+ * Process a single Feishu message through the full dispatch pipeline:
+ * 1. Slash commands (/workspace, /status, etc.)
+ * 2. Agent processing (when workspace is bound)
+ * 3. Simple AI chat fallback
  */
-export async function routeMessage(
+export async function handleFeishuMessage(
   adapter: BotAdapter,
   message: BotMessage,
-  logTag: string
+  logPrefix: string = "[feishu]"
 ): Promise<void> {
   try {
     console.log(
-      `${logTag} Processing ${message.type} message from ${message.senderId}`
+      `${logPrefix} Processing ${message.type} message from ${message.senderId}`
     );
 
     // --- Text messages: check for commands or agent processing ---
@@ -88,7 +82,7 @@ export async function routeMessage(
   } catch (error) {
     const correlationId = crypto.randomUUID().slice(0, 8);
     console.error(
-      `${logTag} Message processing error (id=${correlationId}):`,
+      `${logPrefix} Message processing error (id=${correlationId}):`,
       error
     );
     try {
