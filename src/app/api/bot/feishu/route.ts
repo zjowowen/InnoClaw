@@ -14,20 +14,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFeishuConfig } from "@/lib/bot/types";
 import { createFeishuAdapter } from "@/lib/bot/feishu/client";
-import { routeMessage } from "@/lib/bot/feishu/message-router";
+import { handleFeishuMessage } from "@/lib/bot/feishu/message-handler";
 
 /** Simple in-memory set to deduplicate Feishu event re-deliveries (TTL 5min) */
 const processedEvents = new Map<string, number>();
 const EVENT_TTL = 5 * 60 * 1000;
 
-function isDuplicateEvent(eventId: string): boolean {
-  // Clean expired entries
-  const now = Date.now();
+// Sweep expired entries periodically instead of on every request
+const _sweepTimer = setInterval(() => {
+  const cutoff = Date.now() - EVENT_TTL;
   for (const [id, ts] of processedEvents) {
-    if (now - ts > EVENT_TTL) processedEvents.delete(id);
+    if (ts < cutoff) processedEvents.delete(id);
   }
+}, 60_000);
+if (typeof _sweepTimer === "object" && "unref" in _sweepTimer) {
+  _sweepTimer.unref();
+}
+
+function isDuplicateEvent(eventId: string): boolean {
   if (processedEvents.has(eventId)) return true;
-  processedEvents.set(eventId, now);
+  processedEvents.set(eventId, Date.now());
   return false;
 }
 
@@ -80,7 +86,9 @@ export async function POST(req: NextRequest) {
     // Process messages asynchronously (don't block the webhook response).
     // Feishu requires a quick response to acknowledge receipt.
     for (const message of messages) {
-      routeMessage(adapter, message, "[feishu-webhook]");
+      handleFeishuMessage(adapter, message, "[feishu-webhook]").catch((err) => {
+        console.error("[feishu-webhook] Unhandled error in handleMessage:", err);
+      });
     }
 
     return NextResponse.json({ ok: true });
