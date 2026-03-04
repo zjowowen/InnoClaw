@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       model,
       system: systemPrompt,
       prompt: "Please analyze and summarize all the papers listed above.",
+      abortSignal: req.signal,
     });
 
     return NextResponse.json({ summary: text });

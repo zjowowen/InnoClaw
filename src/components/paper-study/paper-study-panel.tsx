@@ -109,6 +109,11 @@ export function PaperStudyPanel({
       if (sumRes.ok) {
         const sumData = await sumRes.json();
         setSummary(sumData.summary || "");
+      } else {
+        const errData = await sumRes.json().catch(() => ({}));
+        setSearchErrors({
+          summarize: errData.error || `Summarization failed (${sumRes.status})`,
+        });
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -299,7 +304,7 @@ export function PaperStudyPanel({
                 <ArticleCard
                   key={key}
                   article={article}
-                  isSelected={selectedArticle?.id === article.id}
+                  isSelected={selectedArticle?.id === article.id && selectedArticle?.source === article.source}
                   isChecked={checkedIds.has(key)}
                   onSelect={handleSelectArticle}
                   onCheckChange={handleCheckChange}
