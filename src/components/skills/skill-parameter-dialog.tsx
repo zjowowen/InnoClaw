@@ -48,7 +48,6 @@ export function SkillParameterDialog({
   });
 
   // Reset values when the skill changes or dialog reopens
-  const resetKey = `${skill.id}-${open}-${skill.parameters?.length}`;
   useEffect(() => {
     if (open) {
       const init: Record<string, string> = {};
@@ -57,7 +56,7 @@ export function SkillParameterDialog({
       }
       setValues(init);
     }
-  }, [resetKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [skill.id, open, params]);
 
   const setValue = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
