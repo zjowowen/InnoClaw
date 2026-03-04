@@ -12,7 +12,7 @@
 import * as lark from "@larksuiteoapi/node-sdk";
 import { getFeishuConfig } from "../types";
 import { createFeishuAdapter } from "./client";
-import { routeMessage } from "./message-router";
+import { handleFeishuMessage } from "./message-handler";
 
 // ---------------------------------------------------------------------------
 // Singleton guard (survives HMR in dev)
@@ -83,7 +83,9 @@ export function startFeishuWSClient(): void {
 
       // Process each message (fire-and-forget, don't block the event loop)
       for (const message of messages) {
-        routeMessage(adapter, message, "[feishu-ws]");
+        handleFeishuMessage(adapter, message, "[feishu-ws]").catch((err: unknown) => {
+          console.error("[feishu-ws] Unhandled error in handleMessage:", err);
+        });
       }
     },
   });
