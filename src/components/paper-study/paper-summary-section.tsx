@@ -6,6 +6,7 @@ import { Loader2, Save, Check, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 interface PaperSummarySectionProps {
   summary: string;
@@ -47,7 +48,7 @@ export function PaperSummarySection({
       onSaved?.();
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      // silently fail
+      toast.error("Failed to save summary");
     } finally {
       setSaving(false);
     }
