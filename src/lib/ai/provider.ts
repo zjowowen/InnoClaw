@@ -34,10 +34,13 @@ export async function getConfiguredModel(): Promise<LanguageModel> {
 
   switch (provider) {
     case "openai":
-      return openai(modelId);
+      // Use openai.chat() to force the Chat Completions API.
+      // The default openai() uses the Responses API which
+      // third-party proxies (e.g. OPENAI_BASE_URL) may not support.
+      return openai.chat(modelId);
     case "anthropic":
       return anthropic(modelId);
     default:
-      return openai(DEFAULT_MODEL);
+      return openai.chat(DEFAULT_MODEL);
   }
 }
