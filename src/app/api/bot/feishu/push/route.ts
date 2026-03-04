@@ -15,6 +15,7 @@ import { getFeishuConfig } from "@/lib/bot/types";
 import { createFeishuAdapter } from "@/lib/bot/feishu/client";
 
 export async function POST(req: NextRequest) {
+  // Authenticate the request using a shared secret
   const expectedSecret = process.env.FEISHU_PUSH_SECRET;
   if (!expectedSecret) {
     console.error(
