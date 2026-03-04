@@ -4,6 +4,7 @@ import { exec, execFile } from "child_process";
 import path from "path";
 import os from "os";
 import fsp from "fs/promises";
+import { buildSafeExecEnv } from "@/lib/env";
 import {
   validatePath,
   readFile as fsReadFile,
@@ -37,13 +38,7 @@ const DEFAULT_CONTAINER_IMAGE =
   "registry2.d.pjlab.org.cn/ccr-hw/910c:82rc2ipc";
 
 /** Base environment variables for all exec() calls. */
-const baseExecEnv = {
-  PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
-  HOME: process.env.HOME || "/tmp",
-  NODE_ENV: process.env.NODE_ENV || "production",
-  LANG: process.env.LANG || "en_US.UTF-8",
-  TERM: "dumb",
-};
+const baseExecEnv = buildSafeExecEnv();
 
 /**
  * Execute a shell command in the workspace directory and return truncated output.
