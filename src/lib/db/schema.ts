@@ -145,6 +145,38 @@ export const skills = sqliteTable("skills", {
 ]);
 
 // ============================================================
+// SCHEDULED TASKS (user-defined cron/interval tasks)
+// ============================================================
+export const scheduledTasks = sqliteTable("scheduled_tasks", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  taskType: text("task_type", {
+    enum: ["daily_report", "weekly_report", "git_sync", "source_sync", "custom"],
+  }).notNull(),
+  schedule: text("schedule").notNull(), // cron expression, e.g. "0 0 * * *"
+  workspaceId: text("workspace_id").references(() => workspaces.id, {
+    onDelete: "cascade",
+  }), // null = global task
+  config: text("config"), // JSON for task-specific configuration
+  isEnabled: integer("is_enabled", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  lastRunAt: text("last_run_at"),
+  lastRunStatus: text("last_run_status", {
+    enum: ["success", "error", "running"],
+  }),
+  lastRunError: text("last_run_error"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+}, (table) => [
+  index("scheduled_tasks_enabled_idx").on(table.isEnabled),
+]);
+
+// ============================================================
 // CLUSTER OPERATIONS (agent cluster action history)
 // ============================================================
 export const clusterOperations = sqliteTable("cluster_operations", {
@@ -169,4 +201,54 @@ export const clusterOperations = sqliteTable("cluster_operations", {
 }, (table) => [
   index("cluster_ops_ws_created_idx").on(table.workspaceId, table.createdAt),
   index("cluster_ops_created_idx").on(table.createdAt),
+]);
+
+// ============================================================
+// HF DATASETS (HuggingFace dataset/model/space downloads)
+// ============================================================
+export const hfDatasets = sqliteTable("hf_datasets", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  repoId: text("repo_id").notNull(),
+  repoType: text("repo_type").notNull().default("dataset"), // dataset | model | space
+  source: text("source").notNull().default("huggingface"), // huggingface | modelscope | local
+  revision: text("revision"), // branch/tag, null = default
+  sourceConfig: text("source_config"), // JSON: { allowPatterns, ignorePatterns }
+  status: text("status", {
+    enum: ["pending", "downloading", "paused", "ready", "failed", "cancelled"],
+  })
+    .notNull()
+    .default("pending"),
+  progress: integer("progress").notNull().default(0), // 0-100
+  lastError: text("last_error"),
+  localPath: text("local_path"),
+  sizeBytes: integer("size_bytes"),
+  numFiles: integer("num_files"),
+  manifest: text("manifest"), // JSON: file list with splits/formats
+  stats: text("stats"), // JSON: format counts, row counts
+  lastSyncAt: text("last_sync_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// ============================================================
+// DATASET-WORKSPACE LINKS (many-to-many)
+// ============================================================
+export const datasetWorkspaceLinks = sqliteTable("dataset_workspace_links", {
+  id: text("id").primaryKey(),
+  datasetId: text("dataset_id")
+    .notNull()
+    .references(() => hfDatasets.id, { onDelete: "cascade" }),
+  workspaceId: text("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+}, (table) => [
+  uniqueIndex("dataset_workspace_unique_idx").on(table.datasetId, table.workspaceId),
 ]);

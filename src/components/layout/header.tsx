@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, Settings, Zap, FolderOpen } from "lucide-react";
+import { BookOpen, Settings, Zap, FolderOpen, Minimize2, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 
-export function Header() {
+interface HeaderProps {
+  onToggleMinimalMode?: () => void;
+  showMinimalToggle?: boolean;
+}
+
+export function Header({ onToggleMinimalMode, showMinimalToggle }: HeaderProps) {
   const t = useTranslations("common");
   const pathname = usePathname();
+  const router = useRouter();
 
   // Extract workspaceId from URL like /workspace/xxx
   const workspaceMatch = pathname.match(/^\/workspace\/([^/]+)/);
@@ -24,6 +31,18 @@ export function Header() {
         </Link>
         <div className="flex-1" />
         <div className="flex items-center gap-2">
+          {showMinimalToggle && onToggleMinimalMode && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={onToggleMinimalMode}
+              title={t("minimalMode")}
+            >
+              <Minimize2 className="h-4 w-4" />
+              <span className="sr-only">{t("minimalMode")}</span>
+            </Button>
+          )}
           {workspaceId && pathname !== `/workspace/${workspaceId}` && (
             <Link
               href={`/workspace/${workspaceId}`}
@@ -36,19 +55,36 @@ export function Header() {
           <LanguageToggle />
           <ThemeToggle />
           <Link
+            href="/datasets"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+          >
+            <Database className="h-4 w-4" />
+            <span className="sr-only">{t("datasets")}</span>
+          </Link>
+          <Link
             href="/skills"
             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
           >
             <Zap className="h-4 w-4" />
             <span className="sr-only">{t("skills")}</span>
           </Link>
-          <Link
-            href="/settings"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-          >
-            <Settings className="h-4 w-4" />
-            <span className="sr-only">{t("settings")}</span>
-          </Link>
+          {pathname === "/settings" ? (
+            <button
+              onClick={() => router.back()}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-primary bg-primary/10 hover:bg-accent hover:text-accent-foreground p-0"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="sr-only">{t("settings")}</span>
+            </button>
+          ) : (
+            <Link
+              href="/settings"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="sr-only">{t("settings")}</span>
+            </Link>
+          )}
         </div>
       </div>
     </header>
