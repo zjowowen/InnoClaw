@@ -108,6 +108,7 @@ export default function WorkspacePage({
                       variant={middlePanel === "paperStudy" ? "default" : "outline"}
                       size="icon-xs"
                       onClick={() => setMiddlePanel("paperStudy")}
+                      title={t("paperStudyToggle")}
                       aria-label={t("paperStudyToggle")}
                     >
                       <GraduationCap className="h-3 w-3" />
