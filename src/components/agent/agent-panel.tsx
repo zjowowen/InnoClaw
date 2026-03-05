@@ -1071,6 +1071,7 @@ export function AgentPanel({
               if (
                 e.key === "Enter" &&
                 !e.shiftKey &&
+                !e.nativeEvent.isComposing &&
                 !showAutocomplete
               ) {
                 e.preventDefault();
