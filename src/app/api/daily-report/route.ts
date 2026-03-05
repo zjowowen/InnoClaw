@@ -27,10 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       const status =
-        typeof result.error === "string" &&
-        result.error.toLowerCase().includes("ai not configured")
-          ? 503
-          : 500;
+        (result as any).errorCode === "AI_NOT_CONFIGURED" ? 503 : 500;
       return NextResponse.json({ error: result.error }, { status });
     }
 
