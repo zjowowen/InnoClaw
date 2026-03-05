@@ -165,7 +165,7 @@ export default function SettingsPage() {
     PROVIDERS[provider as keyof typeof PROVIDERS]?.models || [];
 
   // Merge hardcoded models with remote models, avoiding duplicates
-  const hardcodedIds = new Set(providerModels.map((m) => m.id));
+  const hardcodedIds = new Set<string>(providerModels.map((m) => m.id));
   const extraRemote = remoteModels.filter((m) => !hardcodedIds.has(m.id));
 
   return (
