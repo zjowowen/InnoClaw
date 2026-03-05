@@ -17,7 +17,9 @@
     "error": "Error",
     "success": "Success",
     "modified": "Modified",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "minimalMode": "Minimal Mode",
+    "exitMinimalMode": "Exit Minimal Mode"
   },
   "home": {
     "title": "My Workspaces",

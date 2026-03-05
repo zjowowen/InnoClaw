@@ -17,7 +17,9 @@
     "error": "错误",
     "success": "成功",
     "modified": "已修改",
-    "workspace": "工作区"
+    "workspace": "工作区",
+    "minimalMode": "极简模式",
+    "exitMinimalMode": "退出极简模式"
   },
   "home": {
     "title": "我的工作空间",
