@@ -101,7 +101,9 @@ export const notes = sqliteTable("notes", {
   updatedAt: text("updated_at")
     .notNull()
     .default(sql`(datetime('now'))`),
-});
+}, (table) => [
+  uniqueIndex("notes_workspace_type_title_idx").on(table.workspaceId, table.type, table.title),
+]);
 
 // ============================================================
 // APP SETTINGS
