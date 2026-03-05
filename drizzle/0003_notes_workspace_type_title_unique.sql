@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX `notes_workspace_type_title_idx` ON `notes` (`workspace_id`,`type`,`title`);

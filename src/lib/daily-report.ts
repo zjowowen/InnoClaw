@@ -36,7 +36,7 @@ async function dailyReportExists(
       and(
         eq(notes.workspaceId, workspaceId),
         eq(notes.type, "daily_report"),
-        like(notes.title, `%${dateStr}%`)
+        eq(notes.reportDate, dateStr)
       )
     )
     .limit(1);
@@ -68,6 +68,7 @@ export interface DailyReportResult {
   success: boolean;
   noteId?: string;
   error?: string;
+  errorCode?: string;
   skipped?: boolean;
   reason?: string;
 }
@@ -92,7 +93,7 @@ export async function generateDailyReport(
   }
 
   if (!isAIAvailable()) {
-    return { success: false, error: "AI not configured" };
+    return { success: false, error: "AI not configured", errorCode: "ai_not_configured" };
   }
 
   const combined = memoryNotes
@@ -124,12 +125,13 @@ export async function generateDailyReport(
       title,
       content: text,
       type: "daily_report",
+      reportDate: date,
       createdAt: isoNow,
       updatedAt: isoNow,
     })
-    // Relies on notes_workspace_type_title_idx unique index to prevent duplicates
-    // from concurrent requests racing past the dailyReportExists() check above.
-    .onConflictDoNothing()
+    .onConflictDoNothing({
+      target: [notes.workspaceId, notes.type, notes.reportDate],
+    })
     .returning({ insertedId: notes.id });
 
   // If another concurrent request already inserted the report, treat as skipped

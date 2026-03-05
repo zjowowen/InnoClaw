@@ -12,13 +12,14 @@ const globalForScheduler = globalThis as unknown as {
 };
 
 /**
- * Calculate milliseconds until the next midnight (00:00:00).
+ * Calculate milliseconds until the next UTC midnight (00:00:00 UTC).
+ * Using UTC midnight ensures consistency with UTC-based date strings.
  */
 function msUntilNextMidnight(): number {
   const now = new Date();
   const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
   return tomorrow.getTime() - now.getTime();
 }
 

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4cfd94c5-266f-480d-bbc3-d3f5e7be1d45",
+  "id": "0e1b2c1a-fcdc-4e5e-86f6-e7edb67002ea",
   "prevId": "5c305a4a-d18e-4e93-829c-60d4a60322ca",
   "tables": {
     "app_settings": {
@@ -134,6 +134,13 @@
           "autoincrement": false,
           "default": "'manual'"
         },
+        "report_date": {
+          "name": "report_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "text",
@@ -152,12 +159,12 @@
         }
       },
       "indexes": {
-        "notes_workspace_type_title_idx": {
-          "name": "notes_workspace_type_title_idx",
+        "notes_daily_report_unique_idx": {
+          "name": "notes_daily_report_unique_idx",
           "columns": [
             "workspace_id",
             "type",
-            "title"
+            "report_date"
           ],
           "isUnique": true
         }
