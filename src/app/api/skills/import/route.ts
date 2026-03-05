@@ -172,9 +172,15 @@ function parseSkillMd(
   }
 
   const frontmatter = fmMatch[1];
-  const body = fmMatch[2].trim();
+  let body = fmMatch[2].trim();
 
   if (!body) return null;
+
+  // Replace SCP Hub API key placeholder if configured
+  const scpHubApiKey = process.env.SCP_HUB_API_KEY;
+  if (scpHubApiKey && body.includes("<YOUR_SCP_HUB_API_KEY>")) {
+    body = body.replaceAll("<YOUR_SCP_HUB_API_KEY>", scpHubApiKey);
+  }
 
   // Simple YAML key extraction (flat keys only)
   const getValue = (key: string): string | undefined => {
@@ -255,24 +261,24 @@ async function discoverPluginContent(
       // Filter by basePath if specified
       if (basePath && !p.startsWith(basePath)) continue;
 
-      // Match: */skills/*/SKILL.md (top-level skill definitions)
-      const skillMatch = p.match(/\/skills\/([^/]+)\/SKILL\.md$/);
+      // Match: */skills/*/SKILL.md or skills/*/SKILL.md (top-level skill definitions)
+      const skillMatch = p.match(/(?:^|\/)skills\/([^/]+)\/SKILL\.md$/);
       if (skillMatch) {
         // Skip sub-agents inside skills (e.g., skill-creator/skills/skill-creator/agents/*.md)
         results.push({ path: p, fallbackSlug: skillMatch[1] });
         continue;
       }
 
-      // Match: */commands/*.md (slash commands)
-      const cmdMatch = p.match(/\/commands\/([^/]+)\.md$/);
+      // Match: */commands/*.md or commands/*.md (slash commands)
+      const cmdMatch = p.match(/(?:^|\/)commands\/([^/]+)\.md$/);
       if (cmdMatch) {
         results.push({ path: p, fallbackSlug: cmdMatch[1] });
         continue;
       }
 
       // Match: */agents/*.md but NOT inside skills/*/agents/ (those are skill sub-agents)
-      if (/\/agents\/[^/]+\.md$/.test(p) && !/\/skills\/[^/]+\/agents\//.test(p)) {
-        const agentSlug = p.match(/\/agents\/([^/]+)\.md$/)?.[1];
+      if (/(?:^|\/)agents\/[^/]+\.md$/.test(p) && !/\/skills\/[^/]+\/agents\//.test(p)) {
+        const agentSlug = p.match(/(?:^|\/)agents\/([^/]+)\.md$/)?.[1];
         if (agentSlug) {
           results.push({ path: p, fallbackSlug: agentSlug });
         }
