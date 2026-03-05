@@ -44,14 +44,13 @@ export function startDailyReportScheduler(): void {
     const timer = setTimeout(async () => {
       console.log("[daily-report-scheduler] Midnight trigger fired");
       try {
-        const { generateAllDailyReports } = await import(
+        const { generateAllDailyReports, getUTCDateString } = await import(
           "@/lib/daily-report"
         );
         // At midnight of day N+1, generate report for day N (yesterday)
         const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const dateStr = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const dateStr = getUTCDateString(yesterday);
         await generateAllDailyReports(dateStr);
       } catch (err) {
         console.error("[daily-report-scheduler] Error:", err);

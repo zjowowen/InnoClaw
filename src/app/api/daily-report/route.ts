@@ -26,7 +26,11 @@ export async function POST(req: NextRequest) {
     );
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      const isAiNotConfigured =
+        typeof result.error === "string" &&
+        result.error.toLowerCase().includes("not configured");
+      const status = isAiNotConfigured ? 503 : 500;
+      return NextResponse.json({ error: result.error }, { status });
     }
 
     if (result.skipped) {
