@@ -125,7 +125,9 @@
     "memoryNoteTitle": "Title",
     "memoryNoteContent": "Content",
     "memoryConfirm": "Confirm",
-    "memoryError": "Failed to save memory"
+    "memoryError": "Failed to save memory",
+    "roleUser": "User",
+    "roleAssistant": "Assistant"
   },
   "notes": {
     "title": "Notes",
@@ -230,7 +232,9 @@
     "memoryNoteTitle": "Title",
     "memoryNoteContent": "Content",
     "dismiss": "Dismiss",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "roleUser": "User",
+    "roleAssistant": "Assistant"
   },
   "report": {
     "tabReport": "Research report",
