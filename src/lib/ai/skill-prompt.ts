@@ -31,12 +31,6 @@ export function buildSkillSystemPrompt(
     }
   }
 
-  // 1b. Inject SCP Hub API key at execution time (not stored in DB)
-  const scpHubApiKey = process.env.SCP_HUB_API_KEY;
-  if (scpHubApiKey && resolvedPrompt.includes("<YOUR_SCP_HUB_API_KEY>")) {
-    resolvedPrompt = resolvedPrompt.replaceAll("<YOUR_SCP_HUB_API_KEY>", scpHubApiKey);
-  }
-
   // 2. Build step instructions if present
   let stepsBlock = "";
   if (skill.steps && skill.steps.length > 0) {
