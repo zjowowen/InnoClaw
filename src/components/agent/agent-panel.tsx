@@ -889,25 +889,31 @@ export function AgentPanel({
     }, 100);
   };
 
-  const handleClear = () => {
-    if (status === "streaming" || status === "submitted") stop();
-    if (messages.length > 0 && aiEnabled) {
-      // Show message selection dialog first
-      overflowKeepRef.current = null; // null = manual clear (not overflow)
-      setSelectedMessageIds(new Set(messages.map((m) => m.id)));
-      setShowMessageSelect(true);
-    } else {
-      setMessages([]);
-    }
-    setInput("");
-  };
-
   // Helper: extract plain text from a message
   const getMessageText = (message: UIMessage) =>
     message.parts
       ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join("") ?? "";
+
+  // Messages that have renderable text content (used for selection UI)
+  const selectableMessages = useMemo(
+    () => messages.filter((m) => getMessageTextLength(m) > 0),
+    [messages]
+  );
+
+  const handleClear = () => {
+    if (status === "streaming" || status === "submitted") stop();
+    if (messages.length > 0 && aiEnabled) {
+      // Show message selection dialog first
+      overflowKeepRef.current = null; // null = manual clear (not overflow)
+      setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)));
+      setShowMessageSelect(true);
+    } else {
+      setMessages([]);
+    }
+    setInput("");
+  };
 
   // Step 2: generate preview from selected messages
   const handleSelectNext = async () => {
@@ -1229,7 +1235,7 @@ export function AgentPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectedMessageIds(new Set(messages.map((m) => m.id)))}
+              onClick={() => setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)))}
             >
               {t("selectAll")}
             </Button>
@@ -1241,7 +1247,7 @@ export function AgentPanel({
               {t("selectNone")}
             </Button>
             <span className="text-xs text-muted-foreground ml-auto">
-              {selectedMessageIds.size} / {messages.length}
+              {selectedMessageIds.size} / {selectableMessages.length}
             </span>
           </div>
 
