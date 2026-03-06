@@ -125,7 +125,9 @@
     "memoryNoteTitle": "标题",
     "memoryNoteContent": "内容",
     "memoryConfirm": "确认",
-    "memoryError": "保存记忆失败"
+    "memoryError": "保存记忆失败",
+    "roleUser": "用户",
+    "roleAssistant": "助手"
   },
   "notes": {
     "title": "笔记",
@@ -233,7 +235,9 @@
     "memoryNoteTitle": "标题",
     "memoryNoteContent": "内容",
     "dismiss": "关闭",
-    "clearAll": "直接清除"
+    "clearAll": "直接清除",
+    "roleUser": "用户",
+    "roleAssistant": "助手"
   },
   "report": {
     "tabReport": "研究报告",

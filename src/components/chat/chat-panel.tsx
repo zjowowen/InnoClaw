@@ -395,7 +395,10 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
 
     // Show message selection dialog instead of auto-summarizing
     overflowKeepRef.current = toKeep;
-    setSelectedMessageIds(new Set(toSummarize.map((m) => m.id)));
+    // Only pre-select messages with renderable text content
+    setSelectedMessageIds(new Set(
+      toSummarize.filter((m) => getMessageTextLength(m) > 0).map((m) => m.id)
+    ));
     setShowMessageSelect(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, status, isSummarizing, showMessageSelect, showMemoryPreview]);
@@ -430,7 +433,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
         const toKeep = overflowKeepRef.current;
         const toSummarize = messages.filter((m) => !toKeep.some((k) => k.id === m.id));
         overflowKeepRef.current = null;
-        summarizeAndEvict(toSummarize, toKeep);
+        await summarizeAndEvict(toSummarize, toKeep);
       }
     } finally {
       setIsSummarizing(false);
@@ -481,11 +484,10 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
         const toKeep = overflowKeepRef.current;
         const toSummarize = messages.filter((m) => !toKeep.some((k) => k.id === m.id));
         overflowKeepRef.current = null;
-        summarizeAndEvict(toSummarize, toKeep);
+        await summarizeAndEvict(toSummarize, toKeep);
       }
     } finally {
       setIsSummarizing(false);
-      summarizingRef.current = false;
     }
   };
 
@@ -696,7 +698,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium text-muted-foreground mb-0.5">
-                        {msg.role === "user" ? "User" : "Assistant"}
+                        {msg.role === "user" ? t("roleUser") : t("roleAssistant")}
                       </div>
                       <div className="text-xs text-foreground line-clamp-3 whitespace-pre-wrap">
                         {text.slice(0, 300)}{text.length > 300 ? "..." : ""}

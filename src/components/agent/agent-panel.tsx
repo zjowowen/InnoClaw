@@ -748,6 +748,7 @@ export function AgentPanel({
   useEffect(() => {
     if (settings?.maxMode === false) return;
     if (restoreGenRef.current > 0 || isSummarizing) return;
+    if (showMessageSelect || showMemoryPreview) return; // Don't trigger while dialog is open
     if (status !== "ready" && status !== "error") return;
     if (messages.length < 4) return;
     if (messages.length === failedAtCountRef.current) return;
@@ -779,10 +780,13 @@ export function AgentPanel({
 
     // Show message selection dialog instead of auto-summarizing
     overflowKeepRef.current = toKeep;
-    setSelectedMessageIds(new Set(toSummarize.map((m) => m.id)));
+    // Only pre-select messages with renderable text content
+    setSelectedMessageIds(new Set(
+      toSummarize.filter((m) => getMessageTextLength(m) > 0).map((m) => m.id)
+    ));
     setShowMessageSelect(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, status, isSummarizing]);
+  }, [messages, status, isSummarizing, showMessageSelect, showMemoryPreview]);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -1272,7 +1276,7 @@ export function AgentPanel({
                       <span className={`text-xs font-medium ${
                         msg.role === "user" ? "text-[#bb9af7]" : "text-[#7aa2f7]"
                       }`}>
-                        {msg.role === "user" ? "User" : "Assistant"}
+                        {msg.role === "user" ? t("roleUser") : t("roleAssistant")}
                       </span>
                       <p className="text-xs text-[#c9d1d9] line-clamp-3 mt-0.5 whitespace-pre-wrap">
                         {text}
