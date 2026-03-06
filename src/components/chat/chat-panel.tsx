@@ -530,6 +530,12 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
       .join("") ?? "";
   };
 
+  // Messages that have renderable text content (used for selection UI)
+  const selectableMessages = useMemo(
+    () => messages.filter((m) => getMessageTextLength(m) > 0),
+    [messages]
+  );
+
   return (
     <div className="flex h-full min-w-0 flex-col">
       {/* Header */}
@@ -664,7 +670,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
             <DialogDescription>{t("selectMessagesDesc")}</DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 mb-2">
-            <Button size="sm" variant="outline" onClick={() => setSelectedMessageIds(new Set(messages.map((m) => m.id)))}>
+            <Button size="sm" variant="outline" onClick={() => setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)))}>
               {t("selectAll")}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setSelectedMessageIds(new Set())}>
