@@ -3,13 +3,20 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, X, Save, FileDown, AlertCircle, Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Eye, X, Save, FileDown, AlertCircle, Loader2, Edit3 } from "lucide-react";
 import { getFileName } from "@/lib/utils";
 import { PdfViewer } from "@/components/files/pdf-viewer";
 import { MolViewer } from "@/components/files/mol-viewer";
 import { toast } from "sonner";
+import {
+  markdownComponents,
+  remarkPlugins,
+  rehypePlugins,
+} from "@/lib/markdown/shared-components";
 
 // Lazy-load CadViewer so Three.js is only fetched when a CAD file is opened
 const CadViewer = dynamic(
@@ -41,6 +48,7 @@ const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"];
 function getFileType(filePath: string) {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf" as const;
+  if (ext === "md" || ext === "markdown") return "markdown" as const;
   if (MOL_EXTS.includes(ext)) return "mol" as const;
   if (CAD_EXTS.includes(ext)) return "cad" as const;
   if (IMAGE_EXTS.includes(ext)) return "image" as const;
@@ -71,6 +79,119 @@ function ImagePreview({ filePath }: { filePath: string }) {
           className="max-h-full max-w-full object-contain"
         />
       </div>
+    </div>
+  );
+}
+
+function MarkdownPreview({ filePath }: { filePath: string }) {
+  const t = useTranslations("files");
+  const tCommon = useTranslations("common");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [modified, setModified] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    let canceled = false;
+    setLoading(true);
+    setModified(false);
+
+    fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load file");
+        return res.json();
+      })
+      .then((data) => {
+        if (!canceled) setContent(data.content);
+      })
+      .catch(() => {
+        if (!canceled) toast.error("Failed to load file");
+      })
+      .finally(() => {
+        if (!canceled) setLoading(false);
+      });
+
+    return () => { canceled = true; };
+  }, [filePath]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/files/write", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: filePath, content }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to save file");
+      }
+      setModified(false);
+      toast.success(t("saved"));
+    } catch {
+      toast.error("Failed to save file");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        {tCommon("loading")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-2 p-3">
+      <div className="flex items-center justify-end gap-2">
+        {modified && (
+          <span className="text-xs text-muted-foreground">{tCommon("modified")}</span>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          {isEditing ? <Eye className="mr-2 h-4 w-4" /> : <Edit3 className="mr-2 h-4 w-4" />}
+          {isEditing ? tCommon("preview") : tCommon("edit")}
+        </Button>
+        {isEditing && (
+          <Button size="sm" onClick={handleSave} disabled={saving || !modified}>
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? t("saving") : tCommon("save")}
+          </Button>
+        )}
+      </div>
+      {isEditing ? (
+        <Textarea
+          className="flex-1 resize-none font-mono text-sm"
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value);
+            setModified(true);
+          }}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+              e.preventDefault();
+              handleSave();
+            }
+          }}
+        />
+      ) : (
+        <ScrollArea className="flex-1">
+          <div className="prose prose-sm dark:prose-invert max-w-none p-2">
+            <ReactMarkdown
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={markdownComponents}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }
@@ -219,6 +340,8 @@ export function FilePreviewPanel({ filePath, onClose }: FilePreviewPanelProps) {
           </div>
         ) : fileType === "pdf" ? (
           <PdfViewer filePath={filePath} />
+        ) : fileType === "markdown" ? (
+          <MarkdownPreview filePath={filePath} />
         ) : fileType === "mol" ? (
           <MolViewer filePath={filePath} />
         ) : fileType === "cad" ? (
