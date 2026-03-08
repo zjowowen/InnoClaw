@@ -748,6 +748,7 @@ export function AgentPanel({
   useEffect(() => {
     if (settings?.maxMode === false) return;
     if (restoreGenRef.current > 0 || isSummarizing) return;
+    if (showMessageSelect || showMemoryPreview) return; // Don't trigger while dialog is open
     if (status !== "ready" && status !== "error") return;
     if (messages.length < 4) return;
     if (messages.length === failedAtCountRef.current) return;
@@ -779,10 +780,13 @@ export function AgentPanel({
 
     // Show message selection dialog instead of auto-summarizing
     overflowKeepRef.current = toKeep;
-    setSelectedMessageIds(new Set(toSummarize.map((m) => m.id)));
+    // Only pre-select messages with renderable text content
+    setSelectedMessageIds(new Set(
+      toSummarize.filter((m) => getMessageTextLength(m) > 0).map((m) => m.id)
+    ));
     setShowMessageSelect(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, status, isSummarizing]);
+  }, [messages, status, isSummarizing, showMessageSelect, showMemoryPreview]);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -885,25 +889,31 @@ export function AgentPanel({
     }, 100);
   };
 
-  const handleClear = () => {
-    if (status === "streaming" || status === "submitted") stop();
-    if (messages.length > 0 && aiEnabled) {
-      // Show message selection dialog first
-      overflowKeepRef.current = null; // null = manual clear (not overflow)
-      setSelectedMessageIds(new Set(messages.map((m) => m.id)));
-      setShowMessageSelect(true);
-    } else {
-      setMessages([]);
-    }
-    setInput("");
-  };
-
   // Helper: extract plain text from a message
   const getMessageText = (message: UIMessage) =>
     message.parts
       ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join("") ?? "";
+
+  // Messages that have renderable text content (used for selection UI)
+  const selectableMessages = useMemo(
+    () => messages.filter((m) => getMessageTextLength(m) > 0),
+    [messages]
+  );
+
+  const handleClear = () => {
+    if (status === "streaming" || status === "submitted") stop();
+    if (messages.length > 0 && aiEnabled) {
+      // Show message selection dialog first
+      overflowKeepRef.current = null; // null = manual clear (not overflow)
+      setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)));
+      setShowMessageSelect(true);
+    } else {
+      setMessages([]);
+    }
+    setInput("");
+  };
 
   // Step 2: generate preview from selected messages
   const handleSelectNext = async () => {
@@ -1225,7 +1235,7 @@ export function AgentPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectedMessageIds(new Set(messages.map((m) => m.id)))}
+              onClick={() => setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)))}
             >
               {t("selectAll")}
             </Button>
@@ -1237,7 +1247,7 @@ export function AgentPanel({
               {t("selectNone")}
             </Button>
             <span className="text-xs text-muted-foreground ml-auto">
-              {selectedMessageIds.size} / {messages.length}
+              {selectedMessageIds.size} / {selectableMessages.length}
             </span>
           </div>
 
@@ -1272,7 +1282,7 @@ export function AgentPanel({
                       <span className={`text-xs font-medium ${
                         msg.role === "user" ? "text-[#bb9af7]" : "text-[#7aa2f7]"
                       }`}>
-                        {msg.role === "user" ? "User" : "Assistant"}
+                        {msg.role === "user" ? t("roleUser") : t("roleAssistant")}
                       </span>
                       <p className="text-xs text-[#c9d1d9] line-clamp-3 mt-0.5 whitespace-pre-wrap">
                         {text}
