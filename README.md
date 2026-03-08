@@ -848,6 +848,62 @@ Send `/status` command — the bot will reply with the current Chat ID. You can 
 | `FEISHU_LOG_LEVEL` | ⬜ | SDK 日志级别 / SDK log level: `error`/`warn`/`info`/`debug`/`trace` (default: `info`) |
 | `WORKSPACE_ROOTS` | ⬜ | 工作空间路径 / Workspace paths for Agent tool access |
 
+### 使用 Skill 连接飞书机器人 / Connect Feishu Bot via Skill
+
+本项目提供了预置的飞书机器人连接 Skill（`config/skills/feishu-bot-setup.md`），包含完整的 9 步连接指南。导入后，你可以在对话中让 Agent 协助你完成飞书机器人的配置和故障排查。
+
+A pre-built Feishu bot setup skill is available at `config/skills/feishu-bot-setup.md`. After importing, you can ask the Agent to help you configure and troubleshoot the Feishu bot connection step by step.
+
+**导入方式 / How to Import:**
+
+**方式一：通过 Web UI 导入（推荐）/ Via Web UI (Recommended)**
+
+1. 启动应用后访问 `/skills` 页面 / Start the app and visit `/skills`
+2. 点击 **"导入技能"** → 选择 **"JSON"** 标签 / Click **"Import Skill"** → select the **"JSON"** tab
+3. 粘贴以下 JSON / Paste the following JSON:
+
+```json
+{
+  "name": "Feishu Bot Setup Guide",
+  "slug": "feishu-bot-setup",
+  "description": "Step-by-step guide for connecting a Feishu (Lark) bot to NotebookLM using persistent WebSocket connection mode.",
+  "systemPrompt": "You are an expert assistant for setting up and troubleshooting Feishu (Lark) bot integration with NotebookLM. Guide users through: 1) Creating a Feishu app at open.feishu.cn 2) Obtaining App ID and App Secret 3) Configuring im.message.receive_v1 event subscription 4) Enabling persistent connection mode 5) Setting FEISHU_BOT_ENABLED, FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_VERIFICATION_TOKEN in .env.local 6) Starting the service and verifying the ✅ connection indicator in logs 7) Troubleshooting 'App connection info not detected' errors. Key insight: WSClient.start() resolves BEFORE the WebSocket is actually connected — users must wait for the ✅ indicator, not just the 'start() initiated' message.",
+  "steps": null,
+  "allowedTools": ["bash", "readfile", "writefile", "listdirectory"],
+  "parameters": null
+}
+```
+
+**方式二：通过 API 导入 / Via API**
+
+```bash
+curl -X POST http://localhost:3000/api/skills/import \
+  -H "Content-Type: application/json" \
+  -d '{"skill":{"name":"Feishu Bot Setup Guide","slug":"feishu-bot-setup","description":"Step-by-step guide for connecting a Feishu bot to NotebookLM via persistent WebSocket connection.","systemPrompt":"You are an expert assistant for setting up and troubleshooting Feishu (Lark) bot integration with NotebookLM. Guide users through creating a Feishu app, configuring event subscriptions, enabling persistent connection mode, setting environment variables, and verifying the connection. Key insight: WSClient.start() resolves BEFORE the actual WebSocket connection — users must wait for the ✅ indicator in logs.","steps":null,"allowedTools":["bash","readfile","writefile","listdirectory"],"parameters":null}}'
+```
+
+**使用示例 / Usage Example:**
+
+导入 Skill 后，在对话中输入 / After importing, type in a conversation:
+
+```
+帮我配置飞书机器人长连接
+```
+
+或 / or:
+
+```
+Help me set up the Feishu bot persistent connection
+```
+
+Agent 会根据 Skill 中的步骤指导你完成配置，并帮助排查 "未检测到应用连接信息" 等常见问题。
+
+The Agent will guide you through the setup steps and help troubleshoot common issues like "App connection info not detected".
+
+> 💡 Skill 源文件位于 `config/skills/feishu-bot-setup.md`，包含更详细的配置说明和完整的 9 步指南。
+>
+> 💡 The skill source file at `config/skills/feishu-bot-setup.md` contains a more detailed 9-step guide with comprehensive configuration instructions.
+
 ---
 
 ## SCP 科学技能 / SCP Scientific Skills
