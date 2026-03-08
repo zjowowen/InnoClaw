@@ -308,7 +308,7 @@ export function createAgentTools(
           ),
       }),
       execute: async ({ command, timeout }) => {
-        const timeoutMs = Math.min((timeout ?? 30) * 1000, 300_000);
+        const timeoutMs = Math.max(1000, Math.min((timeout ?? 30) * 1000, 300_000));
         return execInWorkspace(command, validatedCwd, { timeout: timeoutMs });
       },
     }),
