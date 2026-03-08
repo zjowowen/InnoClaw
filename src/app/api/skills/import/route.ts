@@ -176,12 +176,6 @@ function parseSkillMd(
 
   if (!body) return null;
 
-  // Replace SCP Hub API key placeholder if configured
-  const scpHubApiKey = process.env.SCP_HUB_API_KEY;
-  if (scpHubApiKey && body.includes("<YOUR_SCP_HUB_API_KEY>")) {
-    body = body.replaceAll("<YOUR_SCP_HUB_API_KEY>", scpHubApiKey);
-  }
-
   // Simple YAML key extraction (flat keys only)
   const getValue = (key: string): string | undefined => {
     const m = frontmatter.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
