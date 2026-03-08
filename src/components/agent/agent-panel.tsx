@@ -1252,7 +1252,7 @@ export function AgentPanel({
           </div>
 
           <ScrollArea className="flex-1 min-h-0 px-6">
-            <div className="space-y-2 py-2 pr-4">
+            <div className="space-y-2 py-2 pr-4" role="listbox" aria-multiselectable="true">
               {messages.map((msg) => {
                 const text = getMessageText(msg);
                 if (!text) return null;
@@ -1262,6 +1262,7 @@ export function AgentPanel({
                     key={msg.id}
                     role="option"
                     aria-selected={checked}
+                    tabIndex={0}
                     className={`flex items-start gap-3 rounded-md border px-3 py-2 cursor-pointer transition-colors ${
                       checked
                         ? "border-[#7aa2f7]/50 bg-[#7aa2f7]/5"
@@ -1274,6 +1275,17 @@ export function AgentPanel({
                         else next.add(msg.id);
                         return next;
                       });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedMessageIds((prev) => {
+                          const next = new Set(prev);
+                          if (checked) next.delete(msg.id);
+                          else next.add(msg.id);
+                          return next;
+                        });
+                      }
                     }}
                   >
                     <Checkbox

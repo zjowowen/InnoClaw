@@ -678,7 +678,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
             </Button>
           </div>
           <ScrollArea className="flex-1 min-h-0 max-h-[50vh] pr-2">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" role="listbox" aria-multiselectable="true">
               {messages.map((msg) => {
                 const text = getMessageText(msg);
                 if (!text) return null;
@@ -688,6 +688,7 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                     key={msg.id}
                     role="option"
                     aria-selected={isSelected}
+                    tabIndex={0}
                     className={`flex items-start gap-2 rounded-md border px-3 py-2 cursor-pointer transition-colors ${
                       isSelected ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/50"
                     }`}
@@ -698,6 +699,17 @@ export function ChatPanel({ workspaceId, workspaceName }: ChatPanelProps) {
                         else next.add(msg.id);
                         return next;
                       });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedMessageIds((prev) => {
+                          const next = new Set(prev);
+                          if (isSelected) next.delete(msg.id);
+                          else next.add(msg.id);
+                          return next;
+                        });
+                      }
                     }}
                   >
                     <Checkbox
