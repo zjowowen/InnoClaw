@@ -22,7 +22,9 @@ graph TB
     subgraph External["External Services"]
         OpenAI["OpenAI API"]
         Anthropic["Anthropic API"]
+        Gemini["Gemini API"]
         GitHub["GitHub API"]
+        HF["HuggingFace Hub"]
     end
 
     Browser --> Proxy
@@ -33,7 +35,9 @@ graph TB
     App --> Workspace
     App --> OpenAI
     App --> Anthropic
+    App --> Gemini
     App --> GitHub
+    App --> HF
 ```
 
 ## Option 1: Direct Deployment (Recommended for Self-Hosting)
@@ -131,7 +135,13 @@ services:
       - WORKSPACE_ROOTS=/data/research,/data/projects
       - OPENAI_API_KEY=sk-xxx
       - ANTHROPIC_API_KEY=sk-ant-xxx
+      - GEMINI_API_KEY=your-gemini-key
       - GITHUB_TOKEN=ghp_xxx
+      - LLM_PROVIDER=openai
+      - LLM_MODEL=gpt-4o-mini
+      - AGENT_MAX_STEPS=10
+      # - HTTP_PROXY=http://your-proxy:3128
+      # - HTTPS_PROXY=http://your-proxy:3128
     restart: unless-stopped
 ```
 

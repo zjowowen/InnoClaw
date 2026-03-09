@@ -19,8 +19,22 @@ OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 # Use Anthropic Claude
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
 
-# Or configure both and switch in the Settings UI
+# Use Google Gemini
+GEMINI_API_KEY=your-gemini-key
+
+# Or configure multiple and switch in the Settings UI
 ```
+
+### Default Provider and Model
+
+Set the default LLM provider and model used when the application starts:
+
+```ini
+LLM_PROVIDER=openai       # openai, anthropic, or gemini
+LLM_MODEL=gpt-4o-mini     # Any model ID from the selected provider
+```
+
+These defaults can be overridden at any time via the Settings UI.
 
 ### Using Custom Endpoints
 
@@ -32,6 +46,9 @@ OPENAI_BASE_URL=https://api.your-provider.com/v1
 
 # Custom Anthropic endpoint
 ANTHROPIC_BASE_URL=https://api.your-provider.com
+
+# Custom Gemini-compatible endpoint (OpenAI-compatible proxy)
+GEMINI_BASE_URL=https://api.your-provider.com
 ```
 
 ### Separate Embedding Configuration
@@ -44,14 +61,27 @@ EMBEDDING_BASE_URL=https://api.your-embedding-provider.com/v1
 EMBEDDING_MODEL=text-embedding-3-small
 ```
 
+## Agent Configuration
+
+### Max Tool Steps
+
+Control how many tool-call steps the agent can take per request:
+
+```ini
+AGENT_MAX_STEPS=10    # Default: 10, range: 1-100
+```
+
+Higher values allow more complex multi-step tasks but consume more tokens.
+
 ## In-App Settings
 
 Access the settings page at `/settings` to:
 
-- **Switch AI Provider** — Toggle between OpenAI and Anthropic
+- **Switch AI Provider** — Toggle between OpenAI, Anthropic, and Gemini
 - **Select Model** — Choose the specific model to use for chat
 - **View API Status** — Check which API keys are configured
 - **View Workspace Roots** — See the configured workspace root directories
+- **Configure HuggingFace Token** — Set `HF_TOKEN` for dataset downloads
 
 ## Workspace Configuration
 
@@ -95,6 +125,26 @@ rm ./data/labclaw.db
 # Re-run migrations
 npx drizzle-kit migrate
 ```
+
+## Build Configuration
+
+If the project resides on a network filesystem (NFS, CIFS, etc.), the Next.js build cache may fail. Set a local build directory:
+
+```ini
+NEXT_BUILD_DIR=/tmp/labclaw-next
+```
+
+## Proxy Configuration
+
+For environments that require an HTTP proxy to reach external APIs:
+
+```ini
+HTTP_PROXY=http://your-proxy:3128
+HTTPS_PROXY=http://your-proxy:3128
+NO_PROXY=localhost,127.0.0.1,10.0.0.0/8
+```
+
+All outbound `fetch()` calls (AI API, GitHub, HuggingFace, etc.) will go through the proxy. Hosts listed in `NO_PROXY` bypass it.
 
 ## Bot Integration Configuration
 
