@@ -56,7 +56,29 @@ Run `npm install` in the project root. If it fails:
    - `EMBEDDING_API_KEY` / `EMBEDDING_BASE_URL` / `EMBEDDING_MODEL` — Only if their AI proxy doesn't support embeddings
    - `GITHUB_TOKEN` — For cloning private repositories
    - `SCP_HUB_API_KEY` — For scientific skills (mention they can get a key at https://scphub.intern-ai.org.cn/)
-   - Feishu Bot settings (`FEISHU_BOT_ENABLED`, `FEISHU_APP_ID`, etc.) — Only if they want to set up the Feishu bot
+   - `HF_TOKEN` — For downloading HuggingFace datasets without rate limiting (can also be set in Settings UI later)
+   - Feishu Bot — Only if they want to set up the Feishu bot. Ask for each variable explicitly:
+     - `FEISHU_BOT_ENABLED=true`
+     - `FEISHU_APP_ID` — App ID from Feishu Developer Console (凭证与基础信息 page)
+     - `FEISHU_APP_SECRET` — App Secret from the same page
+     - `FEISHU_VERIFICATION_TOKEN` — From 事件与回调 (Events & Callbacks) page
+     - `FEISHU_ENCRYPT_KEY` — From 事件与回调 page
+     - `FEISHU_PUSH_SECRET` — Optional, for the Web → Feishu push API (`/api/bot/feishu/push`)
+   - WeChat Bot — Only if they want Enterprise WeChat integration. Ask for:
+     - `WECHAT_BOT_ENABLED=true`
+     - `WECHAT_CORP_ID` — Enterprise Corp ID
+     - `WECHAT_CORP_SECRET` — App Secret
+     - `WECHAT_TOKEN` — Message callback Token
+     - `WECHAT_ENCODING_AES_KEY` — Message encryption key
+     - `WECHAT_AGENT_ID` — Agent (应用) ID
+   - K8s Cluster — Only if they need to submit GPU jobs to a Kubernetes cluster (Volcano scheduler). First check if `kubectl` is installed (`which kubectl`). If yes, ask for:
+     - `KUBECONFIG_PATH` — Absolute path to the kubeconfig file (defaults to `config/d_k8s` in the project root if not set)
+     - `K8S_SUBMITTER` — Their AD account name (used in job labels and volume mounts)
+     - `K8S_IMAGE_PULL_SECRET` — Docker registry credential secret name (defaults to submitter name)
+     - `K8S_PVC_AI4S` — PVC claim name for AI4S storage (e.g. `pvc-xxxxx`)
+     - `K8S_PVC_USER` — PVC claim name for user storage
+     - `K8S_PVC_AI4S_A2` — PVC claim name for AI4S-A2 storage
+     - `K8S_MOUNT_USER` — Mount directory name under `/mnt/` (defaults to submitter name)
    - Network proxy (`HTTP_PROXY`, `HTTPS_PROXY`) — Only if they are in an internal network
 
 3. Write the final `.env.local` file with all configured values. Comment out unused optional variables.
@@ -81,7 +103,10 @@ Run `npm run dev` and inform the user:
 Print a summary of what was configured:
 - Workspace roots
 - AI provider configured (or skipped)
-- Optional features enabled
+- Optional features enabled (list which ones: Feishu Bot, WeChat Bot, K8s, SCP, etc.)
 - Database location
 - How to start the server next time (`npm run dev`)
-- How to configure advanced features: visit `/skills` page to import SCP scientific skills, Feishu bot, etc.
+- How to configure advanced features:
+  - **SCP Scientific Skills:** Visit `/skills` page → click "导入技能" (Import Skills) → enter URL `https://github.com/InternScience/scp/tree/main` → confirm. This imports 206 scientific skills.
+  - **Feishu Bot:** If configured, restart the server and verify the terminal shows `[feishu-ws] WSClient connected successfully`.
+  - **K8s Jobs:** If configured, use the Agent panel to submit GPU jobs via `submitK8sJob` and `kubectl` tools.
