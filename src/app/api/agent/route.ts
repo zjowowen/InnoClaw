@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { streamText, convertToModelMessages, UIMessage } from "ai";
+import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { getConfiguredModel, isAIAvailable } from "@/lib/ai/provider";
 import { createAgentTools } from "@/lib/ai/agent-tools";
 import { buildAgentSystemPrompt, buildPlanSystemPrompt, buildAskSystemPrompt } from "@/lib/ai/prompts";
@@ -73,13 +73,20 @@ export async function POST(req: NextRequest) {
       uiMessages as UIMessage[]
     );
 
+    const DEFAULT_MAX_STEPS = 10;
+    const MAX_STEPS_UPPER_BOUND = 100;
+    const parsedSteps = parseInt(process.env.AGENT_MAX_STEPS || "", 10);
+    const maxSteps = Number.isFinite(parsedSteps) && parsedSteps > 0
+      ? Math.min(parsedSteps, MAX_STEPS_UPPER_BOUND)
+      : DEFAULT_MAX_STEPS;
+
     const result = streamText({
       model,
       system: systemPrompt,
       messages: modelMessages,
       tools,
       abortSignal: req.signal,
-      maxSteps: 50, // Allow up to 50 tool calls per request
+      stopWhen: stepCountIs(maxSteps),
       onError({ error }) {
         console.error("Agent stream error:", error);
       },
