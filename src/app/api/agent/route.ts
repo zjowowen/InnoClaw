@@ -73,7 +73,12 @@ export async function POST(req: NextRequest) {
       uiMessages as UIMessage[]
     );
 
-    const maxSteps = parseInt(process.env.AGENT_MAX_STEPS || "10", 10);
+    const DEFAULT_MAX_STEPS = 10;
+    const MAX_STEPS_UPPER_BOUND = 100;
+    const parsedSteps = parseInt(process.env.AGENT_MAX_STEPS || "", 10);
+    const maxSteps = Number.isFinite(parsedSteps) && parsedSteps > 0
+      ? Math.min(parsedSteps, MAX_STEPS_UPPER_BOUND)
+      : DEFAULT_MAX_STEPS;
 
     const result = streamText({
       model,
