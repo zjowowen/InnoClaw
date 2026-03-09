@@ -2,6 +2,29 @@
   "name": "labclaw",
   "version": "0.1.0",
   "private": true,
+  "description": "Self-hostable AI research assistant inspired by Google NotebookLM",
+  "keywords": [
+    "ai",
+    "research-assistant",
+    "rag",
+    "llm",
+    "notebooklm",
+    "nextjs",
+    "self-hosted"
+  ],
+  "author": "LabClaw Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zjowowen/LabClaw.git"
+  },
+  "homepage": "https://zjowowen.github.io/LabClaw/",
+  "bugs": {
+    "url": "https://github.com/zjowowen/LabClaw/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "predev": "node scripts/check-deps.js",
     "dev": "next dev",

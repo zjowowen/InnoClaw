@@ -16,14 +16,14 @@ Optional:
 
 | Requirement | Notes |
 |-------------|-------|
-| **AI API Key** | At least one (OpenAI or Anthropic) for AI chat and note generation |
+| **AI API Key** | At least one (OpenAI, Anthropic, or Gemini) for AI chat and note generation |
 | **GitHub Token** | For cloning/pulling private repositories |
 
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/zjowowen/notebooklm.git
-cd notebooklm
+git clone https://github.com/zjowowen/LabClaw.git
+cd LabClaw
 ```
 
 ## Step 2: Install Dependencies
@@ -53,6 +53,9 @@ OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 
 # [Optional] Anthropic API Key
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
+
+# [Optional] Gemini API Key
+GEMINI_API_KEY=your-gemini-key
 ```
 
 See [Environment Variables](environment-variables.md) for a complete reference of all available options.

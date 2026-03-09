@@ -4,7 +4,7 @@
 
 A self-hostable AI research assistant inspired by Google NotebookLM. Turn server-side folders into workspaces, chat with AI grounded in your documents via RAG, and leverage 206 built-in scientific skills.
 
-📖 **[完整文档 / Full Documentation](https://zjowowen.github.io/notebooklm/)** (English & 简体中文)
+📖 **[完整文档 / Full Documentation](https://zjowowen.github.io/LabClaw/)** (English & 简体中文)
 
 ---
 
@@ -35,8 +35,8 @@ A self-hostable AI research assistant inspired by Google NotebookLM. Turn server
 If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, just 3 commands to get everything configured:
 
 ```bash
-git clone https://github.com/zjowowen/notebooklm.git
-cd notebooklm
+git clone https://github.com/zjowowen/LabClaw.git
+cd LabClaw
 claude /setup
 ```
 
@@ -49,8 +49,8 @@ The `/setup` skill interactively guides you through: dependency installation →
 #### 第 1 步：克隆并安装 / Clone & Install
 
 ```bash
-git clone https://github.com/zjowowen/notebooklm.git
-cd notebooklm
+git clone https://github.com/zjowowen/LabClaw.git
+cd LabClaw
 npm install
 ```
 
