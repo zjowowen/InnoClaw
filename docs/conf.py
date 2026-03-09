@@ -45,7 +45,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "shibuya"
 
 html_theme_options = {
-    "github_url": "https://github.com/zjowowen/notebooklm",
+    "github_url": "https://github.com/zjowowen/LabClaw",
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/overview"},
         {"title": "Usage", "url": "usage/features"},
@@ -53,12 +53,12 @@ html_theme_options = {
     ],
 }
 
-html_baseurl = "https://zjowowen.github.io/notebooklm/"
+html_baseurl = "https://zjowowen.github.io/LabClaw/"
 
 html_context = {
     "languages": [
-        ("English", "/notebooklm/en/"),
-        ("简体中文", "/notebooklm/zh/"),
+        ("English", "/LabClaw/en/"),
+        ("简体中文", "/LabClaw/zh/"),
     ],
 }
 
@@ -67,7 +67,7 @@ html_title = "LabClaw Documentation"
 
 # -- Options for linkcheck ---------------------------------------------------
 linkcheck_ignore = [
-    r"https://github\.com/zjowowen/notebooklm/(issues|pulls|actions)",
+    r"https://github\.com/zjowowen/LabClaw/(issues|pulls|actions)",
 ]
 
 # -- Options for sphinxcontrib-mermaid ---------------------------------------
