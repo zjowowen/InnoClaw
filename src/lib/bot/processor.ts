@@ -14,7 +14,7 @@ import { getConfiguredModel, isAIAvailable } from "@/lib/ai/provider";
 import type { BotAdapter, BotMessage, BotReply } from "./types";
 
 /** Directory where downloaded bot files are stored */
-const BOT_FILES_DIR = path.join(os.tmpdir(), "notebooklm-bot-files");
+const BOT_FILES_DIR = path.join(os.tmpdir(), "innoclaw-bot-files");
 
 /** Maximum size for reading text file content inline (100 KB) */
 const MAX_TEXT_READ_SIZE = 100_000;
@@ -106,7 +106,7 @@ export async function processMessage(
       } catch {
         // Best-effort cleanup; ignore if file was already removed
       }
-    } else {
+    } else if (message.type === "text") {
       // Text message — forward to AI
       const aiResponse = await callAI(message.text);
       replies.push({ type: "text", text: aiResponse });

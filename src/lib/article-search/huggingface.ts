@@ -29,13 +29,12 @@ export async function searchHuggingFace(
   try {
     response = await fetch(HF_API_URL, {
       headers: {
-        "User-Agent": "notebooklm-paper-study/1.0",
+        "User-Agent": "innoclaw/1.0",
         Accept: "application/json",
       },
       signal: controller.signal,
     });
   } catch (err) {
-    clearTimeout(timer);
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error("Hugging Face API request timed out");
     }

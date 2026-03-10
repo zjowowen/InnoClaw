@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     if (!input) {
       return NextResponse.json(
-        { error: "请输入论文名称或 arXiv ID" },
+        { error: "MISSING_INPUT" },
         { status: 400 }
       );
     }
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
       const article = await fetchArxivById(arxivId);
       if (!article) {
         return NextResponse.json(
-          { error: "在 arXiv 上未找到该论文" },
+          { error: "NOT_FOUND" },
           { status: 404 }
         );
       }
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
         });
       }
       return NextResponse.json(
-        { error: "在 arXiv 上未找到该论文" },
+        { error: "NOT_FOUND" },
         { status: 404 }
       );
     }
@@ -208,15 +208,13 @@ export async function POST(req: NextRequest) {
     const articles = await searchByTitle(input);
     if (articles.length === 0) {
       return NextResponse.json(
-        { error: `未找到标题匹配的论文: "${input}"` },
+        { error: "NOT_FOUND" },
         { status: 404 }
       );
     }
     return NextResponse.json({ articles });
   } catch (error) {
     console.error("Paper fetch error:", error);
-    const message =
-      error instanceof Error ? error.message : "获取论文失败";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

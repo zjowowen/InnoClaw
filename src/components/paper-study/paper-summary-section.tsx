@@ -6,6 +6,7 @@ import { Loader2, Save, Check, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 interface PaperSummarySectionProps {
   summary: string;
@@ -23,6 +24,7 @@ export function PaperSummarySection({
   onStop,
 }: PaperSummarySectionProps) {
   const t = useTranslations("paperStudy");
+  const tCommon = useTranslations("common");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -33,21 +35,25 @@ export function PaperSummarySection({
     try {
       const now = new Date();
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      await fetch("/api/notes", {
+      const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workspaceId,
-          title: `论文研读摘要 - ${dateStr}`,
+          title: `${t("summaryNoteTitle")} - ${dateStr}`,
           content: summary,
           type: "summary",
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Save failed (${res.status})`);
+      }
       setSaved(true);
       onSaved?.();
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      // silently fail
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tCommon("error"));
     } finally {
       setSaving(false);
     }

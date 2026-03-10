@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { appSettings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getWorkspaceRoots } from "@/lib/files/filesystem";
+import { updateEnvLocal } from "@/lib/env-file";
 
 export async function GET() {
   try {
@@ -13,16 +14,24 @@ export async function GET() {
       settingsMap[s.key] = s.value;
     }
 
+    const hasHfToken = !!settingsMap["hf_token"] || !!process.env.HF_TOKEN;
+
     return NextResponse.json({
       llmProvider: settingsMap["llm_provider"] || "openai",
       llmModel: settingsMap["llm_model"] || "gpt-4o-mini",
+      contextMode: settingsMap["context_mode"] || "normal",
+      maxMode: settingsMap["max_mode"] !== "false",
       workspaceRoots: getWorkspaceRoots(),
       hasOpenAIKey: !!process.env.OPENAI_API_KEY,
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+      hasGeminiKey: !!process.env.GEMINI_API_KEY,
       hasGithubToken: !!process.env.GITHUB_TOKEN,
-      hasAIKey: !!process.env.OPENAI_API_KEY || !!process.env.ANTHROPIC_API_KEY,
+      hasHfToken,
+      hfTokenSource: settingsMap["hf_token"] ? "db" : (process.env.HF_TOKEN ? "env" : null),
+      hasAIKey: !!process.env.OPENAI_API_KEY || !!process.env.ANTHROPIC_API_KEY || !!process.env.GEMINI_API_KEY,
       openaiBaseUrl: process.env.OPENAI_BASE_URL || "",
       anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL || "",
+      geminiBaseUrl: process.env.GEMINI_BASE_URL || "",
       feishuBotEnabled:
         process.env.FEISHU_BOT_ENABLED === "true" &&
         !!process.env.FEISHU_APP_ID &&
@@ -64,6 +73,16 @@ export async function PATCH(request: NextRequest) {
       } else {
         await db.insert(appSettings).values({ key, value });
       }
+    }
+
+    // Persist LLM settings to .env.local so they survive restarts
+    const envUpdates: Record<string, string> = {};
+    if (typeof body.llm_provider === "string")
+      envUpdates.LLM_PROVIDER = body.llm_provider;
+    if (typeof body.llm_model === "string")
+      envUpdates.LLM_MODEL = body.llm_model;
+    if (Object.keys(envUpdates).length > 0) {
+      updateEnvLocal(envUpdates);
     }
 
     return NextResponse.json({ success: true });

@@ -1,11 +1,34 @@
 {
-  "name": "notebooklm-temp",
+  "name": "innoclaw",
   "version": "0.1.0",
   "private": true,
+  "description": "Self-hostable AI research assistant inspired by Google NotebookLM",
+  "keywords": [
+    "ai",
+    "research-assistant",
+    "rag",
+    "llm",
+    "notebooklm",
+    "nextjs",
+    "self-hosted"
+  ],
+  "author": "InnoClaw Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zjowowen/InnoClaw.git"
+  },
+  "homepage": "https://zjowowen.github.io/InnoClaw/",
+  "bugs": {
+    "url": "https://github.com/zjowowen/InnoClaw/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "predev": "node -e \"try{require('rehype-sanitize');require('better-sqlite3')}catch{process.exit(1)}\" || npm install",
+    "predev": "node scripts/check-deps.js",
     "dev": "next dev",
-    "prebuild": "node -e \"try{require('rehype-sanitize');require('better-sqlite3')}catch{process.exit(1)}\" || npm install",
+    "prebuild": "node scripts/check-deps.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -15,15 +38,19 @@
     "@ai-sdk/anthropic": "^3.0.47",
     "@ai-sdk/openai": "^3.0.33",
     "@ai-sdk/react": "^3.0.101",
+    "@huggingface/hub": "^2.10.5",
+    "@larksuiteoapi/node-sdk": "^1.59.0",
     "ai": "^6.0.99",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cron-parser": "^5.5.0",
     "drizzle-orm": "^0.45.1",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.33",
     "lucide-react": "^0.575.0",
+    "minimatch": "^10.2.4",
     "nanoid": "^5.1.6",
     "next": "16.1.6",
     "next-intl": "^4.8.3",

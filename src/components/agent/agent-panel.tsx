@@ -35,6 +35,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useSkills } from "@/lib/hooks/use-skills";
+import { getOverflowThresholdChars, getMessageTextLength } from "@/lib/ai/models";
 import { SkillAutocomplete } from "@/components/skills/skill-autocomplete";
 import { SkillParameterDialog } from "@/components/skills/skill-parameter-dialog";
 import {
@@ -50,6 +51,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ParticleEffect, ThinkingIndicator, FloatingOrbs, ThinkingParticles, BreathingBorder } from "@/components/ui/particle-effect";
 import type { Skill } from "@/types";
 
 type AgentMode = "agent" | "plan" | "ask";
@@ -139,28 +141,44 @@ function ToolCallBlock({ part }: { part: ToolInvocationPart }) {
   const result = part.output as Record<string, unknown> | undefined;
 
   return (
-    <div className="my-1.5 rounded border border-agent-border bg-agent-card-bg text-xs font-mono overflow-hidden">
+    <div className={`my-2 rounded-lg border text-xs font-mono overflow-hidden break-all transition-all duration-300 ${
+      isRunning
+        ? "border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 shadow-[0_0_15px_rgba(139,92,246,0.1)]"
+        : isError
+          ? "border-destructive/30 bg-destructive/5"
+          : "border-agent-border bg-agent-card-bg"
+    }`}>
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-agent-card-hover transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-agent-card-hover transition-colors"
       >
         {expanded ? (
-          <ChevronDown className="h-3 w-3 shrink-0 text-agent-muted" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-agent-muted" />
         ) : (
-          <ChevronRight className="h-3 w-3 shrink-0 text-agent-muted" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-agent-muted" />
         )}
-        <span className="text-agent-accent">{icon}</span>
-        <span className="font-semibold text-agent-accent">{toolName}</span>
+        <span className={`${isRunning ? "text-primary" : "text-agent-accent"}`}>{icon}</span>
+        <span className={`font-semibold ${isRunning ? "text-primary" : "text-agent-accent"}`}>{toolName}</span>
         <span className="text-agent-muted truncate flex-1">{summary}</span>
         {isRunning && (
-          <Loader2 className="h-3 w-3 shrink-0 animate-spin text-agent-accent" />
+          <div className="flex items-center gap-2">
+            <span className="text-primary/70 text-[10px]">Running</span>
+            <div className="relative">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+              <div className="absolute inset-0 h-4 w-4 animate-ping rounded-full bg-primary/20" />
+            </div>
+          </div>
         )}
         {isDone && !isError && (
-          <Check className="h-3 w-3 shrink-0 text-agent-success" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-agent-success/20">
+            <Check className="h-3 w-3 shrink-0 text-agent-success" />
+          </div>
         )}
         {isDone && isError && (
-          <AlertCircle className="h-3 w-3 shrink-0 text-agent-error" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-agent-error/20">
+            <AlertCircle className="h-3 w-3 shrink-0 text-agent-error" />
+          </div>
         )}
       </button>
 
@@ -199,6 +217,12 @@ function ToolCallBlock({ part }: { part: ToolInvocationPart }) {
               <div className="text-agent-success">$ {String(args.command)}</div>
             </div>
           )}
+          {toolName === "collectJobResults" && args && (
+            <div className="text-agent-muted space-y-0.5">
+              <div>📋 Collecting results for: <span className="text-agent-accent">{String(args.jobName)}</span></div>
+              {args.namespace ? <div>Namespace: <span className="text-agent-foreground">{String(args.namespace)}</span></div> : null}
+            </div>
+          )}
 
           {/* Error */}
           {isError && part.errorText && (
@@ -207,7 +231,7 @@ function ToolCallBlock({ part }: { part: ToolInvocationPart }) {
 
           {/* Result */}
           {isDone && result && (
-            <div className="max-h-[300px] overflow-auto">
+            <div className="max-h-[300px] overflow-y-auto overflow-x-hidden">
               {renderToolResult(toolName, result)}
             </div>
           )}
@@ -345,6 +369,34 @@ function renderToolResult(
         </div>
       );
     }
+    case "collectJobResults": {
+      const crSuccess = Boolean(result.success);
+      const crLogs = String(result.logs || "");
+      const crJobStatus = result.jobStatus as Record<string, unknown> | undefined;
+      return (
+        <div className="space-y-1">
+          <div className={crSuccess ? "text-agent-success" : "text-agent-error"}>
+            {crSuccess ? "Results collected" : "Failed to collect results"}
+            {result.jobName ? ` — ${String(result.jobName)}` : ""}
+          </div>
+          {crJobStatus && (
+            <div className="text-agent-muted text-xs">
+              Active: {String(crJobStatus.active ?? 0)} | Succeeded: {String(crJobStatus.succeeded ?? 0)} | Failed: {String(crJobStatus.failed ?? 0)}
+            </div>
+          )}
+          {crLogs && (
+            <pre className="whitespace-pre-wrap text-agent-foreground leading-relaxed max-h-[400px] overflow-y-auto overflow-x-hidden">
+              {crLogs}
+            </pre>
+          )}
+          {result.logsError ? (
+            <pre className="whitespace-pre-wrap text-agent-error leading-relaxed">
+              {String(result.logsError)}
+            </pre>
+          ) : null}
+        </div>
+      );
+    }
     default:
       return (
         <pre className="whitespace-pre-wrap text-agent-foreground">
@@ -369,18 +421,18 @@ function AgentMessage({ message }: { message: UIMessage }) {
         .join("") ?? "";
 
     return (
-      <div className="flex gap-2 items-start">
-        <span className="text-agent-purple shrink-0 font-bold select-none">
-          &gt;
-        </span>
-        <span className="text-agent-foreground whitespace-pre-wrap">{text}</span>
+      <div className="group flex gap-3 items-start p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10 hover:border-primary/20 transition-all duration-300">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+          <span className="text-xs font-bold">&gt;</span>
+        </div>
+        <span className="text-agent-foreground whitespace-pre-wrap leading-relaxed">{text}</span>
       </div>
     );
   }
 
   // Assistant message — render parts
   return (
-    <div className="space-y-1 pl-0">
+    <div className="space-y-2 pl-0 animate-slide-in-up">
       {message.parts?.map((part, i) => {
         if (part.type === "text") {
           const text = (part as { type: "text"; text: string }).text;
@@ -388,7 +440,7 @@ function AgentMessage({ message }: { message: UIMessage }) {
           return (
             <div
               key={i}
-              className="prose prose-sm max-w-none text-agent-foreground [&_p]:my-1 [&_pre]:bg-agent-card-bg [&_pre]:border [&_pre]:border-agent-border [&_code]:text-agent-code [&_h1]:text-agent-foreground [&_h2]:text-agent-foreground [&_h3]:text-agent-foreground [&_a]:text-agent-accent [&_strong]:text-agent-foreground dark:prose-invert"
+              className="prose prose-sm max-w-none text-agent-foreground [&_p]:my-1.5 [&_pre]:bg-agent-card-bg [&_pre]:border [&_pre]:border-agent-border [&_pre]:rounded-lg [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:text-agent-code [&_code]:break-all [&_h1]:text-agent-foreground [&_h2]:text-agent-foreground [&_h3]:text-agent-foreground [&_a]:text-agent-accent [&_strong]:text-agent-foreground [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 dark:prose-invert"
             >
               <ReactMarkdown>{text}</ReactMarkdown>
             </div>
@@ -412,14 +464,28 @@ function AgentMessage({ message }: { message: UIMessage }) {
         if (part.type === "reasoning") {
           const reasoning = (part as { type: "reasoning"; text: string }).text;
           return (
-            <details key={i} className="text-agent-muted text-xs">
-              <summary className="cursor-pointer hover:text-agent-accent">
-                Thinking...
-              </summary>
-              <pre className="whitespace-pre-wrap mt-1 pl-2 border-l border-agent-border">
-                {reasoning}
-              </pre>
-            </details>
+            <BreathingBorder key={i} isActive={true}>
+              <details className="text-agent-muted text-xs rounded-lg p-2 relative min-h-[60px]">
+                <ThinkingParticles isActive={true} />
+                <summary className="cursor-pointer hover:text-agent-accent flex items-center gap-2 relative z-10">
+                  <div className="relative flex items-center justify-center">
+                    {/* Rotating ring */}
+                    <div className="absolute h-5 w-5 animate-spin rounded-full border border-transparent border-t-purple-500/60" style={{ animationDuration: '1.5s' }} />
+                    {/* Pulsing core */}
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse" />
+                  </div>
+                  <span className="font-medium text-purple-400">Thinking...</span>
+                  <div className="flex gap-0.5 ml-1">
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-purple-400 [animation-delay:-0.3s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-purple-400 [animation-delay:-0.15s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-purple-400" />
+                  </div>
+                </summary>
+                <pre className="whitespace-pre-wrap mt-2 pl-3 border-l-2 border-purple-500/30 text-agent-muted relative z-10">
+                  {reasoning}
+                </pre>
+              </details>
+            </BreathingBorder>
           );
         }
 
@@ -446,7 +512,7 @@ export function AgentPanel({
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
 
@@ -460,13 +526,24 @@ export function AgentPanel({
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const summarizingRef = useRef(false);
+  const failedAtCountRef = useRef(-1);
 
   // Memory preview dialog state
   const [showMessageSelect, setShowMessageSelect] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const toggleMessage = useCallback((id: string) => {
+    setSelectedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   const [showMemoryPreview, setShowMemoryPreview] = useState(false);
   const [memoryPreviewTitle, setMemoryPreviewTitle] = useState("");
   const [memoryPreviewContent, setMemoryPreviewContent] = useState("");
+  // Track overflow-triggered dialog: stores messages to keep after memory save
+  const overflowKeepRef = useRef<UIMessage[] | null>(null);
 
   // Draggable + resizable dialog state
   const [dialogPos, setDialogPos] = useState({ x: 0, y: 0 });
@@ -641,13 +718,72 @@ export function AgentPanel({
       } else {
         localStorage.setItem(storageKey, JSON.stringify(messages));
       }
+      // Notify same-tab listeners (StorageEvent only fires cross-tab)
+      window.dispatchEvent(new CustomEvent("agent-messages-updated", { detail: { key: storageKey } }));
     } catch {
       // storage full or unavailable — silently ignore
     }
   }, [messages, storageKey, status]);
 
-  // --- Auto-memory: summarize and evict ---
-  const OVERFLOW_THRESHOLD_CHARS = 640_000; // ~160K tokens (80% of 200K context)
+  // --- Auto-continue: automatically continue when task is incomplete ---
+  const prevStatusRef = useRef(status);
+  const autoContinueCountRef = useRef(0);
+  const autoContinueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_AUTO_CONTINUES = 5; // Prevent infinite loops
+
+  useEffect(() => {
+    const wasStreaming = prevStatusRef.current === "streaming" || prevStatusRef.current === "submitted";
+    const isNowReady = status === "ready";
+    prevStatusRef.current = status;
+
+    // Only trigger on transition from streaming to ready
+    if (!wasStreaming || !isNowReady) {
+      // Reset counter when user sends a new message
+      if (status === "submitted") {
+        autoContinueCountRef.current = 0;
+      }
+      return;
+    }
+
+    // Check if we've hit the auto-continue limit
+    if (autoContinueCountRef.current >= MAX_AUTO_CONTINUES) {
+      return;
+    }
+
+    // Check if the last assistant message ends with a tool call (task incomplete)
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "assistant") return;
+
+    const parts = lastMessage.parts || [];
+    const hasToolCall = parts.some((p: { type?: string }) =>
+      p.type?.startsWith("tool-") || p.type === "dynamic-tool"
+    );
+
+    // If the last part is a tool call result, the agent was likely interrupted mid-task
+    if (hasToolCall) {
+      const lastPart = parts[parts.length - 1] as { type?: string };
+      const endsWithTool = lastPart?.type?.startsWith("tool-") || lastPart?.type === "dynamic-tool";
+
+      if (endsWithTool) {
+        autoContinueCountRef.current++;
+        autoContinueTimerRef.current = setTimeout(() => {
+          sendMessage({ text: t("autoContinue") });
+        }, 500);
+      }
+    }
+
+    return () => {
+      if (autoContinueTimerRef.current) {
+        clearTimeout(autoContinueTimerRef.current);
+        autoContinueTimerRef.current = null;
+      }
+    };
+  }, [status, messages, sendMessage, t]);
+  const overflowThreshold = getOverflowThresholdChars(
+    settings?.llmProvider ?? "openai",
+    settings?.llmModel ?? "gpt-4o-mini",
+    settings?.contextMode ?? "normal"
+  );
 
   const summarizeAndEvict = async (
     messagesToSummarize: UIMessage[],
@@ -656,6 +792,7 @@ export function AgentPanel({
   ) => {
     if (summarizingRef.current) return;
     summarizingRef.current = true;
+    failedAtCountRef.current = -1;
     setIsSummarizing(true);
     setSummaryError(null);
 
@@ -689,7 +826,10 @@ export function AgentPanel({
       }
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : "Summarization failed");
-      // On failure: do NOT evict messages
+      // On failure: do NOT evict messages; record count to prevent infinite retry
+      if (trigger === "overflow") {
+        failedAtCountRef.current = messagesToSummarize.length + messagesToKeep.length;
+      }
     } finally {
       setIsSummarizing(false);
       summarizingRef.current = false;
@@ -698,14 +838,17 @@ export function AgentPanel({
 
   // Detect context overflow after messages stabilize (not during streaming)
   useEffect(() => {
+    if (settings?.maxMode === false) return;
     if (restoreGenRef.current > 0 || isSummarizing) return;
+    if (showMessageSelect || showMemoryPreview) return; // Don't trigger while dialog is open
     if (status !== "ready" && status !== "error") return;
     if (messages.length < 4) return;
+    if (messages.length === failedAtCountRef.current) return;
 
     // Pre-compute per-message sizes once to avoid repeated serialization
-    const messageSizes = messages.map((m) => JSON.stringify(m).length);
+    const messageSizes = messages.map((m) => getMessageTextLength(m));
     const totalChars = messageSizes.reduce((sum, s) => sum + s, 0);
-    if (totalChars <= OVERFLOW_THRESHOLD_CHARS) return;
+    if (totalChars <= overflowThreshold) return;
 
     // Find split point: keep newest ~20% by character count
     let keepFromIndex = messages.length;
@@ -727,9 +870,15 @@ export function AgentPanel({
     const toSummarize = messages.slice(0, keepFromIndex);
     const toKeep = messages.slice(keepFromIndex);
 
-    summarizeAndEvict(toSummarize, toKeep, "overflow");
+    // Show message selection dialog instead of auto-summarizing
+    overflowKeepRef.current = toKeep;
+    // Only pre-select messages with renderable text content
+    setSelectedMessageIds(new Set(
+      toSummarize.filter((m) => getMessageTextLength(m) > 0).map((m) => m.id)
+    ));
+    setShowMessageSelect(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, status, isSummarizing]);
+  }, [messages, status, isSummarizing, showMessageSelect, showMemoryPreview]);
 
   const isLoading = status === "submitted" || status === "streaming";
 
@@ -795,7 +944,7 @@ export function AgentPanel({
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || isLoading || !aiEnabled) return;
+    if (!text || isLoading || !aiEnabled || isSummarizing) return;
 
     // Check if input matches a skill slug
     if (text.startsWith("/")) {
@@ -832,24 +981,31 @@ export function AgentPanel({
     }, 100);
   };
 
-  const handleClear = () => {
-    if (status === "streaming" || status === "submitted") stop();
-    if (messages.length > 0 && aiEnabled) {
-      // Show message selection dialog first
-      setSelectedMessageIds(new Set(messages.map((m) => m.id)));
-      setShowMessageSelect(true);
-    } else {
-      setMessages([]);
-    }
-    setInput("");
-  };
-
   // Helper: extract plain text from a message
   const getMessageText = (message: UIMessage) =>
     message.parts
       ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join("") ?? "";
+
+  // Messages that have renderable text content (used for selection UI)
+  const selectableMessages = useMemo(
+    () => messages.filter((m) => getMessageTextLength(m) > 0),
+    [messages]
+  );
+
+  const handleClear = () => {
+    if (status === "streaming" || status === "submitted") stop();
+    if (messages.length > 0 && aiEnabled) {
+      // Show message selection dialog first
+      overflowKeepRef.current = null; // null = manual clear (not overflow)
+      setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)));
+      setShowMessageSelect(true);
+    } else {
+      setMessages([]);
+    }
+    setInput("");
+  };
 
   // Step 2: generate preview from selected messages
   const handleSelectNext = async () => {
@@ -889,6 +1045,15 @@ export function AgentPanel({
   const handleSelectCancel = () => {
     setShowMessageSelect(false);
     setSelectedMessageIds(new Set());
+    if (overflowKeepRef.current) {
+      // User cancelled during overflow — fall back to silent auto-summarize
+      const toKeep = overflowKeepRef.current;
+      const toSummarize = messages.filter(
+        (m) => !toKeep.some((k) => k.id === m.id)
+      );
+      overflowKeepRef.current = null;
+      summarizeAndEvict(toSummarize, toKeep, "overflow");
+    }
   };
 
   const handleMemoryConfirm = async () => {
@@ -911,7 +1076,19 @@ export function AgentPanel({
           errData && typeof errData.error === "string" ? errData.error : t("memoryError");
         throw new Error(errorMessage);
       }
-      setMessages([]);
+      if (overflowKeepRef.current) {
+        // Overflow: keep recent messages, inject memory marker
+        const memoryMarker = {
+          id: `memory-${Date.now()}`,
+          role: "assistant" as const,
+          parts: [{ type: "text" as const, text: t("memorySaved") }],
+        } as UIMessage;
+        setMessages([memoryMarker, ...overflowKeepRef.current]);
+        overflowKeepRef.current = null;
+      } else {
+        // Manual clear: empty all messages
+        setMessages([]);
+      }
     } catch (err) {
       setSummaryError(err instanceof Error && err.message ? err.message : t("memoryError"));
     } finally {
@@ -923,6 +1100,15 @@ export function AgentPanel({
     setShowMemoryPreview(false);
     setMemoryPreviewTitle("");
     setMemoryPreviewContent("");
+    if (overflowKeepRef.current) {
+      // User cancelled memory preview during overflow — fall back to silent auto-summarize
+      const toKeep = overflowKeepRef.current;
+      const toSummarize = messages.filter(
+        (m) => !toKeep.some((k) => k.id === m.id)
+      );
+      overflowKeepRef.current = null;
+      summarizeAndEvict(toSummarize, toKeep, "overflow");
+    }
   };
 
   // Switch mode: update body synchronously and clear stale conversation
@@ -935,9 +1121,9 @@ export function AgentPanel({
   const slashQuery = input.startsWith("/") ? input.slice(1) : "";
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-agent-bg text-agent-foreground font-mono text-sm">
+    <div className="relative flex h-full min-w-0 flex-col bg-agent-bg text-agent-foreground font-mono text-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-agent-border px-3 py-2">
+      <div className="relative z-10 flex items-center gap-2 border-b border-agent-border px-3 py-2 bg-agent-bg/80 backdrop-blur-sm">
         {mode === "agent" && <Bot className="h-4 w-4 text-agent-accent" />}
         {mode === "plan" && <ClipboardList className="h-4 w-4 text-agent-success" />}
         {mode === "ask" && <MessageCircleQuestion className="h-4 w-4 text-agent-purple" />}
@@ -950,8 +1136,8 @@ export function AgentPanel({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1" ref={scrollRef}>
-        <div className="p-3 space-y-3">
+      <ScrollArea className="relative z-10 flex-1 [&_[data-slot=scroll-area-viewport]]:!overflow-x-hidden [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!min-w-0 [&_[data-slot=scroll-area-scrollbar][data-orientation=horizontal]]:hidden" ref={scrollRef}>
+        <div className="p-3 space-y-3 overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           {!aiEnabled ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
               <AlertCircle className="h-8 w-8 text-agent-muted" />
@@ -967,18 +1153,37 @@ export function AgentPanel({
               </p>
             </div>
           ) : (
-            messages.map((message) => (
-              <AgentMessage key={message.id} message={message} />
-            ))
+            messages.map((message) => {
+              // Filter out auto-continue messages (user messages with only "继续")
+              if (message.role === "user") {
+                const text = message.parts
+                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+                  .map((p) => p.text)
+                  .join("")
+                  .trim();
+                if (text === "继续") return null;
+              }
+              return <AgentMessage key={message.id} message={message} />;
+            })
           )}
 
-          {/* Loading indicator */}
+          {/* Loading indicator with enhanced effects */}
           {isLoading &&
             messages.length > 0 &&
             messages[messages.length - 1].role === "user" && (
-              <div className="flex items-center gap-2 text-agent-muted">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span className="text-xs">Thinking...</span>
+              <div className="relative my-4">
+                <div className="relative flex items-center gap-3 rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 p-4 backdrop-blur-sm animate-glow-pulse overflow-hidden">
+                  {/* Animated gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/10 to-primary/5 animate-[gradient-rotate_3s_linear_infinite] bg-[length:200%_100%]" />
+                  {/* Scanning line effect */}
+                  <div className="absolute inset-x-0 top-0 h-full overflow-hidden">
+                    <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent animate-[scan-line_2s_linear_infinite]" />
+                  </div>
+                  {/* Glow orbs */}
+                  <div className="absolute -left-4 -top-4 h-16 w-16 rounded-full bg-primary/20 blur-xl animate-pulse" />
+                  <div className="absolute -right-4 -bottom-4 h-12 w-12 rounded-full bg-accent/20 blur-xl animate-pulse [animation-delay:0.5s]" />
+                  <ThinkingIndicator label="InnoClaw thinking" />
+                </div>
               </div>
             )}
 
@@ -1013,7 +1218,7 @@ export function AgentPanel({
       )}
 
       {/* Input area with autocomplete */}
-      <div className="relative border-t border-agent-border">
+      <div className="relative z-10 border-t border-agent-border bg-agent-bg/80 backdrop-blur-sm">
         {/* Slash command autocomplete */}
         {showAutocomplete && availableSkills.length > 0 && (
           <SkillAutocomplete
@@ -1024,10 +1229,10 @@ export function AgentPanel({
           />
         )}
 
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex items-start gap-2 px-3 py-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-agent-accent hover:bg-agent-card-hover transition-colors">
+              <button className="flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-agent-accent hover:bg-agent-card-hover transition-colors mt-1.5">
                 {t(MODE_LABEL_KEYS[mode])}
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -1057,30 +1262,33 @@ export function AgentPanel({
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <span className="text-agent-purple font-bold shrink-0 select-none">
+          <span className="text-agent-purple font-bold shrink-0 select-none mt-1.5">
             &gt;
           </span>
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
-            onChange={(e) => handleInputChange(e.target.value)}
+            onChange={(e) => {
+              handleInputChange(e.target.value);
+              // Auto-resize textarea
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+            }}
             onKeyDown={(e) => {
-              if (
-                e.key === "Enter" &&
-                !e.shiftKey &&
-                !showAutocomplete
-              ) {
+              // Enter without Shift sends message, Shift+Enter creates new line
+              if (e.key === "Enter" && !e.shiftKey && !showAutocomplete) {
                 e.preventDefault();
                 handleSend();
               }
             }}
-            disabled={!aiEnabled}
+            disabled={!aiEnabled || isSummarizing}
             placeholder={aiEnabled ? t(MODE_PLACEHOLDER_KEYS[mode]) : t("disabledState")}
-            className="flex-1 bg-transparent text-agent-foreground placeholder:text-agent-muted outline-none text-sm font-mono"
+            className="flex-1 bg-transparent text-agent-foreground placeholder:text-agent-muted outline-none text-sm font-mono resize-none min-h-[24px] max-h-[200px] leading-6"
+            rows={1}
             autoFocus
           />
-          {isLoading && (
+          <div className="flex items-center gap-1 shrink-0 mt-1">
+            {isLoading && (
             <button
               onClick={handleStop}
               title={t("stop")}
@@ -1098,6 +1306,7 @@ export function AgentPanel({
               <Brain className="h-4 w-4" />
             </button>
           )}
+          </div>
         </div>
       </div>
 
@@ -1140,7 +1349,7 @@ export function AgentPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectedMessageIds(new Set(messages.map((m) => m.id)))}
+              onClick={() => setSelectedMessageIds(new Set(selectableMessages.map((m) => m.id)))}
             >
               {t("selectAll")}
             </Button>
@@ -1152,48 +1361,52 @@ export function AgentPanel({
               {t("selectNone")}
             </Button>
             <span className="text-xs text-muted-foreground ml-auto">
-              {selectedMessageIds.size} / {messages.length}
+              {selectedMessageIds.size} / {selectableMessages.length}
             </span>
           </div>
 
           <ScrollArea className="flex-1 min-h-0 px-6">
-            <div className="space-y-2 py-2 pr-4">
+            <div className="space-y-2 py-2 pr-4" role="listbox" aria-multiselectable="true">
               {messages.map((msg) => {
                 const text = getMessageText(msg);
                 if (!text) return null;
                 const checked = selectedMessageIds.has(msg.id);
                 return (
-                  <label
+                  <div
                     key={msg.id}
+                    role="option"
+                    aria-selected={checked}
+                    tabIndex={0}
                     className={`flex items-start gap-3 rounded-md border px-3 py-2 cursor-pointer transition-colors ${
                       checked
                         ? "border-[#7aa2f7]/50 bg-[#7aa2f7]/5"
                         : "border-[#30363d] hover:border-[#484f58]"
                     }`}
+                    onClick={() => toggleMessage(msg.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleMessage(msg.id);
+                      }
+                    }}
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(v) => {
-                        setSelectedMessageIds((prev) => {
-                          const next = new Set(prev);
-                          if (v) next.add(msg.id);
-                          else next.delete(msg.id);
-                          return next;
-                        });
-                      }}
+                      onCheckedChange={() => toggleMessage(msg.id)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
                       className="mt-0.5 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <span className={`text-xs font-medium ${
                         msg.role === "user" ? "text-[#bb9af7]" : "text-[#7aa2f7]"
                       }`}>
-                        {msg.role === "user" ? "User" : "Assistant"}
+                        {msg.role === "user" ? t("roleUser") : t("roleAssistant")}
                       </span>
                       <p className="text-xs text-[#c9d1d9] line-clamp-3 mt-0.5 whitespace-pre-wrap">
                         {text}
                       </p>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
@@ -1296,6 +1509,12 @@ export function AgentPanel({
           <div className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize" onPointerDown={(e) => onEdgeResizeStart(e, "se")} />
         </DialogContent>
       </Dialog>
+
+      {/* Particle effects overlay - renders on top of content but allows click-through */}
+      <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+        <FloatingOrbs isActive={isLoading} />
+        <ParticleEffect isActive={isLoading} particleCount={80} density={0.0003} colors={["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#a855f7", "#ec4899"]} />
+      </div>
     </div>
   );
 }

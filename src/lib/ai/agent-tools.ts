@@ -4,6 +4,8 @@ import { exec, execFile } from "child_process";
 import path from "path";
 import os from "os";
 import fsp from "fs/promises";
+import { buildSafeExecEnv } from "@/lib/env";
+import { recordClusterOp } from "@/lib/cluster/operations";
 import {
   validatePath,
   readFile as fsReadFile,
@@ -15,6 +17,10 @@ import {
   findRelatedArticles,
 } from "@/lib/article-search";
 import type { Article } from "@/lib/article-search";
+import { db } from "@/lib/db";
+import { skills as skillsTable } from "@/lib/db/schema";
+import { eq, and, or, isNull } from "drizzle-orm";
+import { parseSkillRow } from "@/lib/db/skills-utils";
 
 /** Format an Article for LLM-friendly output. */
 const MAX_AUTHORS_DISPLAY = 5;
@@ -37,13 +43,7 @@ const DEFAULT_CONTAINER_IMAGE =
   "registry2.d.pjlab.org.cn/ccr-hw/910c:82rc2ipc";
 
 /** Base environment variables for all exec() calls. */
-const baseExecEnv = {
-  PATH: process.env.PATH || "/usr/local/bin:/usr/bin:/bin",
-  HOME: process.env.HOME || "/tmp",
-  NODE_ENV: process.env.NODE_ENV || "production",
-  LANG: process.env.LANG || "en_US.UTF-8",
-  TERM: "dumb",
-};
+const baseExecEnv = buildSafeExecEnv();
 
 /**
  * Execute a shell command in the workspace directory and return truncated output.
@@ -272,7 +272,8 @@ spec:
 
 export function createAgentTools(
   workspaceCwd: string,
-  allowedTools?: string[] | null
+  allowedTools?: string[] | null,
+  workspaceId?: string | null
 ) {
   const validatedCwd = validatePath(workspaceCwd);
 
@@ -296,12 +297,19 @@ export function createAgentTools(
   const allTools = {
     bash: tool({
       description:
-        "Execute a shell command in the workspace directory. Use for running builds, tests, git operations, package management, etc.",
+        "Execute a shell command in the workspace directory. Use for running builds, tests, git operations, package management, etc. For long-running scientific computations, you can set a longer timeout (default: 30s, max: 300s).",
       inputSchema: z.object({
         command: z.string().describe("The shell command to execute"),
+        timeout: z
+          .number()
+          .optional()
+          .describe(
+            "Timeout in seconds for the command (default: 30, max: 300). Use a higher value for long-running computations like ADMET prediction, molecular docking, etc."
+          ),
       }),
-      execute: async ({ command }) => {
-        return execInWorkspace(command, validatedCwd);
+      execute: async ({ command, timeout }) => {
+        const timeoutMs = Math.max(1000, Math.min((timeout ?? 30) * 1000, 300_000));
+        return execInWorkspace(command, validatedCwd, { timeout: timeoutMs });
       },
     }),
 
@@ -420,6 +428,18 @@ export function createAgentTools(
         );
 
         if (!isReadOnly && !confirmDangerous) {
+          // Record blocked attempt
+          const blockedBin = useVcctl ? "vcctl" : "kubectl";
+          recordClusterOp({
+            workspaceId,
+            toolName: "kubectl",
+            subcommand,
+            namespace,
+            status: "blocked",
+            summary: `Blocked: ${blockedBin} ${subcommand.slice(0, 80)}`,
+            input: { subcommand, namespace, useVcctl },
+          }).catch(() => {});
+
           return {
             stdout: "",
             stderr: `SAFETY BLOCK: "${subcommand}" may modify the cluster. Set confirmDangerous=true to proceed.`,
@@ -435,6 +455,18 @@ export function createAgentTools(
         ];
 
         if (forbiddenPatterns.some((p) => p.test(subcommand.trim()))) {
+          // Record forbidden attempt
+          const forbiddenBin = useVcctl ? "vcctl" : "kubectl";
+          recordClusterOp({
+            workspaceId,
+            toolName: "kubectl",
+            subcommand,
+            namespace,
+            status: "blocked",
+            summary: `Forbidden: ${forbiddenBin} ${subcommand.slice(0, 80)}`,
+            input: { subcommand, namespace, useVcctl },
+          }).catch(() => {});
+
           return {
             stdout: "",
             stderr: `FORBIDDEN: "${subcommand}" is permanently blocked for safety.`,
@@ -497,7 +529,7 @@ export function createAgentTools(
               },
             },
             (error: Error | null, stdout: string, stderr: string) => {
-              resolve({
+              const result = {
                 stdout: (stdout || "").slice(0, 10000),
                 stderr: (stderr || "").slice(0, 5000),
                 exitCode: (error as NodeJS.ErrnoException)?.code
@@ -505,7 +537,22 @@ export function createAgentTools(
                   : error
                     ? 1
                     : 0,
-              });
+              };
+
+              // Record operation asynchronously (fire and forget)
+              recordClusterOp({
+                workspaceId,
+                toolName: "kubectl",
+                subcommand,
+                namespace,
+                status: result.exitCode === 0 ? "success" : "error",
+                exitCode: result.exitCode,
+                summary: `${bin} ${subcommand.slice(0, 80)}`,
+                input: { subcommand, namespace, useVcctl },
+                output: { exitCode: result.exitCode, stdoutLen: result.stdout.length },
+              }).catch(() => {});
+
+              resolve(result);
             }
           );
         });
@@ -663,6 +710,19 @@ export function createAgentTools(
             );
           });
 
+          // Record operation with actual result status
+          recordClusterOp({
+            workspaceId,
+            toolName: "submitK8sJob",
+            jobName,
+            namespace: resolvedNamespace,
+            status: result.exitCode === 0 ? "success" : "error",
+            exitCode: result.exitCode,
+            summary: `Submit ${jobName} (${resolvedGpuCount} GPUs)`,
+            input: { jobName, command, image: resolvedImage, gpuCount: resolvedGpuCount },
+            output: { exitCode: result.exitCode, success: result.exitCode === 0 },
+          }).catch(() => {});
+
           return {
             success: result.exitCode === 0,
             jobName,
@@ -713,6 +773,154 @@ export function createAgentTools(
           matches: result.stdout.slice(0, 20000) || result.stderr,
           exitCode: result.exitCode,
         };
+      },
+    }),
+
+    collectJobResults: tool({
+      description:
+        "Collect and summarize the results (logs, status, exit code) of a completed K8s job. " +
+        "Useful for automated result collection after job submission. " +
+        "Returns the job status and the last N lines of logs from the job's pods.",
+      inputSchema: z.object({
+        jobName: z
+          .string()
+          .describe("Name of the K8s job to collect results from"),
+        namespace: z
+          .string()
+          .optional()
+          .describe("Kubernetes namespace. Default: 'default'."),
+        tailLines: z
+          .number()
+          .optional()
+          .describe("Number of log lines to fetch (default: 200, max: 2000)"),
+      }),
+      execute: async ({ jobName, namespace, tailLines }) => {
+        const resolvedNamespace = namespace || "default";
+        const resolvedTailLines = Math.max(1, Math.min(tailLines ?? 200, 2000));
+
+        // Validate jobName
+        if (!isValidDnsLabel(jobName)) {
+          return {
+            success: false,
+            error: "Invalid jobName: must be a valid DNS label.",
+          };
+        }
+
+        // Validate namespace
+        if (!isValidDnsLabel(resolvedNamespace)) {
+          return {
+            success: false,
+            error: "Invalid namespace: must be a valid DNS label.",
+          };
+        }
+
+        // 1. Get job status
+        const statusResult = await new Promise<{
+          stdout: string;
+          stderr: string;
+          exitCode: number;
+        }>((resolve) => {
+          execFile(
+            "kubectl",
+            [
+              "get", "job", jobName,
+              "-n", resolvedNamespace,
+              "-o", "json",
+              "--kubeconfig", kubeconfigPath,
+            ],
+            {
+              cwd: validatedCwd,
+              timeout: 15_000,
+              maxBuffer: 1024 * 1024,
+              env: { ...baseExecEnv, KUBECONFIG: kubeconfigPath },
+            },
+            (error: Error | null, stdout: string, stderr: string) => {
+              resolve({
+                stdout: (stdout || "").slice(0, 20000),
+                stderr: (stderr || "").slice(0, 5000),
+                exitCode: error ? 1 : 0,
+              });
+            }
+          );
+        });
+
+        // 2. Get pod logs for the job
+        const logsResult = await new Promise<{
+          stdout: string;
+          stderr: string;
+          exitCode: number;
+        }>((resolve) => {
+          execFile(
+            "kubectl",
+            [
+              "logs",
+              `job/${jobName}`,
+              "-n", resolvedNamespace,
+              `--tail=${resolvedTailLines}`,
+              "--kubeconfig", kubeconfigPath,
+            ],
+            {
+              cwd: validatedCwd,
+              timeout: 30_000,
+              maxBuffer: 2 * 1024 * 1024,
+              env: { ...baseExecEnv, KUBECONFIG: kubeconfigPath },
+            },
+            (error: Error | null, stdout: string, stderr: string) => {
+              resolve({
+                stdout: (stdout || "").slice(0, 30000),
+                stderr: (stderr || "").slice(0, 5000),
+                exitCode: error ? 1 : 0,
+              });
+            }
+          );
+        });
+
+        // Parse job status
+        let jobStatus: Record<string, unknown> = {};
+        try {
+          const parsed = JSON.parse(statusResult.stdout);
+          const s = parsed?.status ?? {};
+          jobStatus = {
+            active: s.active ?? 0,
+            succeeded: s.succeeded ?? 0,
+            failed: s.failed ?? 0,
+            startTime: s.startTime ?? null,
+            completionTime: s.completionTime ?? null,
+            conditions: (s.conditions ?? []).map(
+              (c: Record<string, string>) => ({
+                type: c.type,
+                status: c.status,
+                reason: c.reason,
+              })
+            ),
+          };
+        } catch {
+          jobStatus = { raw: statusResult.stdout.slice(0, 2000) };
+        }
+
+        const result = {
+          success: statusResult.exitCode === 0,
+          jobName,
+          namespace: resolvedNamespace,
+          jobStatus,
+          logs: logsResult.stdout,
+          logsError: logsResult.stderr || undefined,
+        };
+
+        // Record operation
+        recordClusterOp({
+          workspaceId,
+          toolName: "collectJobResults",
+          jobName,
+          namespace: resolvedNamespace,
+          status: statusResult.exitCode === 0 ? "success" : "error",
+          exitCode: statusResult.exitCode,
+          summary: `Collect results for ${jobName}`,
+          input: { jobName, namespace: resolvedNamespace, tailLines: resolvedTailLines },
+          output: { jobStatus, logsLength: logsResult.stdout.length },
+        }).catch(() => {});
+
+        return result;
       },
     }),
 
@@ -818,6 +1026,54 @@ export function createAgentTools(
           articles: result.articles.map(formatArticle),
           totalCount: result.totalCount,
           errors: result.errors,
+        };
+      },
+    }),
+
+    getSkillInstructions: tool({
+      description:
+        "Load detailed workflow instructions for a scientific skill (SCP Skill) by its slug. " +
+        "Returns the skill's full system prompt with step-by-step workflow, tool descriptions, " +
+        "and Python code examples. Use this when the user's request matches a skill from the catalog.",
+      inputSchema: z.object({
+        slug: z
+          .string()
+          .describe(
+            "The skill slug (e.g. 'disease-reversal-prediction', 'drug_target_identification')"
+          ),
+      }),
+      execute: async ({ slug }) => {
+        // Look up skill by slug from the database
+        const rows = await db
+          .select()
+          .from(skillsTable)
+          .where(
+            and(
+              eq(skillsTable.slug, slug),
+              eq(skillsTable.isEnabled, true),
+              workspaceId
+                ? or(
+                    isNull(skillsTable.workspaceId),
+                    eq(skillsTable.workspaceId, workspaceId)
+                  )
+                : isNull(skillsTable.workspaceId)
+            )
+          )
+          .limit(1);
+
+        if (rows.length === 0) {
+          return {
+            error: `Skill '${slug}' not found or disabled. Check the slug and try again.`,
+          };
+        }
+
+        const skill = parseSkillRow(rows[0]);
+        return {
+          name: skill.name,
+          slug: skill.slug,
+          description: skill.description,
+          instructions: skill.systemPrompt,
+          steps: skill.steps,
         };
       },
     }),
