@@ -251,7 +251,11 @@
     "clearAll": "直接清除",
     "roleUser": "用户",
     "roleAssistant": "助手",
-    "autoContinue": "继续"
+    "autoContinue": "继续",
+    "newSession": "新会话",
+    "closeSession": "关闭会话",
+    "closeConfirm": "再次点击关闭",
+    "renameSession": "重命名"
   },
   "report": {
     "tabReport": "研究报告",
@@ -285,6 +289,8 @@
     "dateAll": "不限日期",
     "sourceArxiv": "arXiv",
     "sourceHuggingFace": "HuggingFace",
+    "sourceSemanticScholar": "Semantic Scholar",
+    "semanticPlaceholder": "试试自然语言提问，例如「Transformer 如何处理长序列」...",
     "results": "找到 {count} 篇论文",
     "noResults": "未找到论文。请尝试不同的关键词或日期范围。",
     "emptyState": "搜索 arXiv 和 Hugging Face Daily Papers 上的学术论文。选择论文后点击总结按钮生成 AI 摘要。",
@@ -321,7 +327,11 @@
     "discussionRoleAI": "AI",
     "or": "或",
     "selectAll": "全选",
-    "deselectAll": "取消全选"
+    "deselectAll": "取消全选",
+    "selectArticleToPreview": "选择文章以预览",
+    "aiSearch": "AI 搜索",
+    "aiSearching": "分析中...",
+    "aiSearchHint": "使用 AI 将你的问题扩展为优化的搜索词"
   },
   "skills": {
     "title": "技能",
