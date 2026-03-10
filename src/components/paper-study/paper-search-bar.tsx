@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent } from "react";
 import { useTranslations } from "next-intl";
-import { Search, X, Loader2, FileText, Sparkles } from "lucide-react";
+import { Search, X, Loader2, FileText, Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +77,13 @@ export function PaperSearchBar({
       removeKeyword(preset);
     } else {
       addKeyword(preset);
+    }
+  };
+
+  const handleAddKeyword = () => {
+    if (keywordInput.trim()) {
+      addKeyword(keywordInput);
+      setKeywordInput("");
     }
   };
 
@@ -184,7 +191,7 @@ export function PaperSearchBar({
         </Button>
       </div>
 
-      {/* Keyword input + active keywords */}
+      {/* Keyword input + Add button + active keywords */}
       <div className="flex flex-wrap items-center gap-1.5">
         <Input
           type="text"
@@ -194,6 +201,16 @@ export function PaperSearchBar({
           placeholder={sources.includes("semantic-scholar") ? t("semanticPlaceholder") : t("keywordPlaceholder")}
           className="h-7 w-[200px] text-xs"
         />
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={handleAddKeyword}
+          disabled={!keywordInput.trim()}
+          className="gap-1 text-xs h-7"
+        >
+          <Plus className="h-3 w-3" />
+          {t("addKeyword")}
+        </Button>
         {keywords.map((kw) => (
           <Badge
             key={kw}
