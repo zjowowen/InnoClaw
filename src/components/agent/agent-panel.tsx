@@ -501,12 +501,16 @@ interface AgentPanelProps {
   workspaceId: string;
   workspaceName: string;
   folderPath: string;
+  sessionId: string;
+  sessionName?: string;
 }
 
 export function AgentPanel({
   workspaceId,
   workspaceName,
   folderPath,
+  sessionId,
+  sessionName,
 }: AgentPanelProps) {
   const t = useTranslations("agent");
   const tCommon = useTranslations("common");
@@ -680,7 +684,7 @@ export function AgentPanel({
   const { messages, sendMessage, setMessages, stop, status, error: chatError } = useChat({ transport });
 
   // --- Message persistence via localStorage ---
-  const storageKey = `agent-messages:${workspaceId}:${mode}`;
+  const storageKey = `agent-messages:${workspaceId}:${sessionId}:${mode}`;
   // Counter-based gate: incremented on restore, decremented in the save effect
   // that sees the restored messages. Avoids save-during-restore race.
   const restoreGenRef = useRef(0);
@@ -808,6 +812,7 @@ export function AgentPanel({
           messages: messagesToSummarize,
           trigger,
           locale,
+          sessionName,
         }),
       });
 
@@ -1028,6 +1033,7 @@ export function AgentPanel({
           trigger: "clear",
           preview: true,
           locale,
+          sessionName,
         }),
       });
       if (!res.ok) {

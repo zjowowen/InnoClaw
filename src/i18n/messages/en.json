@@ -248,7 +248,11 @@
     "clearAll": "Clear All",
     "roleUser": "User",
     "roleAssistant": "Assistant",
-    "autoContinue": "Continue"
+    "autoContinue": "Continue",
+    "newSession": "New Session",
+    "closeSession": "Close Session",
+    "closeConfirm": "Click again to close",
+    "renameSession": "Rename"
   },
   "report": {
     "tabReport": "Research report",
@@ -282,6 +286,8 @@
     "dateAll": "All dates",
     "sourceArxiv": "arXiv",
     "sourceHuggingFace": "HuggingFace",
+    "sourceSemanticScholar": "Semantic Scholar",
+    "semanticPlaceholder": "Try a natural language question...",
     "results": "{count} papers found",
     "noResults": "No papers found. Try different keywords or date range.",
     "emptyState": "Search for academic papers from arXiv and Hugging Face Daily Papers. Select papers and click Summarize to generate AI summaries.",
@@ -318,7 +324,11 @@
     "discussionRoleAI": "AI",
     "or": "or",
     "selectAll": "Select All",
-    "deselectAll": "Deselect All"
+    "deselectAll": "Deselect All",
+    "selectArticleToPreview": "Select an article to preview",
+    "aiSearch": "AI Search",
+    "aiSearching": "Analyzing...",
+    "aiSearchHint": "Use AI to expand your query into optimized search terms"
   },
   "notes": {
     "title": "Notes",
