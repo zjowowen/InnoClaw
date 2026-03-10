@@ -66,6 +66,7 @@
     "moved": "Moved successfully",
     "pathCopied": "Path copied to clipboard",
     "deleteConfirm": "Are you sure you want to delete \"{name}\"?",
+    "deleteConfirmDir": "Are you sure you want to delete the folder \"{name}\" and all its contents?",
     "fileName": "File name",
     "folderName": "Folder name",
     "emptyFolder": "This folder is empty",

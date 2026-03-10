@@ -66,6 +66,7 @@
     "moved": "移动成功",
     "pathCopied": "路径已复制到剪贴板",
     "deleteConfirm": "确定要删除「{name}」吗？",
+    "deleteConfirmDir": "确定要删除文件夹「{name}」及其所有内容吗？",
     "fileName": "文件名",
     "folderName": "文件夹名",
     "emptyFolder": "此文件夹为空",

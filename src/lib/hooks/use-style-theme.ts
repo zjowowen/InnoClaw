@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 export type StyleThemeId = "default" | "cartoon" | "cyberpunk-pixel" | "retro-handheld";
 
@@ -17,14 +17,18 @@ function applyStyleTheme(theme: StyleThemeId) {
 
 export function useStyleTheme() {
   const [styleTheme, setStyleThemeState] = useState<StyleThemeId>("default");
+  const [didInit, setDidInit] = useState(false);
 
-  // Read initial value from DOM (set by inline script) on mount
-  useEffect(() => {
+  // Read initial value from DOM (set by inline script) on first client render.
+  // Uses "adjust state during render" pattern instead of useEffect to avoid
+  // cascading renders (react-hooks/set-state-in-effect).
+  if (!didInit && typeof document !== "undefined") {
+    setDidInit(true);
     const current = document.documentElement.dataset.style;
     if (current && VALID_THEMES.has(current)) {
       setStyleThemeState(current as StyleThemeId);
     }
-  }, []);
+  }
 
   const setStyleTheme = useCallback((theme: StyleThemeId) => {
     setStyleThemeState(theme);

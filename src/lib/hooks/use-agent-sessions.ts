@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { nanoid } from "nanoid";
 
 export interface AgentSession {
@@ -108,11 +108,13 @@ function migrateIfNeeded(workspaceId: string): AgentSession[] | null {
 export function useAgentSessions(workspaceId: string) {
   const [sessions, setSessionsState] = useState<AgentSession[]>([]);
   const [activeSessionId, setActiveSessionIdState] = useState<string>("");
-  const initialized = useRef(false);
+  const [prevWorkspaceId, setPrevWorkspaceId] = useState("");
 
-  // Initialize on mount / workspaceId change
-  useEffect(() => {
-    initialized.current = false;
+  // Initialize / re-initialize when workspaceId changes.
+  // Uses "adjust state during render" pattern instead of useEffect to avoid
+  // cascading renders (react-hooks/set-state-in-effect).
+  if (typeof window !== "undefined" && prevWorkspaceId !== workspaceId) {
+    setPrevWorkspaceId(workspaceId);
 
     // Try migration first
     const migrated = migrateIfNeeded(workspaceId);
@@ -139,8 +141,7 @@ export function useAgentSessions(workspaceId: string) {
 
     setSessionsState(loadedSessions);
     setActiveSessionIdState(active);
-    initialized.current = true;
-  }, [workspaceId]);
+  }
 
   const setActiveSessionId = useCallback(
     (id: string) => {
