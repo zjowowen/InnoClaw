@@ -19,7 +19,6 @@ function ensureExtraPaths(basePath: string): string {
   const home = resolveHome();
   const extras = [
     path.join(home, ".local", "bin"),
-    path.join(process.cwd(), "config"),
   ];
   const existing = new Set(basePath.split(":"));
   const missing = extras.filter((p) => !existing.has(p));
