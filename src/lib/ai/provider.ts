@@ -4,18 +4,15 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { db } from "@/lib/db";
 import { appSettings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { DEFAULT_PROVIDER, DEFAULT_MODEL } from "./models";
+import { DEFAULT_PROVIDER, DEFAULT_MODEL, PROVIDERS } from "./models";
 import type { LanguageModel } from "ai";
 
 /**
  * Check if any AI API key is configured.
+ * Derived from PROVIDERS so new providers are automatically included.
  */
 export function isAIAvailable(): boolean {
-  return (
-    !!process.env.OPENAI_API_KEY ||
-    !!process.env.ANTHROPIC_API_KEY ||
-    !!process.env.GEMINI_API_KEY
-  );
+  return Object.values(PROVIDERS).some((p) => !!process.env[p.envKey]);
 }
 
 /**
@@ -50,6 +47,10 @@ const gemini = createOpenAI({
   baseURL: process.env.GEMINI_BASE_URL,
 });
 
+// Cache SH-Lab providers by modelId to avoid re-creating them on every request.
+// Each SH-Lab model uses a distinct base URL, so we key the cache by modelId.
+const shlabProviderCache = new Map<string, ReturnType<typeof createOpenAI>>();
+
 /**
  * Get the currently configured LLM model based on settings
  */
@@ -79,6 +80,38 @@ export async function getConfiguredModel(): Promise<LanguageModel> {
       return gemini.chat(modelId);
     case "anthropic":
       return anthropic(modelId);
+    case "shlab": {
+      // Each SH-Lab model is served from its own endpoint configured via an
+      // environment variable derived from the model ID; use a cached per-model provider.
+      // e.g. intern-s1-pro → SHLAB_INTERN_S1_PRO_BASE_URL
+      const shlabModel = PROVIDERS.shlab.models.find((m) => m.id === modelId);
+      if (!shlabModel) {
+        throw new Error(
+          `Configured SH-Lab model "${modelId}" is unknown. ` +
+            `Please update your llm_model setting or PROVIDERS.shlab.models configuration.`
+        );
+      }
+      const envVarName =
+        "SHLAB_" +
+        modelId.toUpperCase().replace(/[^A-Z0-9]/g, "_") +
+        "_BASE_URL";
+      const baseURL = process.env[envVarName];
+      if (!baseURL) {
+        throw new Error(
+          `No base URL configured for SH-Lab model "${modelId}". ` +
+            `Set the ${envVarName} environment variable.`
+        );
+      }
+      let shlabProvider = shlabProviderCache.get(modelId);
+      if (!shlabProvider) {
+        shlabProvider = createOpenAI({
+          apiKey: process.env.SHLAB_API_KEY || "",
+          baseURL,
+        });
+        shlabProviderCache.set(modelId, shlabProvider);
+      }
+      return shlabProvider.chat(modelId);
+    }
     default:
       // Use the configured modelId even for unknown providers – the user may be
       // pointing OPENAI_BASE_URL at a third-party OpenAI-compatible service.

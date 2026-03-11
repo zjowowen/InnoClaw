@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
 import { getConfiguredModel, isAIAvailable } from "@/lib/ai/provider";
-import { buildPaperChatPrompt } from "@/lib/ai/prompts";
+import { buildPaperChatPrompt, buildPaperChatWithNotesPrompt } from "@/lib/ai/prompts";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages: uiMessages, article } = await req.json();
+    const { messages: uiMessages, article, relatedNotes } = await req.json();
 
     if (!article || !article.title) {
       return new Response("Missing article data", { status: 400 });
@@ -19,13 +19,19 @@ export async function POST(req: NextRequest) {
     }
 
     const model = await getConfiguredModel();
-    const systemPrompt = buildPaperChatPrompt({
+    const articleData = {
       title: article.title,
       authors: Array.isArray(article.authors) ? article.authors : [],
       publishedDate: article.publishedDate || "",
       source: article.source || "",
       abstract: article.abstract || "",
-    });
+    };
+
+    // Use enhanced prompt if related notes are available
+    const systemPrompt =
+      relatedNotes && Array.isArray(relatedNotes) && relatedNotes.length > 0
+        ? buildPaperChatWithNotesPrompt(articleData, relatedNotes)
+        : buildPaperChatPrompt(articleData);
 
     const modelMessages = await convertToModelMessages(
       uiMessages as UIMessage[]

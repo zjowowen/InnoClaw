@@ -54,18 +54,10 @@ export default function WorkspacePage({
   const t = useTranslations("report");
   const tc = useTranslations("cluster");
   const tCommon = useTranslations("common");
-  const [loadingSessionIds, setLoadingSessionIds] = useState<Set<string>>(new Set());
+  const [loadingSessions, setLoadingSessions] = useState<Record<string, boolean>>({});
 
-  const handleSessionLoadingChange = useCallback((sessionId: string, isLoading: boolean) => {
-    setLoadingSessionIds((prev) => {
-      const next = new Set(prev);
-      if (isLoading) {
-        next.add(sessionId);
-      } else {
-        next.delete(sessionId);
-      }
-      return next;
-    });
+  const handleSessionLoadingChange = useCallback((sessionId: string, loading: boolean) => {
+    setLoadingSessions((prev) => ({ ...prev, [sessionId]: loading }));
   }, []);
 
   if (isLoading) {
@@ -205,7 +197,7 @@ export default function WorkspacePage({
                       <AgentSessionTabs
                         sessions={sessions}
                         activeSessionId={activeSessionId}
-                        loadingSessionIds={loadingSessionIds}
+                        loadingSessions={loadingSessions}
                         onSelect={setActiveSessionId}
                         onClose={closeSession}
                         onCreate={createSession}
@@ -223,7 +215,7 @@ export default function WorkspacePage({
                               folderPath={workspace.folderPath}
                               sessionId={session.id}
                               sessionName={session.name}
-                              onLoadingChange={(isLoading) => handleSessionLoadingChange(session.id, isLoading)}
+                              onLoadingChange={(loading) => handleSessionLoadingChange(session.id, loading)}
                             />
                           </div>
                         ))}

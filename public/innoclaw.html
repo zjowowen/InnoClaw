@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnoClaw: Self-Hosted AI Research Assistant with 206 Scientific Skills</title>
+    <meta name="description" content="A self-hostable AI research assistant. Turn server folders into workspaces, chat via RAG, and leverage 206 built-in scientific skills across 8 domains.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .serif {
+            font-family: 'Noto Serif', serif;
+        }
+
+        /* Tech Animations */
+        @keyframes shimmer {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+        .tech-shimmer {
+            background: linear-gradient(90deg, #6d28d9 0%, #8b5cf6 25%, #a78bfa 50%, #8b5cf6 75%, #6d28d9 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 4s linear infinite;
+        }
+
+        /* Animated Background Blobs */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        .tech-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tech-card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.1), 0 8px 10px -6px rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+
+        .mono-tag {
+            font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+            letter-spacing: -0.025em;
+        }
+
+        /* Domain card accent top border */
+        .domain-accent {
+            position: relative;
+            overflow: hidden;
+        }
+        .domain-accent::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .domain-accent:hover::before { opacity: 1; }
+
+        /* Sequential card pulse */
+        @keyframes borderPulse {
+            0%, 100% { border-color: #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); transform: scale(1); }
+            50% { border-color: #8b5cf6; box-shadow: 0 10px 15px -3px rgba(139,92,246,0.15); transform: scale(1.01); }
+        }
+        .sat-step-1 { animation: borderPulse 5s infinite; animation-delay: 0s; }
+        .sat-step-2 { animation: borderPulse 5s infinite; animation-delay: 0.6s; }
+        .sat-step-3 { animation: borderPulse 5s infinite; animation-delay: 1.2s; }
+        .sat-step-4 { animation: borderPulse 5s infinite; animation-delay: 1.8s; }
+        .sat-step-5 { animation: borderPulse 5s infinite; animation-delay: 2.4s; }
+        .sat-step-6 { animation: borderPulse 5s infinite; animation-delay: 3.0s; }
+        .sat-step-7 { animation: borderPulse 5s infinite; animation-delay: 3.6s; }
+        .sat-step-8 { animation: borderPulse 5s infinite; animation-delay: 4.2s; }
+
+        /* Code block */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .code-block .cmd { color: #c084fc; }
+        .code-block .str { color: #a78bfa; }
+        .code-block .comment { color: #64748b; }
+        .code-block .flag { color: #38bdf8; }
+
+        /* Scroll reveal */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased bg-slate-50 relative overflow-x-hidden">
+    <!-- Dynamic Background Blobs -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 -right-4 w-72 h-72 bg-violet-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-fuchsia-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
+
+    <!-- ======= Hero Section ======= -->
+    <section class="relative z-10 pt-12 pb-12 border-b border-gray-200/60 bg-white/30 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-4">
+
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div class="flex flex-col items-center md:items-start gap-2 flex-1">
+                    <!-- Logo + Title -->
+                    <div class="flex items-center gap-3">
+                        <div class="h-14 w-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center text-3xl flex-shrink-0">
+                            <span>🔬</span>
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight whitespace-nowrap leading-none">
+                            <span class="tech-shimmer">InnoClaw</span>
+                        </h1>
+                    </div>
+                    <!-- Typewriter subtitle -->
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center justify-center md:justify-start pl-1">
+                        <span id="hero-icon" class="mr-2">🦞</span>
+                        <span id="hero-prefix" class="mr-1">Claw for</span>
+                        <span id="hero-typewriter" class="text-violet-600 border-r-2 border-violet-600 pr-1 font-mono"></span>
+                    </p>
+                </div>
+
+                <!-- Right: Tagline + Language Toggle -->
+                <div class="flex flex-col items-center md:items-end pb-2 gap-3">
+                    <!-- Language Toggle -->
+                    <button id="lang-toggle" onclick="toggleLanguage()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm text-xs font-semibold text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-colors shadow-sm">
+                        <i class="fas fa-globe"></i>
+                        <span id="lang-label">中文</span>
+                    </button>
+                    <p class="text-sm text-gray-500 font-medium text-center md:text-right max-w-xs">
+                        <span data-i18n="tagline">Self-Hosted AI Research Assistant</span><br>
+                        <span class="text-violet-600 font-semibold" data-i18n="tagline2">Inspired by OpenClaw</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Gradient Banner Placeholder -->
+            <div class="w-full mb-8 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 shadow-2xl rounded-xl overflow-hidden border border-purple-800 p-12 md:p-16 text-center text-white relative">
+                <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 40px 40px;"></div>
+                <div class="relative">
+                    <div class="text-5xl md:text-6xl mb-4">🗂️ 🤖 🧬 📚</div>
+                    <h2 class="text-2xl md:text-3xl font-extrabold mb-3" data-i18n="hero_title">Turn Server Folders into AI Workspaces</h2>
+                    <p class="text-lg text-white/80 max-w-2xl mx-auto" data-i18n="hero_desc">
+                        Chat with AI grounded in your documents via RAG, leverage 206 scientific skills, and orchestrate autonomous agents — all from a single self-hosted platform.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons (Dock Style) -->
+            <div class="flex justify-center">
+                <div class="glass-panel rounded-full p-2.5 flex gap-4 transform hover:scale-105 transition duration-300 flex-wrap justify-center">
+                    <a href="https://github.com/zjowowen/InnoClaw" target="_blank" class="bg-gray-900 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-gray-700 transition flex items-center text-sm shadow-md">
+                        <i class="fab fa-github mr-2"></i> GitHub
+                    </a>
+                    <a href="en/" target="_blank" class="bg-white/80 text-gray-800 px-6 py-2.5 rounded-full font-semibold hover:bg-white hover:text-violet-600 transition flex items-center text-sm shadow-sm border border-gray-100">
+                        <i class="fas fa-book mr-2"></i> <span data-i18n="btn_docs">Documentation</span>
+                    </a>
+                    <a href="#quickstart" class="bg-violet-50 text-violet-700 px-6 py-2.5 rounded-full font-semibold hover:bg-violet-100 transition flex items-center text-sm shadow-sm border border-violet-200">
+                        <i class="fas fa-terminal mr-2"></i> <span data-i18n="btn_quickstart">Quick Start</span>
+                    </a>
+                    <a href="https://github.com/InternScience/scp" target="_blank" class="bg-violet-50 text-violet-700 px-6 py-2.5 rounded-full font-semibold hover:bg-violet-100 transition flex items-center text-sm shadow-sm border border-violet-200">
+                        <i class="fas fa-flask mr-2"></i> <span data-i18n="btn_scp">SCP Skills</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- At a Glance Stats Strip -->
+        <div class="max-w-5xl mx-auto px-4 mt-16">
+            <div class="flex items-center justify-center gap-4 mb-6">
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+                <h3 class="text-center text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mono-tag" data-i18n="at_a_glance">At a Glance</h3>
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+            </div>
+            <div class="grid grid-cols-5 gap-[1px] bg-gray-200 rounded-2xl overflow-hidden shadow-sm border border-gray-200/50">
+                <div class="bg-white p-6 text-center">
+                    <div class="text-3xl font-extrabold text-violet-600">206</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold" data-i18n="stat_skills">Skills</div>
+                </div>
+                <div class="bg-white p-6 text-center">
+                    <div class="text-3xl font-extrabold text-violet-600">8</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold" data-i18n="stat_domains">Domains</div>
+                </div>
+                <div class="bg-white p-6 text-center">
+                    <div class="text-3xl font-extrabold text-violet-600">3</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold" data-i18n="stat_llm">LLM Providers</div>
+                </div>
+                <div class="bg-white p-6 text-center">
+                    <div class="text-3xl font-extrabold text-violet-600">36</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold" data-i18n="stat_tools">Agent Tools</div>
+                </div>
+                <div class="bg-white p-6 text-center">
+                    <div class="text-3xl font-extrabold text-violet-600">2</div>
+                    <div class="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold" data-i18n="stat_langs">Languages</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Core Features ======= -->
+    <section class="py-20 relative z-10">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-2" data-i18n="core_title">Core Features</h2>
+            <p class="text-center text-gray-500 max-w-3xl mx-auto mb-12 text-sm leading-relaxed" data-i18n="core_desc">
+                A comprehensive AI research platform combining workspace management, RAG-enhanced chat, autonomous agents, and 206 scientific skills in a single self-hosted application.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1: Workspace -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100 mb-4">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat1_title">Workspace + File Management</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat1_desc">Map server-side folders as persistent workspaces. Browse, upload, edit, and preview files with tree-view navigation, Markdown rendering, and PDF support.</p>
+                </div>
+
+                <!-- Feature 2: RAG Chat -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center border border-violet-100 mb-4">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat2_title">RAG-Enhanced Chat</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat2_desc">AI answers grounded in your workspace documents with inline source citations. Powered by vector embeddings stored in SQLite for instant retrieval.</p>
+                </div>
+
+                <!-- Feature 3: Notes -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center border border-amber-100 mb-4">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat3_title">Smart Note Generation</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat3_desc">Auto-generate summaries, FAQs, briefings, newsletters, timelines, and daily/weekly reports from your workspace content with one click.</p>
+                </div>
+
+                <!-- Feature 4: Agent -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-red-50 text-red-500 rounded-lg flex items-center justify-center border border-red-100 mb-4">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat4_title">AI Agent System</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat4_desc">Autonomous agents with 36 tool-calling capabilities including bash execution, file operations, kubectl commands, article search, and scientific skill invocation.</p>
+                </div>
+
+                <!-- Feature 5: Paper Study -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 mb-4">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat5_title">Paper Study</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat5_desc">Cross-source academic search spanning arXiv, HuggingFace Daily Papers, and Semantic Scholar. AI-powered query expansion and batch summarization.</p>
+                </div>
+
+                <!-- Feature 6: Multi-Session -->
+                <div class="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 tech-card-hover scroll-reveal">
+                    <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center border border-indigo-100 mb-4">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2" data-i18n="feat6_title">Multi-Agent Sessions</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed" data-i18n="feat6_desc">Tab-based multi-session management with independent contexts, rename support, and MAX mode for automatic context summarization to prevent overflow.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= SCP Scientific Skills ======= -->
+    <section class="py-20 relative z-10 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-2">
+                <span data-i18n="scp_title">206 Scientific Skills Across 8 Domains</span>
+                <span class="ml-2 text-sm font-semibold text-violet-500 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full align-middle mono-tag">SCP</span>
+            </h2>
+            <p class="text-center text-gray-500 max-w-3xl mx-auto mb-10 text-sm leading-relaxed" data-i18n="scp_desc">
+                Powered by <a href="https://github.com/InternScience/scp" target="_blank" class="text-violet-600 hover:underline font-semibold">Science Context Protocol (SCP)</a>, each skill is composable into autonomous research workflows — from drug target identification to protein structure prediction.
+            </p>
+
+            <div class="flex flex-col lg:flex-row gap-8 items-start">
+                <!-- Left: Domain Cards (2-column grid) -->
+                <div class="flex-1 grid grid-cols-2 gap-4">
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-1" style="--accent: #059669;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100">💊</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">71</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain1_title">Drug Discovery & Pharmacology</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain1_desc">Target identification, ADMET prediction, virtual screening, molecular docking, pharmacovigilance.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-2" style="--accent: #7c3aed;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center border border-violet-100">🧬</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">41</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain2_title">Genomics & Genetic Analysis</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain2_desc">Variant pathogenicity assessment, cancer genomics, population genetics, gene-disease associations.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-3" style="--accent: #2563eb;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100">🔬</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">38</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain3_title">Protein Science & Engineering</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain3_desc">ESMFold/AlphaFold structure prediction, binding site analysis, protein-drug interaction profiling.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-4" style="--accent: #d97706;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center border border-amber-100">🧪</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">24</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain4_title">Chemistry & Molecular Science</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain4_desc">Structure analysis, molecular fingerprints, structure-activity relationships, SMILES processing.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-5" style="--accent: #dc2626;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-red-50 text-red-500 rounded-lg flex items-center justify-center border border-red-100">⚙️</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">18</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain5_title">Physics & Engineering</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain5_desc">Circuit analysis, thermodynamics, optics, electromagnetic field analysis, signal processing.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-6" style="--accent: #0d9488;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center border border-teal-100">🔬</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">7</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain6_title">Experimental Automation</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain6_desc">Protocol generation, PubMed literature search, experimental data processing.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-7" style="--accent: #0284c7;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-sky-50 text-sky-600 rounded-lg flex items-center justify-center border border-sky-100">🌍</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">5</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain7_title">Earth & Environmental Science</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain7_desc">Atmospheric science calculations, oceanographic properties, seismic waveform processing.</p>
+                    </div>
+
+                    <div class="bg-white/50 backdrop-blur-sm p-5 rounded-xl border border-gray-100 tech-card-hover domain-accent sat-step-8" style="--accent: #4f46e5;">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center border border-indigo-100">📚</div>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-0.5 rounded font-bold">2</span>
+                        </div>
+                        <h3 class="font-bold text-sm mb-1" data-i18n="domain8_title">Literature & Mining</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed" data-i18n="domain8_desc">Scientific literature mining, biomedical web search, meta-analysis execution.</p>
+                    </div>
+                </div>
+
+                <!-- Right: SCP Info Panel -->
+                <div class="lg:w-72 flex-shrink-0 flex flex-col items-center gap-4 lg:sticky lg:top-8">
+                    <div class="w-full bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-6 border border-violet-200 shadow-sm">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center border border-violet-200">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <h4 class="font-bold text-sm text-gray-800" data-i18n="scp_panel_title">Science Context Protocol</h4>
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-4" data-i18n="scp_panel_desc">
+                            SCP provides a standardized skill format for autonomous scientific research. Each skill includes overview, capabilities, usage examples, and API endpoint connections via the <a href="https://scphub.intern-ai.org.cn/" target="_blank" class="text-violet-600 hover:underline font-semibold">Intern-Discovery Platform</a>.
+                        </p>
+                        <div class="text-xs text-gray-500 mono-tag mb-3">
+                            Overview → When to Use → Capabilities → Examples
+                        </div>
+                        <a href="https://github.com/InternScience/scp" target="_blank" class="inline-flex items-center gap-1 text-xs text-violet-600 font-semibold hover:underline">
+                            <i class="fab fa-github"></i> InternScience/scp <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-violet-400 animate-pulse flex-shrink-0"></span>
+                        <p class="text-xs text-gray-400 font-semibold mono-tag tracking-wide" data-i18n="scp_stats">206 SKILLS ACROSS 8 DOMAINS</p>
+                    </div>
+
+                    <!-- Multi-LLM Support Card -->
+                    <div class="w-full bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 shadow-sm mt-2">
+                        <h4 class="font-bold text-sm text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-brain text-violet-500"></i> <span data-i18n="multi_llm">Multi-LLM Support</span>
+                        </h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                                <span class="text-gray-700 font-medium">OpenAI</span>
+                                <span class="text-gray-400 mono-tag">GPT-4o, GPT-4.1, o3, o4</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                                <span class="text-gray-700 font-medium">Anthropic</span>
+                                <span class="text-gray-400 mono-tag">Opus, Sonnet, Haiku</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                                <span class="text-gray-700 font-medium">Google</span>
+                                <span class="text-gray-400 mono-tag">Gemini 2.5 Pro/Flash</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Representative Workflows ======= -->
+    <section class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4" data-i18n="workflow_title">Representative Workflows</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12" data-i18n="workflow_desc">
+                Each workflow chains multiple skills and tools into end-to-end research automation.
+            </p>
+
+            <div class="space-y-4">
+                <!-- Workflow 1 -->
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100 shadow-sm tech-card-hover scroll-reveal">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-sm border border-emerald-100">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800" data-i18n="wf1">Document-Grounded Research</h3>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">RAG</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">workspace</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">source-citations</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow 2 -->
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100 shadow-sm tech-card-hover scroll-reveal">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center text-sm border border-violet-100">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800" data-i18n="wf2">Scientific Computing Pipeline</h3>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">agent</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">bash</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">kubectl</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">volcano-gpu</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow 3 -->
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100 shadow-sm tech-card-hover scroll-reveal">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-sm border border-blue-100">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800" data-i18n="wf3">Literature Discovery & Summarization</h3>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">arxiv</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">semantic-scholar</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">huggingface</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">batch-summary</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow 4 -->
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100 shadow-sm tech-card-hover scroll-reveal">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center text-sm border border-red-100">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800" data-i18n="wf4">Drug Target Analysis</h3>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">scp-drug-discovery</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">ADMET</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">molecular-docking</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow 5 -->
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100 shadow-sm tech-card-hover scroll-reveal">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-sm border border-amber-100">
+                                <i class="fas fa-dna"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800" data-i18n="wf5">Protein Structure Prediction</h3>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">scp-protein</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">ESMFold</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">AlphaFold</span>
+                            <span class="mono-tag text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md border border-violet-100">binding-sites</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Quick Start ======= -->
+    <section id="quickstart" class="py-16 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12" data-i18n="qs_title">Get Started in Minutes</h2>
+
+            <div class="flex flex-col md:flex-row gap-12 items-center">
+                <!-- Left: Terminal Code -->
+                <div class="flex flex-col justify-center flex-1">
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed" data-i18n="qs_desc">
+                        Clone the repo, install dependencies, configure your API keys, and start the development server. <span class="font-semibold text-gray-800">InnoClaw</span> runs on any machine with Node.js 20+.
+                    </p>
+                    <div class="code-block shadow-lg transform hover:scale-[1.02] transition-transform duration-300 w-full">
+                        <div class="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                            <span class="ml-auto text-xs text-gray-500 mono-tag">terminal</span>
+                        </div>
+                        <div class="p-6 text-sm leading-relaxed overflow-x-auto font-mono">
+                            <span class="comment"># Clone the repository</span><br>
+                            <span class="cmd">git clone</span> <span class="str">https://github.com/zjowowen/InnoClaw.git</span><br>
+                            <span class="cmd">cd</span> InnoClaw<br>
+                            <br>
+                            <span class="comment"># Install dependencies</span><br>
+                            <span class="cmd">npm install</span><br>
+                            <br>
+                            <span class="comment"># Configure environment</span><br>
+                            <span class="cmd">cp</span> .env.example .env.local<br>
+                            <span class="comment"># Edit .env.local with your API keys</span><br>
+                            <br>
+                            <span class="comment"># Initialize database & start</span><br>
+                            <span class="cmd">mkdir</span> <span class="flag">-p</span> ./data && <span class="cmd">npx</span> drizzle-kit migrate<br>
+                            <span class="cmd">npm run</span> dev<br>
+                            <br>
+                            <span class="comment"># Open http://localhost:3000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Feature Checklist -->
+                <div class="flex-shrink-0 md:w-72">
+                    <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-4">
+                        <h4 class="font-bold text-sm text-gray-800 mb-2 uppercase tracking-wide" data-i18n="req_title">Requirements</h4>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                            <span class="text-sm text-gray-600" data-i18n="req1">Node.js 20+ required</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                            <span class="text-sm text-gray-600" data-i18n="req2">SQLite — zero-config database</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                            <span class="text-sm text-gray-600" data-i18n="req3">Supports OpenAI / Anthropic / Gemini</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-emerald-500 mt-0.5"></i>
+                            <span class="text-sm text-gray-600" data-i18n="req4">Ready in under 3 minutes</span>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100">
+                            <h4 class="font-bold text-sm text-gray-800 mb-2 uppercase tracking-wide">Or via Claude Code</h4>
+                            <div class="bg-gray-50 rounded-lg p-3 mono-tag text-xs text-violet-600">
+                                claude → /project:setup
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Integration Ecosystem ======= -->
+    <section class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">
+                <span data-i18n="integ_pre">Integration</span> <span class="tech-shimmer" data-i18n="integ_eco">Ecosystem</span>
+            </h2>
+            <div class="w-24 h-1 bg-violet-600 mx-auto rounded-full mb-12"></div>
+
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Feishu Bot -->
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 tech-card-hover scroll-reveal flex flex-col">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 mb-4">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h3 class="font-bold text-sm mb-2" data-i18n="integ1_title">Feishu Bot</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed flex-grow" data-i18n="integ1_desc">WebSocket real-time messaging with interactive card messages. Agent tool-calling directly from Feishu conversations.</p>
+                </div>
+
+                <!-- Kubernetes -->
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 tech-card-hover scroll-reveal flex flex-col">
+                    <div class="w-10 h-10 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center border border-violet-100 mb-4">
+                        <i class="fas fa-dharmachakra"></i>
+                    </div>
+                    <h3 class="font-bold text-sm mb-2" data-i18n="integ2_title">Kubernetes</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed flex-grow" data-i18n="integ2_desc">Submit GPU computing jobs via Volcano scheduler. Manage cluster resources directly from the Agent panel.</p>
+                </div>
+
+                <!-- GitHub -->
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 tech-card-hover scroll-reveal flex flex-col">
+                    <div class="w-10 h-10 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center border border-gray-200 mb-4">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <h3 class="font-bold text-sm mb-2" data-i18n="integ3_title">GitHub</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed flex-grow" data-i18n="integ3_desc">Clone and pull repositories with private repo support via personal access tokens. Integrated Git operations.</p>
+                </div>
+
+                <!-- HuggingFace -->
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100 tech-card-hover scroll-reveal flex flex-col">
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center border border-amber-100 mb-4">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 class="font-bold text-sm mb-2" data-i18n="integ4_title">HuggingFace</h3>
+                    <p class="text-xs text-gray-500 leading-relaxed flex-grow" data-i18n="integ4_desc">Browse and download datasets directly. Access Daily Papers for latest AI research. Integrated model discovery.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Tech Stack ======= -->
+    <section class="py-12 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex items-center justify-center gap-4 mb-8">
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+                <h3 class="text-center text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mono-tag" data-i18n="built_with">Built With</h3>
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+            </div>
+            <div class="flex flex-wrap justify-center gap-3">
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">Next.js 16</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">React 19</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">TypeScript</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">Tailwind CSS 4</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">shadcn/ui</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">Vercel AI SDK 6</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">SQLite</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">Drizzle ORM</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">next-intl</span>
+                <span class="mono-tag text-xs px-4 py-2 bg-white text-gray-700 rounded-full border border-gray-200 font-semibold shadow-sm hover:border-violet-300 hover:text-violet-700 transition-colors">next-themes</span>
+            </div>
+
+            <!-- Theme Showcase -->
+            <div class="mt-10 flex items-center justify-center gap-4 mb-6">
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+                <h3 class="text-center text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mono-tag" data-i18n="themes">4 Visual Themes</h3>
+                <div class="h-[1px] w-12 bg-gray-300"></div>
+            </div>
+            <div class="flex flex-wrap justify-center gap-4">
+                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-violet-500 to-purple-500"></div>
+                    <span class="text-xs font-semibold text-gray-600">Default</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-orange-400 to-pink-400"></div>
+                    <span class="text-xs font-semibold text-gray-600">Cartoon</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"></div>
+                    <span class="text-xs font-semibold text-gray-600">Cyberpunk-Pixel</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+                    <div class="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-lime-400"></div>
+                    <span class="text-xs font-semibold text-gray-600">Retro-Handheld</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Partners / Institutions Section ======= -->
+    <section class="py-16 bg-gradient-to-b from-white to-gray-50">
+        <div class="max-w-5xl mx-auto px-6 text-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-3" data-i18n="partners_title">Research Partners</h2>
+            <p class="text-gray-500 text-sm mb-10" data-i18n="partners_subtitle">Collaborating with world-class institutions</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-10 gap-y-6 items-center justify-items-center">
+                <img src="logos/shlab_logo.png" alt="Shanghai AI Laboratory" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/CUHK_banner.svg" alt="The Chinese University of Hong Kong" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/PKU_leftright.png" alt="Peking University" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/sjtubannerred.png" alt="Shanghai Jiao Tong University" class="h-8 md:h-10 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/复旦大学横.png" alt="Fudan University" class="h-8 md:h-10 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/University_of_Oxford.svg" alt="University of Oxford" class="h-10 md:h-12 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/The_University_of_Sydney_Logo.svg" alt="The University of Sydney" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/ustc_logo.png" alt="University of Science and Technology of China" class="h-8 md:h-10 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/NJU-logo.png" alt="Nanjing University" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+                <img src="logos/TUM-logo.jpeg" alt="Technical University of Munich" class="h-9 md:h-11 object-contain opacity-85 hover:opacity-100 transition-all duration-300 hover:scale-105">
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= Footer ======= -->
+    <footer class="bg-gray-900 text-white py-8 text-center text-sm">
+        <p class="opacity-60">
+            <i class="fab fa-creative-commons"></i> InnoClaw · MIT License
+        </p>
+        <p class="opacity-40 mt-2">
+            <a href="https://github.com/zjowowen/InnoClaw" class="hover:text-violet-400 transition-colors">
+                <i class="fab fa-github mr-1"></i> github.com/zjowowen/InnoClaw
+            </a>
+            &nbsp;&middot;&nbsp;
+            <a href="en/" class="hover:text-violet-400 transition-colors">
+                <i class="fas fa-book mr-1"></i> Documentation
+            </a>
+        </p>
+        <p class="opacity-30 mt-2 text-xs" data-i18n="footer_powered">
+            Inspired by OpenClaw · Powered by Next.js, Vercel AI SDK & SCP
+        </p>
+    </footer>
+
+    <!-- Scroll Reveal + Typewriter + i18n Script -->
+    <script>
+        // ===== i18n Translations =====
+        const translations = {
+            zh: {
+                tagline: '自托管 AI 科研助手',
+                tagline2: '灵感源自 OpenClaw',
+                hero_title: '将服务器文件夹变为 AI 工作空间',
+                hero_desc: '通过 RAG 与基于文档的 AI 对话，利用 206 项科学技能，编排自主智能体 —— 一切尽在一个自托管平台。',
+                btn_docs: '文档',
+                btn_quickstart: '快速开始',
+                btn_scp: 'SCP 技能',
+                at_a_glance: '概览',
+                stat_skills: '技能',
+                stat_domains: '领域',
+                stat_llm: 'LLM 提供商',
+                stat_tools: '智能体工具',
+                stat_langs: '语言',
+                core_title: '核心功能',
+                core_desc: '一个综合性 AI 科研平台，集工作空间管理、RAG 增强对话、自主智能体和 206 项科学技能于一体的自托管应用。',
+                feat1_title: '工作空间 + 文件管理',
+                feat1_desc: '将服务器端文件夹映射为持久化工作空间。支持文件浏览、上传、编辑和预览，包含树形导航、Markdown 渲染和 PDF 支持。',
+                feat2_title: 'RAG 增强对话',
+                feat2_desc: 'AI 回答基于工作空间文档，支持行内来源引用。由存储在 SQLite 中的向量嵌入驱动，实现即时检索。',
+                feat3_title: '智能笔记生成',
+                feat3_desc: '一键从工作空间内容自动生成摘要、FAQ、简报、通讯、时间线以及日报/周报。',
+                feat4_title: 'AI 智能体系统',
+                feat4_desc: '自主智能体具备 36 种工具调用能力，包括 bash 执行、文件操作、kubectl 命令、文献搜索和科学技能调用。',
+                feat5_title: '论文研究',
+                feat5_desc: '跨源学术搜索，覆盖 arXiv、HuggingFace Daily Papers 和 Semantic Scholar。支持 AI 驱动的查询扩展和批量摘要。',
+                feat6_title: '多智能体会话',
+                feat6_desc: '基于标签页的多会话管理，独立上下文、重命名支持，以及 MAX 模式自动上下文摘要防止溢出。',
+                scp_title: '8 大领域 206 项科学技能',
+                scp_desc: '基于 <a href="https://github.com/InternScience/scp" target="_blank" class="text-violet-600 hover:underline font-semibold">Science Context Protocol (SCP)</a>，每项技能可组合为自主科研工作流 —— 从药物靶点识别到蛋白质结构预测。',
+                domain1_title: '药物发现与药理学',
+                domain1_desc: '靶点识别、ADMET 预测、虚拟筛选、分子对接、药物警戒。',
+                domain2_title: '基因组学与遗传分析',
+                domain2_desc: '变异致病性评估、癌症基因组学、群体遗传学、基因-疾病关联。',
+                domain3_title: '蛋白质科学与工程',
+                domain3_desc: 'ESMFold/AlphaFold 结构预测、结合位点分析、蛋白质-药物相互作用分析。',
+                domain4_title: '化学与分子科学',
+                domain4_desc: '结构分析、分子指纹、构效关系、SMILES 处理。',
+                domain5_title: '物理与工程',
+                domain5_desc: '电路分析、热力学、光学、电磁场分析、信号处理。',
+                domain6_title: '实验自动化',
+                domain6_desc: '实验方案生成、PubMed 文献检索、实验数据处理。',
+                domain7_title: '地球与环境科学',
+                domain7_desc: '大气科学计算、海洋学性质、地震波形处理。',
+                domain8_title: '文献与挖掘',
+                domain8_desc: '科学文献挖掘、生物医学网络搜索、Meta 分析执行。',
+                scp_panel_title: '科学上下文协议',
+                scp_panel_desc: 'SCP 为自主科学研究提供标准化技能格式。每项技能包含概述、能力、使用示例和 API 端点连接，通过 <a href="https://scphub.intern-ai.org.cn/" target="_blank" class="text-violet-600 hover:underline font-semibold">Intern-Discovery 平台</a>接入。',
+                scp_stats: '8 大领域 206 项技能',
+                multi_llm: '多 LLM 支持',
+                workflow_title: '代表性工作流',
+                workflow_desc: '每个工作流将多项技能和工具串联为端到端的科研自动化流程。',
+                wf1: '基于文档的研究',
+                wf2: '科学计算流水线',
+                wf3: '文献发现与摘要',
+                wf4: '药物靶点分析',
+                wf5: '蛋白质结构预测',
+                qs_title: '几分钟即可上手',
+                qs_desc: '克隆仓库、安装依赖、配置 API 密钥并启动开发服务器。<span class="font-semibold text-gray-800">InnoClaw</span> 可运行在任何安装了 Node.js 20+ 的机器上。',
+                req_title: '系统要求',
+                req1: '需要 Node.js 20+',
+                req2: 'SQLite — 零配置数据库',
+                req3: '支持 OpenAI / Anthropic / Gemini',
+                req4: '3 分钟内即可就绪',
+                integ_pre: '集成',
+                integ_eco: '生态系统',
+                integ1_title: '飞书机器人',
+                integ1_desc: 'WebSocket 实时消息和交互式卡片消息。直接从飞书对话中调用智能体工具。',
+                integ2_title: 'Kubernetes',
+                integ2_desc: '通过 Volcano 调度器提交 GPU 计算任务。直接从智能体面板管理集群资源。',
+                integ3_title: 'GitHub',
+                integ3_desc: '通过个人访问令牌克隆和拉取仓库，支持私有仓库。集成 Git 操作。',
+                integ4_title: 'HuggingFace',
+                integ4_desc: '直接浏览和下载数据集。访问 Daily Papers 获取最新 AI 研究。集成模型发现。',
+                built_with: '技术栈',
+                themes: '4 种视觉主题',
+                footer_powered: '灵感源自 OpenClaw · 基于 Next.js、Vercel AI SDK 和 SCP 构建',
+                partners_title: '合作机构',
+                partners_subtitle: '携手世界一流研究机构',
+            },
+            en: {
+                tagline: 'Self-Hosted AI Research Assistant',
+                tagline2: 'Inspired by OpenClaw',
+                hero_title: 'Turn Server Folders into AI Workspaces',
+                hero_desc: 'Chat with AI grounded in your documents via RAG, leverage 206 scientific skills, and orchestrate autonomous agents — all from a single self-hosted platform.',
+                btn_docs: 'Documentation',
+                btn_quickstart: 'Quick Start',
+                btn_scp: 'SCP Skills',
+                at_a_glance: 'At a Glance',
+                stat_skills: 'Skills',
+                stat_domains: 'Domains',
+                stat_llm: 'LLM Providers',
+                stat_tools: 'Agent Tools',
+                stat_langs: 'Languages',
+                core_title: 'Core Features',
+                core_desc: 'A comprehensive AI research platform combining workspace management, RAG-enhanced chat, autonomous agents, and 206 scientific skills in a single self-hosted application.',
+                feat1_title: 'Workspace + File Management',
+                feat1_desc: 'Map server-side folders as persistent workspaces. Browse, upload, edit, and preview files with tree-view navigation, Markdown rendering, and PDF support.',
+                feat2_title: 'RAG-Enhanced Chat',
+                feat2_desc: 'AI answers grounded in your workspace documents with inline source citations. Powered by vector embeddings stored in SQLite for instant retrieval.',
+                feat3_title: 'Smart Note Generation',
+                feat3_desc: 'Auto-generate summaries, FAQs, briefings, newsletters, timelines, and daily/weekly reports from your workspace content with one click.',
+                feat4_title: 'AI Agent System',
+                feat4_desc: 'Autonomous agents with 36 tool-calling capabilities including bash execution, file operations, kubectl commands, article search, and scientific skill invocation.',
+                feat5_title: 'Paper Study',
+                feat5_desc: 'Cross-source academic search spanning arXiv, HuggingFace Daily Papers, and Semantic Scholar. AI-powered query expansion and batch summarization.',
+                feat6_title: 'Multi-Agent Sessions',
+                feat6_desc: 'Tab-based multi-session management with independent contexts, rename support, and MAX mode for automatic context summarization to prevent overflow.',
+                scp_title: '206 Scientific Skills Across 8 Domains',
+                scp_desc: 'Powered by <a href="https://github.com/InternScience/scp" target="_blank" class="text-violet-600 hover:underline font-semibold">Science Context Protocol (SCP)</a>, each skill is composable into autonomous research workflows — from drug target identification to protein structure prediction.',
+                domain1_title: 'Drug Discovery & Pharmacology',
+                domain1_desc: 'Target identification, ADMET prediction, virtual screening, molecular docking, pharmacovigilance.',
+                domain2_title: 'Genomics & Genetic Analysis',
+                domain2_desc: 'Variant pathogenicity assessment, cancer genomics, population genetics, gene-disease associations.',
+                domain3_title: 'Protein Science & Engineering',
+                domain3_desc: 'ESMFold/AlphaFold structure prediction, binding site analysis, protein-drug interaction profiling.',
+                domain4_title: 'Chemistry & Molecular Science',
+                domain4_desc: 'Structure analysis, molecular fingerprints, structure-activity relationships, SMILES processing.',
+                domain5_title: 'Physics & Engineering',
+                domain5_desc: 'Circuit analysis, thermodynamics, optics, electromagnetic field analysis, signal processing.',
+                domain6_title: 'Experimental Automation',
+                domain6_desc: 'Protocol generation, PubMed literature search, experimental data processing.',
+                domain7_title: 'Earth & Environmental Science',
+                domain7_desc: 'Atmospheric science calculations, oceanographic properties, seismic waveform processing.',
+                domain8_title: 'Literature & Mining',
+                domain8_desc: 'Scientific literature mining, biomedical web search, meta-analysis execution.',
+                scp_panel_title: 'Science Context Protocol',
+                scp_panel_desc: 'SCP provides a standardized skill format for autonomous scientific research. Each skill includes overview, capabilities, usage examples, and API endpoint connections via the <a href="https://scphub.intern-ai.org.cn/" target="_blank" class="text-violet-600 hover:underline font-semibold">Intern-Discovery Platform</a>.',
+                scp_stats: '206 SKILLS ACROSS 8 DOMAINS',
+                multi_llm: 'Multi-LLM Support',
+                workflow_title: 'Representative Workflows',
+                workflow_desc: 'Each workflow chains multiple skills and tools into end-to-end research automation.',
+                wf1: 'Document-Grounded Research',
+                wf2: 'Scientific Computing Pipeline',
+                wf3: 'Literature Discovery & Summarization',
+                wf4: 'Drug Target Analysis',
+                wf5: 'Protein Structure Prediction',
+                qs_title: 'Get Started in Minutes',
+                qs_desc: 'Clone the repo, install dependencies, configure your API keys, and start the development server. <span class="font-semibold text-gray-800">InnoClaw</span> runs on any machine with Node.js 20+.',
+                req_title: 'Requirements',
+                req1: 'Node.js 20+ required',
+                req2: 'SQLite — zero-config database',
+                req3: 'Supports OpenAI / Anthropic / Gemini',
+                req4: 'Ready in under 3 minutes',
+                integ_pre: 'Integration',
+                integ_eco: 'Ecosystem',
+                integ1_title: 'Feishu Bot',
+                integ1_desc: 'WebSocket real-time messaging with interactive card messages. Agent tool-calling directly from Feishu conversations.',
+                integ2_title: 'Kubernetes',
+                integ2_desc: 'Submit GPU computing jobs via Volcano scheduler. Manage cluster resources directly from the Agent panel.',
+                integ3_title: 'GitHub',
+                integ3_desc: 'Clone and pull repositories with private repo support via personal access tokens. Integrated Git operations.',
+                integ4_title: 'HuggingFace',
+                integ4_desc: 'Browse and download datasets directly. Access Daily Papers for latest AI research. Integrated model discovery.',
+                built_with: 'Built With',
+                themes: '4 Visual Themes',
+                footer_powered: 'Inspired by OpenClaw · Powered by Next.js, Vercel AI SDK & SCP',
+                partners_title: 'Research Partners',
+                partners_subtitle: 'Collaborating with world-class institutions',
+            }
+        };
+
+        const featuresI18n = {
+            en: [
+                { prefix: "Claw for", text: "Vibe Research" },
+                { prefix: "Claw for", text: "Biology & Related Technologies" },
+                { prefix: "Claw for", text: "Physics" },
+                { prefix: "Claw for", text: "Chemistry" },
+                { prefix: "Claw for", text: "Mechanics & Materials Science" },
+                { prefix: "Claw for", text: "Mathematics" },
+                { prefix: "Claw for", text: "Information Science & Computing" },
+                { prefix: "Supported by", text: "RAG-Enhanced Chat" },
+                { prefix: "Supported by", text: "206 Scientific Skills" },
+                { prefix: "Supported by", text: "Autonomous Agents" },
+                { prefix: "Supported by", text: "Multi-LLM Support" },
+            ],
+            zh: [
+                { prefix: "Claw for", text: "氛围研究" },
+                { prefix: "Claw for", text: "生物与相关技术" },
+                { prefix: "Claw for", text: "物理学" },
+                { prefix: "Claw for", text: "化学" },
+                { prefix: "Claw for", text: "力学与材料科学" },
+                { prefix: "Claw for", text: "数学" },
+                { prefix: "Claw for", text: "信息科学与计算" },
+                { prefix: "Supported by", text: "RAG 增强对话" },
+                { prefix: "Supported by", text: "206 项科学技能" },
+                { prefix: "Supported by", text: "自主智能体" },
+                { prefix: "Supported by", text: "多 LLM 支持" },
+            ]
+        };
+
+        let currentLang = localStorage.getItem('innoclaw-web-lang') || 'en';
+
+        function applyLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('innoclaw-web-lang', lang);
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            document.getElementById('lang-label').textContent = lang === 'en' ? '中文' : 'EN';
+
+            const dict = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) {
+                    el.innerHTML = dict[key];
+                }
+            });
+
+            // Restart typewriter with correct language
+            const twEl = document.getElementById('hero-typewriter');
+            if (twEl) {
+                twEl.textContent = '';
+                if (window._twTimer) clearTimeout(window._twTimer);
+                createTypewriter('hero-typewriter', featuresI18n[lang], {
+                    typeSpeed: 80, deleteSpeed: 50, pauseEnd: 2000, pauseStart: 300
+                });
+            }
+        }
+
+        function toggleLanguage() {
+            applyLanguage(currentLang === 'en' ? 'zh' : 'en');
+        }
+
+        // ===== Scroll Reveal Observer =====
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+
+        // Typewriter Effect (supports {prefix, text} items)
+        function createTypewriter(elementId, words, options = {}) {
+            const element = document.getElementById(elementId);
+            const prefixEl = document.getElementById('hero-prefix');
+            const iconEl = document.getElementById('hero-icon');
+            if (!element) return;
+
+            let wordIndex = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            let typeSpeed = options.typeSpeed || 100;
+
+            function type() {
+                const item = words[wordIndex];
+                const currentWord = typeof item === 'string' ? item : item.text;
+                const currentPrefix = typeof item === 'string' ? null : item.prefix;
+
+                // Update prefix and icon when starting a new word
+                if (currentPrefix && !isDeleting && charIndex === 0) {
+                    if (prefixEl) prefixEl.textContent = currentPrefix;
+                    if (iconEl) iconEl.textContent = currentPrefix.startsWith('Claw') ? '🦞' : '🧠';
+                }
+
+                if (isDeleting) {
+                    element.textContent = currentWord.substring(0, charIndex - 1);
+                    charIndex--;
+                    typeSpeed = options.deleteSpeed || 50;
+                } else {
+                    element.textContent = currentWord.substring(0, charIndex + 1);
+                    charIndex++;
+                    typeSpeed = options.typeSpeed || 100;
+                }
+
+                if (!isDeleting && charIndex === currentWord.length) {
+                    isDeleting = true;
+                    typeSpeed = options.pauseEnd || 2000;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    wordIndex = (wordIndex + 1) % words.length;
+                    typeSpeed = options.pauseStart || 500;
+                }
+
+                window._twTimer = setTimeout(type, typeSpeed);
+            }
+
+            type();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Apply saved language preference
+            applyLanguage(currentLang);
+        });
+    </script>
+</body>
+</html>

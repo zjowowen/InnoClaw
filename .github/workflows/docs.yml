@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "site/**"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
       - "docs/**"
+      - "site/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -44,22 +46,26 @@ jobs:
       - name: Build Chinese docs
         run: sphinx-build -b html docs docs/_build/html/zh -D language=zh_CN -W --keep-going
 
-      - name: Create root redirect and .nojekyll
+      - name: Copy homepage into build output
         run: |
-          cat > docs/_build/html/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta http-equiv="refresh" content="0; url=en/">
-              <title>Redirecting...</title>
-            </head>
-            <body>
-              <p>Redirecting to <a href="en/">English documentation</a>...</p>
-            </body>
-          </html>
-          EOF
+          cp site/index.html docs/_build/html/index.html
+          cp -r site/logos docs/_build/html/logos
           touch docs/_build/html/.nojekyll
+
+      - name: Ensure root index does not auto-redirect to zh
+        run: |
+          if grep -q 'http-equiv="refresh" content="0; url=zh/"' docs/_build/html/index.html; then
+            echo "Root index still redirects to zh. Replacing with site homepage."
+            cp site/index.html docs/_build/html/index.html
+          fi
+
+      - name: Validate root index for GitHub Pages
+        run: |
+          if grep -q 'http-equiv="refresh" content="0; url=zh/"' docs/_build/html/index.html; then
+            echo "::error::Root index.html is still redirecting to /zh/."
+            echo "::error::Please ensure site/index.html is copied to docs/_build/html/index.html."
+            exit 1
+          fi
 
       - name: Upload artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
