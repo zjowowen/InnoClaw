@@ -51,16 +51,6 @@ const gemini = createOpenAI({
 // Cache per-model OpenAI-compatible providers (shared across all per-model-URL providers).
 const perModelProviderCache = new Map<string, ReturnType<typeof createOpenAI>>();
 
-/** Providers that use a per-model base URL pattern: {PREFIX}_{MODEL_ID}_BASE_URL */
-const PER_MODEL_URL_PROVIDERS = new Set([
-  "shlab",
-  "qwen",
-  "moonshot",
-  "deepseek",
-  "minimax",
-  "zhipu",
-]);
-
 /**
  * Create (or return cached) OpenAI-compatible provider for providers that use
  * per-model base URLs. The env var name is derived from the provider and model:
