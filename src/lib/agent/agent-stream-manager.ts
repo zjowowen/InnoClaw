@@ -190,6 +190,9 @@ class AgentStreamManager {
       // Always persist whatever we have and notify subscribers,
       // regardless of the previous status (handles stop() race condition).
       this.saveToLocalStorage(entry);
+      // Ensure same-tab listeners (e.g. useReport) are notified of the final
+      // state, even if there are no active subscribers/doneSubscribers.
+      this.notifyUpdate(entry);
       this.notifyDone(entry);
       // Auto-cleanup completed entries to prevent memory leaks
       this.scheduleCleanup(key);
