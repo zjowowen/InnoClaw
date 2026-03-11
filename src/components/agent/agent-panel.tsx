@@ -912,14 +912,15 @@ export function AgentPanel({
     if (!lastMessage || lastMessage.role !== "assistant") return;
 
     const parts = lastMessage.parts || [];
-    const hasToolCall = parts.some((p: { type?: string }) =>
-      p.type?.startsWith("tool-") || p.type === "dynamic-tool"
+    const lastPart = parts[parts.length - 1];
+    const endsWithToolCall = lastPart && (
+      lastPart.type?.startsWith("tool-") || lastPart.type === "dynamic-tool"
     );
 
-    // Only auto-continue when the last assistant message includes a tool call.
-    // Pure-text assistant messages are treated as completed unless they
-    // themselves request further tools.
-    if (!hasToolCall) {
+    // Only auto-continue when the last assistant message ends with a tool call,
+    // indicating the task is incomplete. Pure-text endings are treated as
+    // completed — the model is done talking.
+    if (!endsWithToolCall) {
       // Reset the auto-continue counter when we see a pure-text response,
       // so we don't keep auto-continuing based on stale state.
       autoContinueCountRef.current = 0;
