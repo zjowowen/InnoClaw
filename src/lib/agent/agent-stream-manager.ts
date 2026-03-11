@@ -41,6 +41,8 @@ export interface StreamEntry {
 
 class AgentStreamManager {
   private streams = new Map<string, StreamEntry>();
+  private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private static readonly CLEANUP_DELAY_MS = 5000;
 
   // ---- Query API ----------------------------------------------------------
 
@@ -70,6 +72,8 @@ class AgentStreamManager {
   register(key: string, storageKey: string): AbortController {
     // Abort any previous stream for this key.
     this.stop(key);
+    // Cancel any pending auto-cleanup for this key.
+    this.cancelScheduledCleanup(key);
 
     const abortController = new AbortController();
     const entry: StreamEntry = {
@@ -88,8 +92,9 @@ class AgentStreamManager {
   stop(key: string): void {
     const e = this.streams.get(key);
     if (e) {
+      // Keep status as "streaming" so the background consumer's catch block
+      // still runs its persist + notifyDone logic when it sees the AbortError.
       e.abortController.abort();
-      e.status = e.status === "streaming" ? "done" : e.status;
     }
   }
 
@@ -129,7 +134,7 @@ class AgentStreamManager {
       const messageStream = readUIMessageStream({ stream: chunkStream });
 
       let lastSaveTime = 0;
-      const SAVE_INTERVAL = 800; // save at most every 800ms
+      const SAVE_INTERVAL = 2000; // save at most every 2s to reduce main-thread churn
 
       // Step 3: Iterate over the message stream – each yield is the latest
       // snapshot of the assistant message being built.
@@ -147,7 +152,21 @@ class AgentStreamManager {
         if (now - lastSaveTime > SAVE_INTERVAL) {
           lastSaveTime = now;
           this.saveToLocalStorage(entry);
-          this.notifyUpdate(entry);
+          // Only dispatch the cross-tab event when the panel is unmounted
+          // (no direct subscribers). Otherwise the mounted panel handles updates.
+          if (entry.subscribers.size === 0) {
+            this.notifyUpdate(entry);
+          } else {
+            // When there are subscribers, notify them directly while avoiding
+            // the global cross-tab event.
+            for (const callback of entry.subscribers) {
+              try {
+                callback();
+              } catch {
+                // Swallow subscriber errors to avoid breaking the stream loop.
+              }
+            }
+          }
         }
       }
 
@@ -156,21 +175,27 @@ class AgentStreamManager {
       entry.status = "done";
       this.notifyUpdate(entry);
       this.notifyDone(entry);
+      // Auto-cleanup completed entries to prevent memory leaks
+      this.scheduleCleanup(key);
     } catch (err) {
-      if (entry.status === "streaming") {
-        const isAbort =
-          err instanceof DOMException && err.name === "AbortError";
-        if (!isAbort) {
-          entry.status = "error";
-          entry.error =
-            err instanceof Error ? err.message : "Background stream failed";
-        } else {
-          entry.status = "done";
-        }
-        // Persist whatever we have so far
-        this.saveToLocalStorage(entry);
-        this.notifyDone(entry);
+      const isAbort =
+        err instanceof DOMException && err.name === "AbortError";
+      if (!isAbort) {
+        entry.status = "error";
+        entry.error =
+          err instanceof Error ? err.message : "Background stream failed";
+      } else {
+        entry.status = "done";
       }
+      // Always persist whatever we have and notify subscribers,
+      // regardless of the previous status (handles stop() race condition).
+      this.saveToLocalStorage(entry);
+      // Ensure same-tab listeners (e.g. useReport) are notified of the final
+      // state, even if there are no active subscribers/doneSubscribers.
+      this.notifyUpdate(entry);
+      this.notifyDone(entry);
+      // Auto-cleanup completed entries to prevent memory leaks
+      this.scheduleCleanup(key);
     }
   }
 
@@ -249,8 +274,34 @@ class AgentStreamManager {
 
   // ---- Cleanup ------------------------------------------------------------
 
+  /**
+   * Auto-remove a completed entry after a short delay, giving subscribers
+   * time to read the final state before it is garbage-collected.
+   */
+  private scheduleCleanup(key: string): void {
+    this.cancelScheduledCleanup(key);
+    const timer = setTimeout(() => {
+      this.cleanupTimers.delete(key);
+      const e = this.streams.get(key);
+      if (e && e.status !== "streaming") {
+        this.streams.delete(key);
+      }
+    }, AgentStreamManager.CLEANUP_DELAY_MS);
+    this.cleanupTimers.set(key, timer);
+  }
+
+  /** Cancel a pending auto-cleanup timer for the given key. */
+  private cancelScheduledCleanup(key: string): void {
+    const timer = this.cleanupTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      this.cleanupTimers.delete(key);
+    }
+  }
+
   /** Remove the stream entry entirely (called after successful remount). */
   cleanup(key: string): void {
+    this.cancelScheduledCleanup(key);
     const e = this.streams.get(key);
     if (e && e.status !== "streaming") {
       this.streams.delete(key);
