@@ -82,9 +82,15 @@ export async function getConfiguredModel(): Promise<LanguageModel> {
     case "shlab": {
       // Each SH-Lab model has its own base URL; create a per-model provider.
       const shlabModel = PROVIDERS.shlab.models.find((m) => m.id === modelId);
+      if (!shlabModel || !shlabModel.baseUrl) {
+        throw new Error(
+          `Configured SH-Lab model "${modelId}" is unknown or missing a baseUrl. ` +
+            `Please update your llm_model setting or PROVIDERS.shlab.models configuration.`
+        );
+      }
       const shlabProvider = createOpenAI({
         apiKey: process.env.SHLAB_API_KEY || "EMPTY",
-        baseURL: shlabModel?.baseUrl,
+        baseURL: shlabModel.baseUrl,
       });
       return shlabProvider.chat(modelId);
     }
