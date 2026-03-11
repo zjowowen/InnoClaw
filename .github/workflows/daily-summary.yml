@@ -69,6 +69,7 @@ jobs:
 
       - name: Create Issue
         if: steps.check.outputs.commit_count != '0'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -76,18 +77,12 @@ jobs:
           COMMITS="${{ steps.check.outputs.commit_count }}"
           SUMMARY=$(cat /tmp/summary.md)
 
+          BODY="$(printf '> 自动生成的每日变更总结 | %s 个 commit\n\n%s\n\n---\n*由 GitHub Copilot + Actions 自动生成*' "$COMMITS" "$SUMMARY")"
+
           gh issue create \
             --repo "${{ github.repository }}" \
             --title "📋 每日变更总结 - ${TODAY}" \
-            --body "$(cat <<EOF
-          > 自动生成的每日变更总结 | ${COMMITS} 个 commit
-
-          ${SUMMARY}
-
-          ---
-          *由 GitHub Copilot + Actions 自动生成*
-          EOF
-          )" \
+            --body "$BODY" \
             --label "daily-summary"
 
       - name: Send to Feishu
