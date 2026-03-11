@@ -128,7 +128,8 @@ export async function POST(req: NextRequest) {
       model,
       system: systemPrompt,
       messages: modelMessages,
-      ...(useTools ? { tools, stopWhen: stepCountIs(maxSteps) } : {}),
+      ...(useTools ? { tools } : {}),
+      stopWhen: stepCountIs(maxSteps),
       abortSignal: req.signal,
       onError({ error }) {
         console.error("Agent stream error:", error);
