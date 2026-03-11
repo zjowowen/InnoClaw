@@ -882,7 +882,7 @@ export function AgentPanel({
   const prevStatusRef = useRef(status);
   const autoContinueCountRef = useRef(0);
   const autoContinueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const MAX_AUTO_CONTINUES = 5; // Prevent infinite loops
+  const MAX_AUTO_CONTINUES = 20; // Prevent infinite loops
 
   useEffect(() => {
     const wasStreaming = prevStatusRef.current === "streaming" || prevStatusRef.current === "submitted";
@@ -912,17 +912,18 @@ export function AgentPanel({
       p.type?.startsWith("tool-") || p.type === "dynamic-tool"
     );
 
-    // If the last part is a tool call result, the agent was likely interrupted mid-task
-    if (hasToolCall) {
-      const lastPart = parts[parts.length - 1] as { type?: string };
-      const endsWithTool = lastPart?.type?.startsWith("tool-") || lastPart?.type === "dynamic-tool";
-
-      if (endsWithTool) {
-        autoContinueCountRef.current++;
-        autoContinueTimerRef.current = setTimeout(() => {
-          sendMessage({ text: t("autoContinue") });
-        }, 500);
-      }
+    // Decide whether to auto-continue:
+    // 1. Message has tool calls → agent was actively working, likely hit maxSteps
+    // 2. Already mid-task (autoContinueCount > 0) and got pure text → model
+    //    may output progress text without tools mid-task (common with Kimi)
+    // Only skip auto-continue for the very first response that is pure text
+    // (i.e., a simple Q&A answer with no tool usage at all).
+    const midTask = autoContinueCountRef.current > 0;
+    if (hasToolCall || midTask) {
+      autoContinueCountRef.current++;
+      autoContinueTimerRef.current = setTimeout(() => {
+        sendMessage({ text: t("autoContinue") });
+      }, 500);
     }
 
     return () => {

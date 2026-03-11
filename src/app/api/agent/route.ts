@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
 
     const modelMessages = await convertToModelMessages(sanitizedMessages);
 
-    const DEFAULT_MAX_STEPS = 10;
+    const DEFAULT_MAX_STEPS = 50;
     const MAX_STEPS_UPPER_BOUND = 100;
     const parsedSteps = parseInt(process.env.AGENT_MAX_STEPS || "", 10);
     const maxSteps = Number.isFinite(parsedSteps) && parsedSteps > 0

@@ -43,7 +43,7 @@ const MIN_PATCH_INTERVAL_MS = 1_000;
 const MAX_EXECUTION_TIME_MS = 5 * 60 * 1000;
 
 /** Maximum steps for the agent tool loop */
-const MAX_STEPS = 10;
+const MAX_STEPS = 50;
 
 // ---------------------------------------------------------------------------
 // Types
