@@ -699,20 +699,24 @@ export function AgentPanel({
           input: string | URL | Request,
           init?: RequestInit,
         ): Promise<Response> => {
-          // Replace the component's abort signal with the manager's
+          // Use the component's abort signal for the network request itself
           const { signal: _componentSignal, ...restInit } = init ?? {};
-          const managerAbort = agentStreamManager.register(
-            streamKeyRef.current,
-            storageKeyForManagerRef.current,
-          );
 
           const response = await globalThis.fetch(input, {
             ...restInit,
-            signal: managerAbort.signal,
+            signal: _componentSignal,
           });
 
-          if (!response.ok || !response.body) return response;
+          // If the response is not OK or has no body, do not register with the manager
+          if (!response.ok || !response.body) {
+            return response;
+          }
 
+          // Only register with the agent stream manager once we know we have a streaming body
+          agentStreamManager.register(
+            streamKeyRef.current,
+            storageKeyForManagerRef.current,
+          );
           // Tee the response body — component gets one branch, manager gets the other
           const [managerBranch, componentBranch] = response.body.tee();
 
