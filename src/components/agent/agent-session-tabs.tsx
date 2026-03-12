@@ -120,7 +120,7 @@ export function AgentSessionTabs({
   }
 
   return (
-    <div className="flex items-center gap-0.5 px-1 py-0.5 shrink-0 overflow-x-auto flex-1 min-w-0">
+    <div className="flex items-center gap-0.5 px-1 py-0.5 overflow-x-auto flex-1 min-w-0">
       {sessions.map((session) => {
         const isActive = session.id === activeSessionId;
         const isConfirming = confirmingId === session.id;
