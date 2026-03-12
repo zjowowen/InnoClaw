@@ -83,7 +83,7 @@ export function SkillMdFormDialog({
       return;
     }
 
-    const slug = parsed.slug || parsed.name.toLowerCase().replace(/\s+/g, "-");
+    const slug = parsed.slug || parsed.name;
 
     setSaving(true);
     try {
