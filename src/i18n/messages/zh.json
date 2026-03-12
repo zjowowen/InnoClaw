@@ -459,7 +459,13 @@
     "exportSuccess": "技能 JSON 已复制到剪贴板",
     "exportDownload": "下载 JSON",
     "deleteStep": "删除步骤",
-    "removeParameter": "移除参数"
+    "removeParameter": "移除参数",
+    "mdEditorDesc": "使用 Markdown 格式定义技能。在 YAML frontmatter (--- 之间) 中设置元数据，在下方编写系统提示词。",
+    "mdParseError": "无法解析 Markdown 格式。请确保包含有效的 YAML frontmatter (--- 包裹)。",
+    "mdMissingName": "缺少 name 字段，请在 frontmatter 中添加。",
+    "mdMissingPrompt": "缺少系统提示词，请在 frontmatter 下方添加内容。",
+    "mdNoName": "未命名",
+    "mdNoPrompt": "无提示词内容"
   },
   "cluster": {
     "clusterToggle": "集群",

@@ -9,7 +9,7 @@ import { Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useSkills } from "@/lib/hooks/use-skills";
 import { SkillList } from "@/components/skills/skill-list";
-import { SkillFormDialog } from "@/components/skills/skill-form-dialog";
+import { SkillMdFormDialog } from "@/components/skills/skill-md-form-dialog";
 import { SkillImportDialog } from "@/components/skills/skill-import-dialog";
 import type { Skill, SkillStep, SkillParameter } from "@/types";
 
@@ -144,7 +144,7 @@ export default function SkillsPage() {
           onToggleEnabled={handleToggleEnabled}
         />
 
-        <SkillFormDialog
+        <SkillMdFormDialog
           open={formOpen}
           onOpenChange={setFormOpen}
           skill={editingSkill}
