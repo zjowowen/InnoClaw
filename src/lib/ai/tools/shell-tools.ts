@@ -46,6 +46,30 @@ export function createShellTools(ctx: ToolContext) {
           } catch { /* don't fail the tool */ }
         }
 
+        // Detect Python errors and add a classification hint for the LLM
+        if (result.exitCode !== 0 && result.stderr) {
+          const stderr = result.stderr;
+          if (stderr.includes("ModuleNotFoundError") || stderr.includes("ImportError")) {
+            const match = stderr.match(/No module named ['\"]?([a-zA-Z0-9_.-]+)['\"]?/);
+            return {
+              ...result,
+              pythonErrorHint: `MISSING_MODULE: ${match?.[1] ?? "unknown"}. Run pip install to install the missing package, then retry the command.`,
+            };
+          }
+          if (stderr.includes("SyntaxError")) {
+            return {
+              ...result,
+              pythonErrorHint: "SYNTAX_ERROR: Fix the Python syntax error and retry.",
+            };
+          }
+          if (stderr.includes("Traceback (most recent call last)")) {
+            return {
+              ...result,
+              pythonErrorHint: "RUNTIME_ERROR: Read the traceback, diagnose the root cause, fix the code, and retry.",
+            };
+          }
+        }
+
         return result;
       },
     }),
