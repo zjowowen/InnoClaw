@@ -31,9 +31,12 @@ export function buildSkillSystemPrompt(
     }
   }
 
-  // 1b. Replace SCP Hub API key placeholder with an environment variable reference
+  // 1b. Replace SCP Hub API key placeholder with a Python environment lookup
   if (resolvedPrompt.includes("<YOUR_SCP_HUB_API_KEY>")) {
-    resolvedPrompt = resolvedPrompt.replaceAll("<YOUR_SCP_HUB_API_KEY>", "$SCP_HUB_API_KEY");
+    resolvedPrompt = resolvedPrompt.replaceAll(
+      "<YOUR_SCP_HUB_API_KEY>",
+      'os.environ["SCP_HUB_API_KEY"]'
+    );
   }
 
   // 2. Build step instructions if present
