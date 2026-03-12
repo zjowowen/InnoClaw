@@ -1055,17 +1055,17 @@ export function AgentPanel({
               {availableProviders.map((provider) => (
                 <React.Fragment key={provider.id}>
                   <DropdownMenuLabel className="text-xs text-muted-foreground">{provider.name}</DropdownMenuLabel>
-                  {provider.models.map((model: { id: string; name: string }) => (
-                    <DropdownMenuRadioGroup
-                      key={model.id}
-                      value={selectedProvider === provider.id && selectedModel === model.id ? model.id : ""}
-                      onValueChange={() => handleModelChange(provider.id, model.id)}
-                    >
-                      <DropdownMenuRadioItem value={model.id}>
+                  <DropdownMenuRadioGroup
+                    key={provider.id}
+                    value={selectedProvider === provider.id ? selectedModel : ""}
+                    onValueChange={(modelId) => handleModelChange(provider.id, modelId)}
+                  >
+                    {provider.models.map((model: { id: string; name: string }) => (
+                      <DropdownMenuRadioItem key={model.id} value={model.id}>
                         {model.name}
                       </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  ))}
+                    ))}
+                  </DropdownMenuRadioGroup>
                   <DropdownMenuSeparator />
                 </React.Fragment>
               ))}
