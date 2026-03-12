@@ -523,6 +523,7 @@ export function AgentPanel({
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const userScrolledUp = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
@@ -1049,8 +1050,24 @@ export function AgentPanel({
     onLoadingChangeRef.current?.(isLoading);
   }, [isLoading]);
 
-  // Auto-scroll to bottom when messages update
+  // Track whether user has scrolled away from the bottom
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const viewport = el.querySelector('[data-slot="scroll-area-viewport"]');
+    if (!viewport) return;
+    const handleScroll = () => {
+      const threshold = 80;
+      const atBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
+      userScrolledUp.current = !atBottom;
+    };
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+    return () => viewport.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll to bottom when messages update (skip if user scrolled up)
+  useEffect(() => {
+    if (userScrolledUp.current) return;
     if (scrollRef.current) {
       const viewport = scrollRef.current.querySelector(
         '[data-slot="scroll-area-viewport"]'
@@ -1112,6 +1129,7 @@ export function AgentPanel({
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading || !aiEnabled || isSummarizing) return;
+    userScrolledUp.current = false;
 
     // Check if input matches a skill slug
     if (text.startsWith("/")) {
