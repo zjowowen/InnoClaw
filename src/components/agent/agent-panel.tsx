@@ -236,27 +236,78 @@ export function AgentPanel({
   // Initialize model selection from localStorage, then fall back to global settings
   useEffect(() => {
     if (selectedProvider !== null) return; // already initialized
-    const stored = localStorage.getItem("agent-model-selection");
-    if (stored) {
-      try {
-        const { provider, model } = JSON.parse(stored);
-        if (provider && model) {
-          setSelectedProvider(provider);
-          setSelectedModel(model);
-          return;
+
+    // Try to read a stored selection from localStorage
+    let storedSelection: { provider: string; model: string } | null = null;
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const stored = window.localStorage.getItem("agent-model-selection");
+        if (stored) {
+          try {
+            storedSelection = JSON.parse(stored);
+          } catch {
+            // Ignore parse errors and treat as no stored selection
+          }
         }
-      } catch { /* ignore */ }
+      }
+    } catch {
+      // Ignore storage access errors and fall back to settings
     }
+
+    const configuredProviders = settings?.configuredProviders as string[] | undefined;
+
+    const isValidSelection = (selection: { provider: string; model: string } | null) => {
+      if (!selection) return false;
+      const { provider, model } = selection;
+      if (!provider || !model) return false;
+      const providerDef = PROVIDERS[provider as ProviderId];
+      if (!providerDef) return false;
+      if (configuredProviders && !configuredProviders.includes(provider)) return false;
+      const hasModel = providerDef.models.some((m) => m.id === model);
+      return hasModel;
+    };
+
+    if (isValidSelection(storedSelection)) {
+      setSelectedProvider(storedSelection!.provider);
+      setSelectedModel(storedSelection!.model);
+      return;
+    } else if (storedSelection) {
+      // Clear invalid stored value
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.removeItem("agent-model-selection");
+        }
+      } catch {
+        // Ignore storage access errors
+      }
+    }
+
+    // Fall back to global settings if available and valid
     if (settings?.llmProvider && settings?.llmModel) {
-      setSelectedProvider(settings.llmProvider);
-      setSelectedModel(settings.llmModel);
+      const fallbackSelection = {
+        provider: settings.llmProvider as string,
+        model: settings.llmModel as string,
+      };
+      if (isValidSelection(fallbackSelection)) {
+        setSelectedProvider(fallbackSelection.provider);
+        setSelectedModel(fallbackSelection.model);
+      }
     }
-  }, [settings?.llmProvider, settings?.llmModel, selectedProvider]);
+  }, [settings?.llmProvider, settings?.llmModel, settings?.configuredProviders, selectedProvider]);
 
   const handleModelChange = useCallback((providerId: string, modelId: string) => {
     setSelectedProvider(providerId);
     setSelectedModel(modelId);
-    localStorage.setItem("agent-model-selection", JSON.stringify({ provider: providerId, model: modelId }));
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(
+          "agent-model-selection",
+          JSON.stringify({ provider: providerId, model: modelId })
+        );
+      }
+    } catch {
+      // Ignore storage access errors; state has already been updated
+    }
   }, []);
 
   const modelDisplayName = useMemo(() => {
