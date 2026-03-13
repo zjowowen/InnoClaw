@@ -8,6 +8,49 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // Merge NO_PROXY entries from .env.local into process.env.
+    // A shell proxy script may set a no_proxy that is missing internal
+    // domains (e.g. .pjh-service.org.cn). Next.js does not override
+    // existing env vars from .env.local, so we merge them here.
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const dotenv = await import("dotenv");
+
+      const envLocalPath = path.resolve(process.cwd(), ".env.local");
+      if (fs.existsSync(envLocalPath)) {
+        const parsed = dotenv.parse(
+          fs.readFileSync(envLocalPath, "utf-8")
+        );
+        const sources = [
+          process.env.no_proxy,
+          process.env.NO_PROXY,
+          parsed.no_proxy,
+          parsed.NO_PROXY,
+        ];
+        const entries = new Set<string>();
+        for (const src of sources) {
+          if (!src) continue;
+          for (const e of src.split(",")) {
+            const t = e.trim();
+            if (t) entries.add(t);
+          }
+        }
+        if (entries.size > 0) {
+          const merged = Array.from(entries).join(",");
+          if (process.env.no_proxy !== undefined || parsed.no_proxy) {
+            process.env.no_proxy = merged;
+          }
+          if (process.env.NO_PROXY !== undefined || parsed.NO_PROXY) {
+            process.env.NO_PROXY = merged;
+          }
+          console.log(`[instrumentation] Merged no_proxy: ${merged}`);
+        }
+      }
+    } catch {
+      // Silently continue — proxy bypass is best-effort
+    }
+
     // Set up HTTP proxy for all fetch() calls (AI SDK, etc.)
     // Reads HTTP_PROXY, HTTPS_PROXY, NO_PROXY env vars automatically.
     // proxyTunnel: false  →  use regular HTTP forward proxying for http:// targets
