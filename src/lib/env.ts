@@ -17,12 +17,14 @@ export function resolveHome(): string {
 function ensureExtraPaths(basePath: string): string {
   if (process.platform === "win32") return basePath;
   const home = resolveHome();
-  const extras = [
-    path.join(home, ".local", "bin"),
-    // Python paths: macOS Python.org framework installs & common locations
-    "/Library/Frameworks/Python.framework/Versions/Current/bin",
-    "/opt/homebrew/bin",
-  ];
+  const extras = [path.join(home, ".local", "bin")];
+  // Python paths: macOS Python.org framework installs & common locations
+  if (process.platform === "darwin") {
+    extras.push(
+      "/Library/Frameworks/Python.framework/Versions/Current/bin",
+      "/opt/homebrew/bin"
+    );
+  }
   const existing = new Set(basePath.split(":"));
   const missing = extras.filter((p) => !existing.has(p));
   return missing.length > 0 ? [...missing, basePath].join(":") : basePath;
@@ -47,10 +49,6 @@ export function buildSafeExecEnv(
     NODE_ENV: process.env.NODE_ENV || "production",
     TERM: "dumb",
     LANG: process.env.LANG || "en_US.UTF-8",
-    // Pass SCP Hub API key to child Python processes
-    ...(process.env.SCP_HUB_API_KEY
-      ? { SCP_HUB_API_KEY: process.env.SCP_HUB_API_KEY }
-      : {}),
   };
 
   // Windows requires additional system environment variables

@@ -23,7 +23,15 @@ export function createShellTools(ctx: ToolContext) {
       execute: async ({ command, timeout }) => {
         const timeoutMs = Math.max(1000, Math.min((timeout ?? 30) * 1000, 300_000));
         const startTime = Date.now();
-        const result = await execInWorkspace(command, ctx.validatedCwd, { timeout: timeoutMs });
+        // Pass SCP_HUB_API_KEY only to agent-executed commands (not the general terminal API)
+        const extraEnv: Record<string, string> = {};
+        if (process.env.SCP_HUB_API_KEY) {
+          extraEnv.SCP_HUB_API_KEY = process.env.SCP_HUB_API_KEY;
+        }
+        const result = await execInWorkspace(command, ctx.validatedCwd, {
+          timeout: timeoutMs,
+          env: extraEnv,
+        });
 
         // Best-effort: detect and copy newly created/modified files to research history
         if (ctx.researchHistoryDir) {
