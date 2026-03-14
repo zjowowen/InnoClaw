@@ -108,7 +108,7 @@ jobs:
             echo "has_features=true" >> "$GITHUB_OUTPUT"
             sed -n '/---BEGIN_FEATURES---/,/---END_FEATURES---/p' \
               /tmp/feature_detection.txt \
-              | grep -v '---' > /tmp/new_features.txt
+              | grep -vF '---' > /tmp/new_features.txt
             echo "Detected features:"
             cat /tmp/new_features.txt
           else
