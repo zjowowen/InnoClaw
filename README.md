@@ -1,8 +1,8 @@
 # InnoClaw
 
-一个可自托管的 AI 研究助手，灵感来自 Google NotebookLM。将服务器文件夹作为工作空间，基于 RAG 与 AI 对话，内置 206 个科学技能。
+一个可自托管的 AI 研究助手。将服务器文件夹作为工作空间，基于 RAG 与 AI 对话，内置 206 个科学技能。
 
-A self-hostable AI research assistant inspired by Google NotebookLM. Turn server-side folders into workspaces, chat with AI grounded in your documents via RAG, and leverage 206 built-in scientific skills.
+A self-hostable AI research assistant. Turn server-side folders into workspaces, chat with AI grounded in your documents via RAG, and leverage 206 built-in scientific skills.
 
 📖 **[完整文档 / Full Documentation](https://zjowowen.github.io/InnoClaw/)** (English & 简体中文)
 
@@ -267,6 +267,22 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 1. 安装 `kubectl`（[官方安装指南](https://kubernetes.io/docs/tasks/tools/)）
 2. 在 `.env.local` 中配置 `KUBECONFIG_PATH=/path/to/your/kubeconfig`
 3. 重启服务后，在 Agent 面板中即可使用 `submitK8sJob` 和 `kubectl` 工具
+
+---
+
+## 新增特性 / What's New
+
+<!-- whats-new-start -->
+
+#### 2026-03-14
+- **Research Execution Engine / 研究执行引擎**: New AI-driven research orchestration system with remote profiles, capability toggles, run history, and agent tools
+- **Auto-updating README "What's New" / 自动更新 README 新功能板块**: GitHub Actions workflow that automatically generates and commits a bilingual What's New section daily
+
+*暂无条目。当 CI 检测到重大新功能时会自动更新此栏目。*
+
+
+
+<!-- whats-new-end -->
 
 ---
 
