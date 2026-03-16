@@ -25,6 +25,7 @@ A self-hostable AI research assistant. Turn server-side folders into workspaces,
 - 💡 **研究灵感生成** — 多智能体 AI 头脑风暴，基于论文生成跨学科研究方向与创新点
 - 📑 **多标签预览** — 同时打开多篇论文和文件，标签式切换，一键从文件预览转为论文研读模式
 - 🧪 **研究执行工作区** — 13 阶段自动化实验工作流：代码审查 → 补丁提议 → 远程同步 → 任务提交 → 智能监控 → 结果收集 → 分析推荐。支持 Shell / Slurm / rjob 三种调度后端，5 个 AI Agent 角色协作，权限细粒度管控
+- ⚡ **Agent-Long / Agent-Short 模式** — Agent-Short（默认）适合快速单步任务；Agent-Long 为多步研究流水线优化，maxSteps=100、自动续接上限 50、内置 15 阶段研究执行管道指令
 
 **适用人群：** 研究人员 · 开发者 · 自托管爱好者 · 学生和教育工作者
 
@@ -507,6 +508,11 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 
 <!-- whats-new-start -->
 
+#### 2026-03-16
+- **Paper Discussion & Ideation Robustness / 论文讨论与灵感生成稳定性提升**: Per-role token budgets (2–2.5x increase), automatic retry on empty/short responses, and error visibility in the UI. Fixes agents returning empty or truncated output with reasoning-capable models (SH-Lab, Qwen, etc.)
+- **Full Paper Context / 全文送入讨论智能体**: Discussion and ideation agents now receive up to 30k chars of the full paper text (local files) instead of just the abstract, enabling deeper analysis of methodology, experiments, and results
+- **Abstract Extraction Fix / 摘要提取修复**: Heuristic regex-based abstract extraction with improved AI prompt to prevent extracting author names instead of the actual abstract
+
 #### 2026-03-14
 - **Research Execution Engine / 研究执行引擎**: New AI-driven research orchestration system with remote profiles, capability toggles, run history, and agent tools
 - **Auto-updating README "What's New" / 自动更新 README 新功能板块**: GitHub Actions workflow that automatically generates and commits a bilingual What's New section daily
@@ -547,6 +553,9 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
   - **SSH 快速配置**：粘贴 SSH 命令自动解析主机、用户名、端口、密钥
   - **8 项权限管控**：读代码 / 写代码 / 本地终端 / SSH / 远程同步 / 任务提交 / 收集结果 / 自动应用
   - **人工审批门控**：补丁审批、同步执行、任务提交、结果收集四个关键节点需人工确认
+- **Agent-Long / Agent-Short 模式** — Agent 面板输入栏左侧可选：
+  - **Agent-Short**（默认）：快速任务，maxSteps=50，自动续接上限 20 次
+  - **Agent-Long**：多步研究流水线，maxSteps=100，自动续接上限 50 次，系统提示词内置 15 阶段研究执行管道指令，确保长流程不中断
 
 ---
 
@@ -584,7 +593,19 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 - 双击标签或点击铅笔图标重命名
 - 关闭标签需两步确认（防止误操作）
 
-### 8. 研究执行工作区 / Research Execution Workspace
+### 8. Agent 模式选择 / Agent Mode Selection
+Agent 面板输入栏左侧的模式选择器提供四种模式：
+
+| 模式 | 说明 | maxSteps | 自动续接 |
+|------|------|:--------:|:--------:|
+| **Agent-Short** | 默认模式，适合快速单步任务 | 50 | 20 次 |
+| **Agent-Long** | 多步研究流水线，内置 15 阶段执行管道 | 100 | 50 次 |
+| **Plan** | 只读分析模式，生成实现方案 | — | — |
+| **Ask** | 只读问答模式，回答代码/文件相关问题 | — | — |
+
+> **Agent-Long** 专为研究执行设计：系统提示词包含从代码审查到结果分析的 15 阶段管道指令，更高的步数和续接上限确保长流程实验不会中途断开。
+
+### 9. 研究执行工作区 / Research Execution Workspace
 在工作空间侧边栏打开 **Research Execution** 面板，管理远程实验全流程：
 
 **配置远程目标：**

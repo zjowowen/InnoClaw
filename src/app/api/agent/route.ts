@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { getConfiguredModelWithProvider, getModelFromOverride, isAIAvailable } from "@/lib/ai/provider";
 import { createAgentTools } from "@/lib/ai/agent-tools";
-import { buildAgentSystemPrompt, buildPlanSystemPrompt, buildAskSystemPrompt } from "@/lib/ai/prompts";
+import { buildAgentSystemPrompt, buildAgentLongSystemPrompt, buildPlanSystemPrompt, buildAskSystemPrompt } from "@/lib/ai/prompts";
 import { buildSkillSystemPrompt } from "@/lib/ai/skill-prompt";
 import { providerSupportsTools, PROVIDERS } from "@/lib/ai/models";
 import type { ProviderId } from "@/lib/ai/models";
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       systemPrompt = buildAskSystemPrompt(cwd);
       tools = createAgentTools(cwd, ["readFile", "listDirectory", "grep"], workspaceId, sessionCreatedAt);
     } else {
-      // Default agent mode: load skill catalog for auto-matching
+      // Agent modes ("agent" (default), "long-agent", or legacy "agent"): load skill catalog
       let skillCatalog: { slug: string; name: string; description: string | null }[] | undefined;
       try {
         const skillRows = await db
@@ -132,7 +132,13 @@ export async function POST(req: NextRequest) {
         // Skills table might not exist yet; proceed without catalog
       }
 
-      systemPrompt = buildAgentSystemPrompt(cwd, skillCatalog, { noTools: !useTools });
+      if (mode === "long-agent") {
+        // Long Agent: research execution pipeline mode — enhanced prompt
+        systemPrompt = buildAgentLongSystemPrompt(cwd, skillCatalog, { noTools: !useTools });
+      } else {
+        // Agent (default): standard agent mode
+        systemPrompt = buildAgentSystemPrompt(cwd, skillCatalog, { noTools: !useTools });
+      }
       tools = createAgentTools(cwd, undefined, workspaceId, sessionCreatedAt);
     }
 

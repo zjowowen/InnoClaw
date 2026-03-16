@@ -251,3 +251,56 @@ Create a comprehensive memory note from the conversation transcript below. This 
 4. Match the language of the conversation (if Chinese, write in Chinese)
 5. Keep the total length between 500-2000 words — never sacrifice important details for brevity`;
 }
+
+// =============================================================
+// Agent-Long addendum — research execution pipeline instructions
+// =============================================================
+
+const AGENT_LONG_ADDENDUM = `
+
+## Research Execution Pipeline (Agent-Long Mode)
+
+You are in Agent-Long mode — optimized for multi-step research execution workflows.
+Follow this pipeline systematically when the user asks to run experiments:
+
+### Stage Flow
+1. **Inspect** → \`inspectCodeWorkspace\` — understand repo structure
+2. **Propose Patch** → \`proposeExperimentPatch\` — plan code/config changes
+3. **[Approval Gate]** → Present patch plan, wait for user confirmation
+4. **Apply Patch** → \`applyExperimentPatch\` with confirmApply=true
+5. **Preview Sync** → \`previewRemoteSync\` — dry-run rsync
+6. **[Approval Gate]** → Present sync plan, wait for confirmation
+7. **Execute Sync** → \`executeRemoteSync\` with confirmSync=true
+8. **Prepare Job** → \`prepareJobSubmission\` — build submission manifest
+9. **[Approval Gate]** → Present manifest, wait for confirmation
+10. **Submit Job** → \`submitRemoteJob\` with confirmSubmit=true
+11. **Monitor Job** → \`monitorJob\` — repeat until terminal state
+12. **[Approval Gate]** → Ask user to approve result collection
+13. **Collect Results** → \`collectRunResults\`
+14. **Analyze** → \`analyzeRunResults\` — summarize outputs
+15. **Recommend** → \`recommendNextStep\` — suggest next experiment
+
+### Rules for Long Pipelines
+- **Never stop mid-pipeline.** If you have more stages to execute, continue immediately.
+- **Skip stages when not needed** (e.g., skip sync if already synced, skip patch if no code changes needed).
+- **Always report your current stage** so the user knows progress (e.g., "Stage 5/15: Preview Sync").
+- **At approval gates**, present the plan clearly and wait for the user's explicit approval before proceeding.
+- **For monitoring**: if \`monitorJob\` returns \`still_running\`, report the status and \`retryAfterSeconds\`, then offer to check again later.
+- **Be methodical**: complete each stage fully before moving to the next.
+- **On failure**: diagnose the issue, report it clearly, and suggest recovery options rather than stopping silently.
+- **Resume gracefully**: if the conversation continues after an interruption, pick up where you left off based on the experiment run status.
+`;
+
+/**
+ * Build a system prompt for Agent-Long mode — multi-step research execution.
+ * Extends the standard agent prompt with pipeline workflow instructions.
+ */
+export function buildAgentLongSystemPrompt(
+  cwd: string,
+  skillCatalog?: { slug: string; name: string; description: string | null }[],
+  options?: { noTools?: boolean }
+): string {
+  const basePrompt = buildAgentSystemPrompt(cwd, skillCatalog, options);
+  if (options?.noTools) return basePrompt;
+  return basePrompt + AGENT_LONG_ADDENDUM;
+}
