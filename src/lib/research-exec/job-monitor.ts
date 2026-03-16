@@ -162,7 +162,10 @@ function resolveStatus(
       const parts = parsed.sacct.split("|");
       schedulerState = (parts[0] ?? "").trim();
       const exitStr = (parts[1] ?? "").split(":")[0];
-      if (exitStr) exitCode = parseInt(exitStr, 10) || null;
+      if (exitStr) {
+        const parsedExit = parseInt(exitStr, 10);
+        exitCode = Number.isNaN(parsedExit) ? null : parsedExit;
+      }
     }
   } else if (profile.schedulerType === "rjob") {
     if (parsed.rjobStatus) {
