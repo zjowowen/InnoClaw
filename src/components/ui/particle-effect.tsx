@@ -27,7 +27,7 @@ interface ParticleEffectProps {
 export function ParticleEffect({
   isActive,
   className = "",
-  particleCount = 50,
+  particleCount = MAX_PARTICLES,
   colors = ["#8b5cf6", "#6366f1", "#3b82f6", "#06b6d4", "#a855f7"],
   density = 0.00015, // particles per square pixel
 }: ParticleEffectProps) {
