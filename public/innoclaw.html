@@ -276,6 +276,58 @@
         .mobile-menu.open { display: block; }
         @media (max-width: 768px) { .nav-desktop { display: none; } .nav-hamburger { display: flex; } }
         @media (min-width: 769px) { .nav-hamburger { display: none; } }
+
+        /* ===== Utility classes to replace inline styles ===== */
+        .clr-primary { color: var(--text-primary); }
+        .clr-secondary { color: var(--text-secondary); }
+        .clr-muted { color: var(--text-muted); }
+        .clr-accent { color: var(--text-accent); }
+        .clr-accent2 { color: var(--text-accent2); }
+        .bg-section { background: var(--bg-secondary); }
+        .border-def { border: 1px solid var(--border-default); }
+        .border-accent { border: 1px solid var(--border-accent); }
+        .divider-bg { background: var(--divider); }
+        .tag-styled { background: var(--tag-bg); border: 1px solid var(--tag-border); }
+        .tag-text { color: var(--tag-text); }
+
+        /* Feature card icon containers */
+        .feat-icon {
+            width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        }
+        .feat-icon-sm {
+            width: 1.75rem; height: 1.75rem; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center; font-size: 0.875rem;
+        }
+        .feat-icon-lg {
+            width: 2.25rem; height: 2.25rem; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Section header pattern */
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        .section-header h2 { font-size: clamp(1.875rem, 4vw, 2.25rem); font-weight: 700; margin-top: 0.5rem; }
+        .section-header p { font-size: 0.94rem; line-height: 1.6; margin-top: 0.5rem; max-width: 48rem; margin-inline: auto; color: var(--text-secondary); }
+
+        /* Integration card icon */
+        .integ-icon-box {
+            width: 3rem; height: 3rem; border-radius: 0.75rem;
+            display: flex; align-items: center; justify-content: center; font-size: 1.125rem; margin-bottom: 0.75rem;
+        }
+
+        /* Color helpers for feature borders */
+        .border-l-emerald { border-left: 3px solid #059669; }
+        .border-l-purple  { border-left: 3px solid #8b5cf6; }
+        .border-l-amber   { border-left: 3px solid #d97706; }
+        .border-l-red     { border-left: 3px solid #ef4444; }
+        .border-l-blue    { border-left: 3px solid #3b82f6; }
+        .border-l-indigo  { border-left: 3px solid #6366f1; }
+        .border-l-teal    { border-left: 3px solid #0d9488; }
+        .border-l-pink    { border-left: 3px solid #be185d; }
+        .border-l-yellow  { border-left: 3px solid #ca8a04; }
+        .border-l-sky     { border-left: 3px solid #0284c7; }
+        .border-l-indigo2 { border-left: 3px solid #4f46e5; }
+        .border-l-dred    { border-left: 3px solid #dc2626; }
     </style>
 </head>
 <body class="antialiased relative noise-overlay">
@@ -286,10 +338,22 @@
     <!-- ======= Sticky Navigation ======= -->
     <nav class="fixed top-0 left-0 right-0 z-50" style="background: var(--bg-nav); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid var(--border-default);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <!-- Logo -->
             <a href="#" class="flex items-center gap-2 flex-shrink-0">
-                <div class="h-7 w-7 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center"><svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 6c0-1 .8-2 2-2s2 1.5 1.5 3L10 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M13 5c0-1 .8-2 2-2s2 1.5 1.2 3L14.5 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M18 6c0-1 .8-2 2-2s2 1.5 1 3L19 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M9 14c-.5 1-1 3 0 5 1.5 3 5 5 7 5s5.5-2 7-5c1-2 .5-4 0-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="18" r="2.5" fill="#facc15" opacity="0.9"/><path d="M16 14.5v-1.5M18.5 17l1.2-1M13.5 17l-1.2-1M18.2 20l1-1M13.8 20l-1-1" stroke="#facc15" stroke-width="1.2" stroke-linecap="round" opacity="0.9"/></svg></div>
+                <div class="h-7 w-7 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg viewBox="0 0 32 32" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 6c0-1 .8-2 2-2s2 1.5 1.5 3L10 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M13 5c0-1 .8-2 2-2s2 1.5 1.2 3L14.5 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M18 6c0-1 .8-2 2-2s2 1.5 1 3L19 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M9 14c-.5 1-1 3 0 5 1.5 3 5 5 7 5s5.5-2 7-5c1-2 .5-4 0-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="16" cy="18" r="2.5" fill="#facc15" opacity="0.9"/>
+                        <path d="M16 14.5v-1.5M18.5 17l1.2-1M13.5 17l-1.2-1M18.2 20l1-1M13.8 20l-1-1" stroke="#facc15" stroke-width="1.2" stroke-linecap="round" opacity="0.9"/>
+                    </svg>
+                </div>
                 <span class="text-base font-bold tracking-tight tech-shimmer">InnoClaw</span>
             </a>
+
+            <!-- Desktop Nav Links -->
             <div class="nav-desktop flex items-center gap-5 text-xs">
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#skills" class="nav-link">Skills</a>
@@ -298,22 +362,26 @@
                 <a href="#quickstart" class="nav-link">Quick Start</a>
                 <a href="#ecosystem" class="nav-link">Ecosystem</a>
             </div>
+
+            <!-- Right Controls -->
             <div class="flex items-center gap-2">
                 <button id="theme-toggle" onclick="toggleTheme()" class="theme-toggle" title="Toggle light/dark mode">
                     <i class="fas fa-moon text-sm" id="theme-icon"></i>
                 </button>
-                <button id="lang-toggle" onclick="toggleLanguage()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold" style="border: 1px solid var(--border-default); background: var(--bg-card); color: var(--text-secondary);">
+                <button id="lang-toggle" onclick="toggleLanguage()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border-def clr-secondary" style="background: var(--bg-card);">
                     <i class="fas fa-globe text-[10px]"></i>
                     <span id="lang-label">中文</span>
                 </button>
                 <a href="https://github.com/zjowowen/InnoClaw" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/20 transition-all">
                     <i class="fab fa-github"></i> GitHub
                 </a>
-                <button class="nav-hamburger items-center justify-center w-8 h-8 rounded-lg" style="color: var(--text-secondary);" onclick="document.getElementById('mobile-menu').classList.toggle('open')">
+                <button class="nav-hamburger items-center justify-center w-8 h-8 rounded-lg clr-secondary" onclick="document.getElementById('mobile-menu').classList.toggle('open')">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
         </div>
+
+        <!-- Mobile Menu -->
         <div id="mobile-menu" class="mobile-menu">
             <div class="flex flex-col gap-3 text-sm">
                 <a href="#features" class="nav-link" onclick="document.getElementById('mobile-menu').classList.remove('open')">Features</a>
@@ -322,7 +390,9 @@
                 <a href="#research" class="nav-link" onclick="document.getElementById('mobile-menu').classList.remove('open')">Research</a>
                 <a href="#quickstart" class="nav-link" onclick="document.getElementById('mobile-menu').classList.remove('open')">Quick Start</a>
                 <a href="#ecosystem" class="nav-link" onclick="document.getElementById('mobile-menu').classList.remove('open')">Ecosystem</a>
-                <a href="https://github.com/zjowowen/InnoClaw" target="_blank" class="nav-link sm:hidden"><i class="fab fa-github mr-1"></i> GitHub</a>
+                <a href="https://github.com/zjowowen/InnoClaw" target="_blank" class="nav-link sm:hidden">
+                    <i class="fab fa-github mr-1"></i> GitHub
+                </a>
             </div>
         </div>
     </nav>
@@ -357,13 +427,13 @@
                 </h1>
                 <div class="flex items-center justify-center gap-3 mb-6">
                     <div class="h-[1px] w-10 sm:w-16" style="background: linear-gradient(90deg, transparent, var(--accent-cyan));"></div>
-                    <p class="text-lg sm:text-xl md:text-2xl font-semibold tracking-wide" style="color: var(--text-secondary);" data-i18n="slogan">Grip Science, Unleash Innovation at Scale</p>
+                    <p class="text-lg sm:text-xl md:text-2xl font-semibold tracking-wide clr-secondary" data-i18n="slogan">Grip Science, Unleash Innovation at Scale</p>
                     <div class="h-[1px] w-10 sm:w-16" style="background: linear-gradient(90deg, var(--accent-cyan), transparent);"></div>
                 </div>
-                <p class="text-lg sm:text-xl font-semibold flex items-center justify-center gap-2 mb-4" style="color: var(--text-secondary);">
+                <p class="text-lg sm:text-xl font-semibold flex items-center justify-center gap-2 mb-4 clr-secondary">
                     <span id="hero-icon" class="text-xl">&#128161;</span>
                     <span id="hero-prefix">Innovation for</span>
-                    <span id="hero-typewriter" class="pr-1 mono" style="color: var(--text-accent);"></span>
+                    <span id="hero-typewriter" class="pr-1 mono clr-accent"></span>
                 </p>
             </div>
 
@@ -374,9 +444,9 @@
                 <div class="relative">
                     <div class="text-3xl md:text-4xl mb-3 tracking-wider">&#129302; &#128161; &#129516; &#128218; &#128300;</div>
                     <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold mb-3" data-i18n="hero_title">Turn Server Folders into AI Workspaces</h2>
-                    <p class="text-sm leading-relaxed max-w-2xl mx-auto mb-4" style="color: var(--text-secondary);" data-i18n="hero_desc">Chat with AI grounded in your documents via RAG, leverage 206 scientific skills, and orchestrate autonomous agents &mdash; all from a single self-hosted platform.</p>
+                    <p class="text-sm leading-relaxed max-w-2xl mx-auto mb-4 clr-secondary" data-i18n="hero_desc">Chat with AI grounded in your documents via RAG, leverage 206 scientific skills, and orchestrate autonomous agents &mdash; all from a single self-hosted platform.</p>
                     <div class="glow-line mx-auto max-w-xs mb-4"></div>
-                    <p class="text-sm leading-relaxed max-w-3xl mx-auto" style="color: var(--text-muted);" data-i18n="hero_purpose">InnoClaw is built to democratize AI-powered scientific research. By providing a self-hosted, open-source platform that unifies document intelligence, multi-agent orchestration, and 206 domain-specific skills, it empowers researchers, labs, and institutions to accelerate discovery &mdash; without surrendering data to third-party clouds.</p>
+                    <p class="text-sm leading-relaxed max-w-3xl mx-auto clr-muted" data-i18n="hero_purpose">InnoClaw is built to democratize AI-powered scientific research. By providing a self-hosted, open-source platform that unifies document intelligence, multi-agent orchestration, and 206 domain-specific skills, it empowers researchers, labs, and institutions to accelerate discovery &mdash; without surrendering data to third-party clouds.</p>
                 </div>
             </div>
 
@@ -390,9 +460,18 @@
 
             <!-- Stats pills -->
             <div class="flex flex-wrap justify-center gap-3">
-                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="background: var(--tag-bg); border: 1px solid var(--tag-border);"><span class="font-extrabold mono" style="color: var(--text-accent);">206</span><span class="text-xs uppercase mono font-semibold" style="color: var(--text-muted);" data-i18n="stat_skills">Skills</span></div>
-                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="background: var(--tag-bg); border: 1px solid var(--tag-border);"><span class="font-extrabold mono" style="color: var(--text-accent);">8</span><span class="text-xs uppercase mono font-semibold" style="color: var(--text-muted);" data-i18n="stat_domains">Domains</span></div>
-                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="background: var(--tag-bg); border: 1px solid var(--tag-border);"><span class="font-extrabold mono" style="color: var(--text-accent);">9</span><span class="text-xs uppercase mono font-semibold" style="color: var(--text-muted);" data-i18n="stat_llm">LLM Providers</span></div>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm tag-styled">
+                    <span class="font-extrabold mono clr-accent">206</span>
+                    <span class="text-xs uppercase mono font-semibold clr-muted" data-i18n="stat_skills">Skills</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm tag-styled">
+                    <span class="font-extrabold mono clr-accent">8</span>
+                    <span class="text-xs uppercase mono font-semibold clr-muted" data-i18n="stat_domains">Domains</span>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-full text-sm tag-styled">
+                    <span class="font-extrabold mono clr-accent">9</span>
+                    <span class="text-xs uppercase mono font-semibold clr-muted" data-i18n="stat_llm">LLM Providers</span>
+                </div>
             </div>
         </div>
     </section>
@@ -403,17 +482,35 @@
         <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-10">
             <div class="flex items-center justify-center gap-3 mb-10">
                 <span class="section-num">&sect;01</span>
-                <div class="h-[1px] flex-1 max-w-[60px]" style="background: var(--divider);"></div>
-                <h3 class="text-xs font-bold uppercase tracking-[0.2em] mono" style="color: var(--text-muted);" data-i18n="at_a_glance">At a Glance</h3>
-                <div class="h-[1px] flex-1 max-w-[60px]" style="background: var(--divider);"></div>
+                <div class="h-[1px] flex-1 max-w-[60px] divider-bg"></div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.2em] mono clr-muted" data-i18n="at_a_glance">At a Glance</h3>
+                <div class="h-[1px] flex-1 max-w-[60px] divider-bg"></div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="1"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="206">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_skills">Skills</div></div>
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="2"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="8">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_domains">Domains</div></div>
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="3"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="9">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_llm">LLM Providers</div></div>
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="4"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="68">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_tools">Agent Tools</div></div>
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="5"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="68">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_api">API Routes</div></div>
-                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="5"><div class="text-2xl sm:text-3xl font-extrabold mono stat-number" style="color: var(--text-accent);" data-target="2">0</div><div class="text-xs uppercase tracking-wider mt-1.5 font-semibold" style="color: var(--text-muted);" data-i18n="stat_langs">Languages</div></div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="1">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="206">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_skills">Skills</div>
+                </div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="2">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="8">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_domains">Domains</div>
+                </div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="3">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="9">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_llm">LLM Providers</div>
+                </div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="4">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="68">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_tools">Agent Tools</div>
+                </div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="5">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="68">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_api">API Routes</div>
+                </div>
+                <div class="card stat-accent-top rounded-xl p-5 text-center scroll-reveal" data-delay="5">
+                    <div class="text-2xl sm:text-3xl font-extrabold mono stat-number clr-accent" data-target="2">0</div>
+                    <div class="text-xs uppercase tracking-wider mt-1.5 font-semibold clr-muted" data-i18n="stat_langs">Languages</div>
+                </div>
             </div>
         </div>
     </section>
@@ -422,65 +519,225 @@
     <section id="features" class="py-20 relative">
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;02</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2" data-i18n="core_title">Core Features</h2>
-                <p class="text-sm leading-relaxed mt-3 max-w-3xl mx-auto" style="color: var(--text-secondary);" data-i18n="core_desc">A comprehensive AI research platform combining workspace management, RAG-enhanced chat, autonomous agents, and 206 scientific skills in a single self-hosted application.</p>
+                <h2 data-i18n="core_title">Core Features</h2>
+                <p data-i18n="core_desc">A comprehensive AI research platform combining workspace management, RAG-enhanced chat, autonomous agents, and 206 scientific skills in a single self-hosted application.</p>
             </div>
+
             <!-- Bento Grid -->
             <div class="bento-grid">
-                <!-- Row 1: 2 large + 1 normal -->
-                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal" data-delay="1" style="border-left: 3px solid #059669;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-emerald-500 text-base" style="background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.2);"><i class="fas fa-folder-open"></i></div><h3 class="font-bold text-base" data-i18n="feat1_title">Workspace + File Management</h3></div><p class="text-sm leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat1_desc">Map server-side folders as persistent workspaces. Browse, upload, edit, and preview files with tree-view navigation, Markdown rendering, and PDF support.</p></div>
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="2" style="border-left: 3px solid #8b5cf6;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-purple-500 text-base" style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);"><i class="fas fa-comments"></i></div><h3 class="font-bold text-sm" data-i18n="feat2_title">RAG-Enhanced Chat</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat2_desc">AI answers grounded in your workspace documents with inline source citations. Powered by vector embeddings stored in SQLite for instant retrieval.</p></div>
+                <!-- Row 1 -->
+                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal border-l-emerald" data-delay="1">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-emerald-500" style="background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.2);"><i class="fas fa-folder-open"></i></div>
+                        <h3 class="font-bold text-base" data-i18n="feat1_title">Workspace + File Management</h3>
+                    </div>
+                    <p class="text-sm leading-relaxed clr-secondary" data-i18n="feat1_desc">Map server-side folders as persistent workspaces. Browse, upload, edit, and preview files with tree-view navigation, Markdown rendering, and PDF support.</p>
+                </div>
 
-                <!-- Row 2: 1 normal + 2 large -->
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="1" style="border-left: 3px solid #d97706;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-amber-500 text-base" style="background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.2);"><i class="fas fa-file-alt"></i></div><h3 class="font-bold text-sm" data-i18n="feat3_title">Smart Note Generation</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat3_desc">Auto-generate summaries, FAQs, briefings, newsletters, timelines, and daily/weekly reports from your workspace content with one click.</p></div>
-                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal" data-delay="2" style="border-left: 3px solid #ef4444;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-red-500 text-base" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);"><i class="fas fa-robot"></i></div><h3 class="font-bold text-base" data-i18n="feat4_title">AI Agent System</h3></div><p class="text-sm leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat4_desc">Autonomous agents with 36 tool-calling capabilities including bash execution, file operations, kubectl commands, article search, and scientific skill invocation.</p></div>
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-purple" data-delay="2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-purple-500" style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);"><i class="fas fa-comments"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat2_title">RAG-Enhanced Chat</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat2_desc">AI answers grounded in your workspace documents with inline source citations. Powered by vector embeddings stored in SQLite for instant retrieval.</p>
+                </div>
 
-                <!-- Row 3: 3 equal -->
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="1" style="border-left: 3px solid #3b82f6;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-blue-500 text-base" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);"><i class="fas fa-graduation-cap"></i></div><h3 class="font-bold text-sm" data-i18n="feat5_title">Paper Study</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat5_desc">Cross-source academic search spanning arXiv, HuggingFace Daily Papers, and Semantic Scholar. AI-powered query expansion and batch summarization.</p></div>
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="2" style="border-left: 3px solid #6366f1;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-indigo-500 text-base" style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);"><i class="fas fa-layer-group"></i></div><h3 class="font-bold text-sm" data-i18n="feat6_title">Multi-Agent Sessions</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat6_desc">Tab-based multi-session management with independent contexts, rename support, and MAX mode for automatic context summarization to prevent overflow.</p></div>
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="3" style="border-left: 3px solid #0d9488;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-teal-500 text-base" style="background: rgba(13,148,136,0.1); border: 1px solid rgba(13,148,136,0.2);"><i class="fas fa-database"></i></div><h3 class="font-bold text-sm" data-i18n="feat7_title">Dataset Management</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat7_desc">Download datasets from HuggingFace &amp; ModelScope with pause/resume. Real-time progress tracking, manifest building, data preview, and workspace linking.</p></div>
+                <!-- Row 2 -->
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-amber" data-delay="1">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-amber-500" style="background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.2);"><i class="fas fa-file-alt"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat3_title">Smart Note Generation</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat3_desc">Auto-generate summaries, FAQs, briefings, newsletters, timelines, and daily/weekly reports from your workspace content with one click.</p>
+                </div>
 
-                <!-- Row 4: 1 normal + 2 large -->
-                <div class="card card-glow-top rounded-xl p-6 scroll-reveal" data-delay="1" style="border-left: 3px solid #be185d;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-pink-600 text-base" style="background: rgba(190,24,93,0.1); border: 1px solid rgba(190,24,93,0.2);"><i class="fas fa-flask-vial"></i></div><h3 class="font-bold text-sm" data-i18n="feat8_title">Research Execution</h3></div><p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat8_desc">13-stage experiment workflow with SSH remote execution, Slurm job scheduling, real-time monitoring, and multi-agent collaboration across 5 AI roles.</p></div>
-                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal" data-delay="2" style="border-left: 3px solid #ca8a04;"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center text-yellow-600 text-base" style="background: rgba(202,138,4,0.1); border: 1px solid rgba(202,138,4,0.2);"><i class="fas fa-clock"></i></div><h3 class="font-bold text-base" data-i18n="feat9_title">Scheduled Automation</h3></div><p class="text-sm leading-relaxed" style="color: var(--text-secondary);" data-i18n="feat9_desc">Cron-based task automation for daily reports, weekly summaries, git sync, and custom workflows. Auto-generate research digests on schedule.</p></div>
+                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal border-l-red" data-delay="2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-red-500" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);"><i class="fas fa-robot"></i></div>
+                        <h3 class="font-bold text-base" data-i18n="feat4_title">AI Agent System</h3>
+                    </div>
+                    <p class="text-sm leading-relaxed clr-secondary" data-i18n="feat4_desc">Autonomous agents with 36 tool-calling capabilities including bash execution, file operations, kubectl commands, article search, and scientific skill invocation.</p>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-blue" data-delay="1">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-blue-500" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);"><i class="fas fa-graduation-cap"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat5_title">Paper Study</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat5_desc">Cross-source academic search spanning arXiv, HuggingFace Daily Papers, and Semantic Scholar. AI-powered query expansion and batch summarization.</p>
+                </div>
+
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-indigo" data-delay="2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-indigo-500" style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);"><i class="fas fa-layer-group"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat6_title">Multi-Agent Sessions</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat6_desc">Tab-based multi-session management with independent contexts, rename support, and MAX mode for automatic context summarization to prevent overflow.</p>
+                </div>
+
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-teal" data-delay="3">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-teal-500" style="background: rgba(13,148,136,0.1); border: 1px solid rgba(13,148,136,0.2);"><i class="fas fa-database"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat7_title">Dataset Management</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat7_desc">Download datasets from HuggingFace &amp; ModelScope with pause/resume. Real-time progress tracking, manifest building, data preview, and workspace linking.</p>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="card card-glow-top rounded-xl p-6 scroll-reveal border-l-pink" data-delay="1">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-pink-600" style="background: rgba(190,24,93,0.1); border: 1px solid rgba(190,24,93,0.2);"><i class="fas fa-flask-vial"></i></div>
+                        <h3 class="font-bold text-sm" data-i18n="feat8_title">Research Execution</h3>
+                    </div>
+                    <p class="text-xs leading-relaxed clr-secondary" data-i18n="feat8_desc">13-stage experiment workflow with SSH remote execution, Slurm job scheduling, real-time monitoring, and multi-agent collaboration across 5 AI roles.</p>
+                </div>
+
+                <div class="card card-glow-top bento-wide rounded-xl p-6 scroll-reveal border-l-yellow" data-delay="2">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="feat-icon text-yellow-600" style="background: rgba(202,138,4,0.1); border: 1px solid rgba(202,138,4,0.2);"><i class="fas fa-clock"></i></div>
+                        <h3 class="font-bold text-base" data-i18n="feat9_title">Scheduled Automation</h3>
+                    </div>
+                    <p class="text-sm leading-relaxed clr-secondary" data-i18n="feat9_desc">Cron-based task automation for daily reports, weekly summaries, git sync, and custom workflows. Auto-generate research digests on schedule.</p>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- ======= SCP SCIENTIFIC SKILLS ======= -->
-    <section id="skills" class="py-20 relative" style="background: var(--bg-secondary);">
+    <section id="skills" class="py-20 relative bg-section">
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;03</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2"><span data-i18n="scp_title">206 Scientific Skills Across 8 Domains</span> <span class="ml-2 text-xs font-semibold px-2.5 py-1 rounded-full align-middle mono" style="color: var(--tag-text); background: var(--tag-bg); border: 1px solid var(--tag-border);">SCP</span></h2>
-                <p class="text-sm leading-relaxed mt-2 max-w-3xl mx-auto" style="color: var(--text-secondary);" data-i18n="scp_desc">Powered by <a href="https://github.com/InternScience/scp" target="_blank" class="font-semibold hover:underline" style="color: var(--text-accent);">Science Context Protocol (SCP)</a>, each skill is composable into autonomous research workflows &mdash; from drug target identification to protein structure prediction.</p>
+                <h2>
+                    <span data-i18n="scp_title">206 Scientific Skills Across 8 Domains</span>
+                    <span class="ml-2 text-xs font-semibold px-2.5 py-1 rounded-full align-middle mono tag-text tag-styled">SCP</span>
+                </h2>
+                <p data-i18n="scp_desc">Powered by <a href="https://github.com/InternScience/scp" target="_blank" class="font-semibold hover:underline clr-accent">Science Context Protocol (SCP)</a>, each skill is composable into autonomous research workflows &mdash; from drug target identification to protein structure prediction.</p>
             </div>
+
+            <!-- Domain Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #059669;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#128138;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">71</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain1_title">Drug Discovery &amp; Pharmacology</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain1_desc">Target identification, ADMET prediction, virtual screening, molecular docking, pharmacovigilance.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 34.5%; background: linear-gradient(90deg, #059669, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #7c3aed;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#129516;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">41</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain2_title">Genomics &amp; Genetic Analysis</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain2_desc">Variant pathogenicity assessment, cancer genomics, population genetics, gene-disease associations.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 19.9%; background: linear-gradient(90deg, #7c3aed, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #2563eb;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#128300;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">38</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain3_title">Protein Science &amp; Engineering</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain3_desc">ESMFold/AlphaFold structure prediction, binding site analysis, protein-drug interaction profiling.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 18.4%; background: linear-gradient(90deg, #2563eb, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #d97706;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#129514;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">24</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain4_title">Chemistry &amp; Molecular Science</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain4_desc">Structure analysis, molecular fingerprints, structure-activity relationships, SMILES processing.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 11.7%; background: linear-gradient(90deg, #d97706, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #dc2626;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#9881;&#65039;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">18</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain5_title">Physics &amp; Engineering</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain5_desc">Circuit analysis, thermodynamics, optics, electromagnetic field analysis, signal processing.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 8.7%; background: linear-gradient(90deg, #dc2626, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #0d9488;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#128300;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">7</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain6_title">Experimental Automation</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain6_desc">Protocol generation, PubMed literature search, experimental data processing.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 3.4%; background: linear-gradient(90deg, #0d9488, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #0284c7;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#127757;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">5</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain7_title">Earth &amp; Environmental Science</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain7_desc">Atmospheric science calculations, oceanographic properties, seismic waveform processing.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 2.4%; background: linear-gradient(90deg, #0284c7, transparent);"></div></div></div>
-                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #4f46e5;"><div class="flex items-center justify-between mb-2"><span class="text-xl">&#128218;</span><span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">2</span></div><h3 class="font-semibold text-sm mb-1" data-i18n="domain8_title">Literature &amp; Mining</h3><p class="text-xs leading-relaxed mb-2.5" style="color: var(--text-muted);" data-i18n="domain8_desc">Scientific literature mining, biomedical web search, meta-analysis execution.</p><div class="skill-bar"><div class="skill-bar-fill" style="width: 1%; background: linear-gradient(90deg, #4f46e5, transparent);"></div></div></div>
+                <div class="card rounded-xl p-4 scroll-reveal border-l-emerald">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#128138;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">71</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain1_title">Drug Discovery &amp; Pharmacology</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain1_desc">Target identification, ADMET prediction, virtual screening, molecular docking, pharmacovigilance.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 34.5%; background: linear-gradient(90deg, #059669, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #7c3aed;">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#129516;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">41</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain2_title">Genomics &amp; Genetic Analysis</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain2_desc">Variant pathogenicity assessment, cancer genomics, population genetics, gene-disease associations.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 19.9%; background: linear-gradient(90deg, #7c3aed, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal" style="border-left: 3px solid #2563eb;">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#128300;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">38</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain3_title">Protein Science &amp; Engineering</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain3_desc">ESMFold/AlphaFold structure prediction, binding site analysis, protein-drug interaction profiling.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 18.4%; background: linear-gradient(90deg, #2563eb, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal border-l-amber">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#129514;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">24</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain4_title">Chemistry &amp; Molecular Science</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain4_desc">Structure analysis, molecular fingerprints, structure-activity relationships, SMILES processing.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 11.7%; background: linear-gradient(90deg, #d97706, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal border-l-dred">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#9881;&#65039;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">18</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain5_title">Physics &amp; Engineering</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain5_desc">Circuit analysis, thermodynamics, optics, electromagnetic field analysis, signal processing.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 8.7%; background: linear-gradient(90deg, #dc2626, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal border-l-teal">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#128300;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">7</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain6_title">Experimental Automation</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain6_desc">Protocol generation, PubMed literature search, experimental data processing.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 3.4%; background: linear-gradient(90deg, #0d9488, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal border-l-sky">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#127757;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">5</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain7_title">Earth &amp; Environmental Science</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain7_desc">Atmospheric science calculations, oceanographic properties, seismic waveform processing.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 2.4%; background: linear-gradient(90deg, #0284c7, transparent);"></div></div>
+                </div>
+
+                <div class="card rounded-xl p-4 scroll-reveal border-l-indigo2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xl">&#128218;</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">2</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1" data-i18n="domain8_title">Literature &amp; Mining</h3>
+                    <p class="text-xs leading-relaxed mb-2.5 clr-muted" data-i18n="domain8_desc">Scientific literature mining, biomedical web search, meta-analysis execution.</p>
+                    <div class="skill-bar"><div class="skill-bar-fill" style="width: 1%; background: linear-gradient(90deg, #4f46e5, transparent);"></div></div>
+                </div>
             </div>
+
+            <!-- SCP Info + LLM Support -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="card rounded-xl p-5 scroll-reveal"><div class="flex items-center gap-2 mb-3"><div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm" style="color: var(--text-accent); background: var(--tag-bg); border: 1px solid var(--tag-border);"><i class="fas fa-flask"></i></div><h4 class="font-semibold text-sm" data-i18n="scp_panel_title">Science Context Protocol</h4></div><p class="text-xs leading-relaxed mb-3" style="color: var(--text-secondary);" data-i18n="scp_panel_desc">SCP provides a standardized skill format for autonomous scientific research. Each skill includes overview, capabilities, usage examples, and API endpoint connections via the <a href="https://scphub.intern-ai.org.cn/" target="_blank" class="font-semibold hover:underline" style="color: var(--text-accent);">Intern-Discovery Platform</a>.</p><div class="text-xs mono mb-3" style="color: var(--text-muted);">Overview &rarr; When to Use &rarr; Capabilities &rarr; Examples</div><div class="flex items-center justify-between flex-wrap gap-2"><a href="https://github.com/InternScience/scp" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold hover:underline" style="color: var(--text-accent);"><i class="fab fa-github"></i> InternScience/scp <i class="fas fa-arrow-right text-[10px]"></i></a><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style="background: var(--accent-cyan);"></span><p class="text-xs font-semibold mono tracking-wide" style="color: var(--text-muted);" data-i18n="scp_stats">206 SKILLS ACROSS 8 DOMAINS</p></div></div></div>
-                <div class="card rounded-xl p-5 scroll-reveal"><h4 class="font-semibold text-sm mb-3 flex items-center gap-2"><i class="fas fa-brain" style="color: var(--text-accent2);"></i> <span data-i18n="multi_llm">Multi-LLM Support</span> <span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);">9 Providers &middot; 26 Models</span></h4>
+                <div class="card rounded-xl p-5 scroll-reveal">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="feat-icon-sm clr-accent tag-styled"><i class="fas fa-flask"></i></div>
+                        <h4 class="font-semibold text-sm" data-i18n="scp_panel_title">Science Context Protocol</h4>
+                    </div>
+                    <p class="text-xs leading-relaxed mb-3 clr-secondary" data-i18n="scp_panel_desc">SCP provides a standardized skill format for autonomous scientific research. Each skill includes overview, capabilities, usage examples, and API endpoint connections via the <a href="https://scphub.intern-ai.org.cn/" target="_blank" class="font-semibold hover:underline clr-accent">Intern-Discovery Platform</a>.</p>
+                    <div class="text-xs mono mb-3 clr-muted">Overview &rarr; When to Use &rarr; Capabilities &rarr; Examples</div>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <a href="https://github.com/InternScience/scp" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold hover:underline clr-accent">
+                            <i class="fab fa-github"></i> InternScience/scp <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style="background: var(--accent-cyan);"></span>
+                            <p class="text-xs font-semibold mono tracking-wide clr-muted" data-i18n="scp_stats">206 SKILLS ACROSS 8 DOMAINS</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card rounded-xl p-5 scroll-reveal">
+                    <h4 class="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <i class="fas fa-brain clr-accent2"></i>
+                        <span data-i18n="multi_llm">Multi-LLM Support</span>
+                        <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled">9 Providers &middot; 26 Models</span>
+                    </h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span><span class="font-medium text-xs">OpenAI</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">GPT-5.2, 4.1, o3/o4</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span><span class="font-medium text-xs">Anthropic</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">Opus 4, Sonnet 4, Haiku</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span><span class="font-medium text-xs">Google</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">Gemini 2.5/3/3.1</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0"></span><span class="font-medium text-xs">DeepSeek</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">V3.2</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0"></span><span class="font-medium text-xs">Qwen</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">Qwen3 235B, 3.5 397B</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span><span class="font-medium text-xs">Moonshot</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">Kimi K2.5</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span><span class="font-medium text-xs">SH-Lab</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">Intern S1, S1 Pro</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span><span class="font-medium text-xs">MiniMax</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">MiniMax 2.5</span></div>
-                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2 sm:col-span-2"><span class="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0"></span><span class="font-medium text-xs">Zhipu</span><span class="mono text-[10px] ml-auto" style="color: var(--text-muted);">GLM-5</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span><span class="font-medium text-xs">OpenAI</span><span class="mono text-[10px] ml-auto clr-muted">GPT-5.2, 4.1, o3/o4</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span><span class="font-medium text-xs">Anthropic</span><span class="mono text-[10px] ml-auto clr-muted">Opus 4, Sonnet 4, Haiku</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span><span class="font-medium text-xs">Google</span><span class="mono text-[10px] ml-auto clr-muted">Gemini 2.5/3/3.1</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0"></span><span class="font-medium text-xs">DeepSeek</span><span class="mono text-[10px] ml-auto clr-muted">V3.2</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0"></span><span class="font-medium text-xs">Qwen</span><span class="mono text-[10px] ml-auto clr-muted">Qwen3 235B, 3.5 397B</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span><span class="font-medium text-xs">Moonshot</span><span class="mono text-[10px] ml-auto clr-muted">Kimi K2.5</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span><span class="font-medium text-xs">SH-Lab</span><span class="mono text-[10px] ml-auto clr-muted">Intern S1, S1 Pro</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2"><span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span><span class="font-medium text-xs">MiniMax</span><span class="mono text-[10px] ml-auto clr-muted">MiniMax 2.5</span></div>
+                        <div class="flex items-center gap-2.5 text-sm card rounded-lg px-3 py-2 sm:col-span-2"><span class="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0"></span><span class="font-medium text-xs">Zhipu</span><span class="mono text-[10px] ml-auto clr-muted">GLM-5</span></div>
                     </div>
                 </div>
             </div>
@@ -491,29 +748,88 @@
     <section id="workflows" class="py-20 relative">
         <div class="glow-line"></div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;04</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2" data-i18n="workflow_title">Representative Workflows</h2>
-                <p class="text-sm mt-2 max-w-2xl mx-auto" style="color: var(--text-secondary);" data-i18n="workflow_desc">Each workflow chains multiple skills and tools into end-to-end research automation.</p>
+                <h2 data-i18n="workflow_title">Representative Workflows</h2>
+                <p data-i18n="workflow_desc">Each workflow chains multiple skills and tools into end-to-end research automation.</p>
             </div>
+
             <div class="space-y-5">
-                <div class="relative pl-10 scroll-reveal"><div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono" style="background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--text-accent);">01</div><div class="wf-connector"></div><div class="card rounded-xl p-4"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><h3 class="font-semibold text-sm" data-i18n="wf1">Document-Grounded Research</h3><div class="flex flex-wrap gap-1.5"><span class="tag">RAG</span><span class="tag">workspace</span><span class="tag">source-citations</span></div></div></div></div>
-                <div class="relative pl-10 scroll-reveal"><div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono" style="background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--text-accent);">02</div><div class="wf-connector"></div><div class="card rounded-xl p-4"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><h3 class="font-semibold text-sm" data-i18n="wf2">Scientific Computing Pipeline</h3><div class="flex flex-wrap gap-1.5"><span class="tag">agent</span><span class="tag">bash</span><span class="tag">kubectl</span><span class="tag">volcano-gpu</span></div></div></div></div>
-                <div class="relative pl-10 scroll-reveal"><div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono" style="background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--text-accent);">03</div><div class="wf-connector"></div><div class="card rounded-xl p-4"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><h3 class="font-semibold text-sm" data-i18n="wf3">Literature Discovery &amp; Summarization</h3><div class="flex flex-wrap gap-1.5"><span class="tag">arxiv</span><span class="tag">semantic-scholar</span><span class="tag">huggingface</span><span class="tag">batch-summary</span></div></div></div></div>
-                <div class="relative pl-10 scroll-reveal"><div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono" style="background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--text-accent);">04</div><div class="wf-connector"></div><div class="card rounded-xl p-4"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><h3 class="font-semibold text-sm" data-i18n="wf4">Drug Target Analysis</h3><div class="flex flex-wrap gap-1.5"><span class="tag">scp-drug-discovery</span><span class="tag">ADMET</span><span class="tag">molecular-docking</span></div></div></div></div>
-                <div class="relative pl-10 scroll-reveal"><div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono" style="background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--text-accent);">05</div><div class="card rounded-xl p-4"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"><h3 class="font-semibold text-sm" data-i18n="wf5">Protein Structure Prediction</h3><div class="flex flex-wrap gap-1.5"><span class="tag">scp-protein</span><span class="tag">ESMFold</span><span class="tag">AlphaFold</span><span class="tag">binding-sites</span></div></div></div></div>
+                <div class="relative pl-10 scroll-reveal">
+                    <div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono tag-styled clr-accent">01</div>
+                    <div class="wf-connector"></div>
+                    <div class="card rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h3 class="font-semibold text-sm" data-i18n="wf1">Document-Grounded Research</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="tag">RAG</span><span class="tag">workspace</span><span class="tag">source-citations</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative pl-10 scroll-reveal">
+                    <div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono tag-styled clr-accent">02</div>
+                    <div class="wf-connector"></div>
+                    <div class="card rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h3 class="font-semibold text-sm" data-i18n="wf2">Scientific Computing Pipeline</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="tag">agent</span><span class="tag">bash</span><span class="tag">kubectl</span><span class="tag">volcano-gpu</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative pl-10 scroll-reveal">
+                    <div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono tag-styled clr-accent">03</div>
+                    <div class="wf-connector"></div>
+                    <div class="card rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h3 class="font-semibold text-sm" data-i18n="wf3">Literature Discovery &amp; Summarization</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="tag">arxiv</span><span class="tag">semantic-scholar</span><span class="tag">huggingface</span><span class="tag">batch-summary</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative pl-10 scroll-reveal">
+                    <div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono tag-styled clr-accent">04</div>
+                    <div class="wf-connector"></div>
+                    <div class="card rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h3 class="font-semibold text-sm" data-i18n="wf4">Drug Target Analysis</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="tag">scp-drug-discovery</span><span class="tag">ADMET</span><span class="tag">molecular-docking</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative pl-10 scroll-reveal">
+                    <div class="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mono tag-styled clr-accent">05</div>
+                    <div class="card rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <h3 class="font-semibold text-sm" data-i18n="wf5">Protein Structure Prediction</h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="tag">scp-protein</span><span class="tag">ESMFold</span><span class="tag">AlphaFold</span><span class="tag">binding-sites</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- ======= RESEARCH & DISCOVERY ======= -->
-    <section id="research" class="py-20 relative" style="background: var(--bg-secondary);">
+    <section id="research" class="py-20 relative bg-section">
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;05</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2"><span data-i18n="research_title">Research</span> &amp; <span class="tech-shimmer" data-i18n="research_discovery">Discovery</span></h2>
-                <p class="text-sm leading-relaxed mt-2 max-w-3xl mx-auto" style="color: var(--text-secondary);" data-i18n="research_desc">Advanced multi-agent research capabilities — from structured paper discussions to automated experiment execution.</p>
+                <h2><span data-i18n="research_title">Research</span> &amp; <span class="tech-shimmer" data-i18n="research_discovery">Discovery</span></h2>
+                <p data-i18n="research_desc">Advanced multi-agent research capabilities — from structured paper discussions to automated experiment execution.</p>
             </div>
 
             <!-- Paper Discussion System -->
@@ -522,27 +838,27 @@
                 <div class="flex flex-col lg:flex-row gap-6">
                     <div class="flex-1">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-purple-500" style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);"><i class="fas fa-users"></i></div>
+                            <div class="feat-icon-lg text-purple-500" style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2);"><i class="fas fa-users"></i></div>
                             <h3 class="font-bold text-base" data-i18n="paper_disc_title">Multi-Agent Paper Discussion</h3>
                         </div>
-                        <p class="text-xs leading-relaxed mb-4" style="color: var(--text-secondary);" data-i18n="paper_disc_desc">A 5-role structured discussion system that simulates an academic seminar. AI agents collaborate through a 6-phase workflow to produce deep, multi-perspective analysis of any research paper.</p>
+                        <p class="text-xs leading-relaxed mb-4 clr-secondary" data-i18n="paper_disc_desc">A 5-role structured discussion system that simulates an academic seminar. AI agents collaborate through a 6-phase workflow to produce deep, multi-perspective analysis of any research paper.</p>
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#127891;</div><span class="text-[10px] font-semibold mono" style="color: var(--text-accent);" data-i18n="role_moderator">Moderator</span></div>
-                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128218;</div><span class="text-[10px] font-semibold mono" style="color: var(--text-accent);" data-i18n="role_literature">Literature</span></div>
-                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128269;</div><span class="text-[10px] font-semibold mono" style="color: var(--text-accent);" data-i18n="role_critic">Critic</span></div>
-                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128736;&#65039;</div><span class="text-[10px] font-semibold mono" style="color: var(--text-accent);" data-i18n="role_replicator">Replicator</span></div>
-                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#9997;&#65039;</div><span class="text-[10px] font-semibold mono" style="color: var(--text-accent);" data-i18n="role_scribe">Scribe</span></div>
+                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#127891;</div><span class="text-[10px] font-semibold mono clr-accent" data-i18n="role_moderator">Moderator</span></div>
+                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128218;</div><span class="text-[10px] font-semibold mono clr-accent" data-i18n="role_literature">Literature</span></div>
+                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128269;</div><span class="text-[10px] font-semibold mono clr-accent" data-i18n="role_critic">Critic</span></div>
+                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#128736;&#65039;</div><span class="text-[10px] font-semibold mono clr-accent" data-i18n="role_replicator">Replicator</span></div>
+                            <div class="card rounded-lg px-3 py-2 text-center"><div class="text-base mb-1">&#9997;&#65039;</div><span class="text-[10px] font-semibold mono clr-accent" data-i18n="role_scribe">Scribe</span></div>
                         </div>
                     </div>
                     <div class="lg:w-72 flex-shrink-0">
-                        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: var(--text-muted);" data-i18n="disc_phases">6-Phase Workflow</div>
+                        <div class="text-xs font-semibold uppercase tracking-wider mb-3 clr-muted" data-i18n="disc_phases">6-Phase Workflow</div>
                         <div class="space-y-1.5">
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">1</span><span style="color: var(--text-secondary);" data-i18n="phase1">Overview &amp; Context</span></div>
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">2</span><span style="color: var(--text-secondary);" data-i18n="phase2">Methodology Analysis</span></div>
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">3</span><span style="color: var(--text-secondary);" data-i18n="phase3">Critical Review</span></div>
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">4</span><span style="color: var(--text-secondary);" data-i18n="phase4">Reproducibility Check</span></div>
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">5</span><span style="color: var(--text-secondary);" data-i18n="phase5">Cross-Perspective Debate</span></div>
-                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px]" style="background: var(--tag-bg); color: var(--text-accent);">6</span><span style="color: var(--text-secondary);" data-i18n="phase6">Synthesis &amp; Conclusion</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">1</span><span class="clr-secondary" data-i18n="phase1">Overview &amp; Context</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">2</span><span class="clr-secondary" data-i18n="phase2">Methodology Analysis</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">3</span><span class="clr-secondary" data-i18n="phase3">Critical Review</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">4</span><span class="clr-secondary" data-i18n="phase4">Reproducibility Check</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">5</span><span class="clr-secondary" data-i18n="phase5">Cross-Perspective Debate</span></div>
+                            <div class="flex items-center gap-2 text-xs"><span class="w-5 h-5 rounded flex items-center justify-center mono font-bold text-[10px] tag-styled clr-accent">6</span><span class="clr-secondary" data-i18n="phase6">Synthesis &amp; Conclusion</span></div>
                         </div>
                     </div>
                 </div>
@@ -550,14 +866,13 @@
 
             <!-- Research Ideation + Research Execution -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- Research Ideation -->
                 <div class="card rounded-2xl p-5 scroll-reveal relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="w-9 h-9 rounded-lg flex items-center justify-center text-cyan-500" style="background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.2);"><i class="fas fa-lightbulb"></i></div>
+                        <div class="feat-icon-lg text-cyan-500" style="background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.2);"><i class="fas fa-lightbulb"></i></div>
                         <h3 class="font-bold text-sm" data-i18n="ideation_title">Research Ideation</h3>
                     </div>
-                    <p class="text-xs leading-relaxed mb-3" style="color: var(--text-secondary);" data-i18n="ideation_desc">AI-powered brainstorming engine that generates cross-disciplinary research directions grounded in your paper collection. Discover innovation points and unexplored connections.</p>
+                    <p class="text-xs leading-relaxed mb-3 clr-secondary" data-i18n="ideation_desc">AI-powered brainstorming engine that generates cross-disciplinary research directions grounded in your paper collection. Discover innovation points and unexplored connections.</p>
                     <div class="flex flex-wrap gap-1.5">
                         <span class="tag">cross-disciplinary</span>
                         <span class="tag">paper-grounded</span>
@@ -565,14 +880,13 @@
                     </div>
                 </div>
 
-                <!-- Research Execution Framework -->
                 <div class="card rounded-2xl p-5 scroll-reveal relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500 to-transparent"></div>
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="w-9 h-9 rounded-lg flex items-center justify-center text-pink-500" style="background: rgba(236,72,153,0.1); border: 1px solid rgba(236,72,153,0.2);"><i class="fas fa-rocket"></i></div>
+                        <div class="feat-icon-lg text-pink-500" style="background: rgba(236,72,153,0.1); border: 1px solid rgba(236,72,153,0.2);"><i class="fas fa-rocket"></i></div>
                         <h3 class="font-bold text-sm" data-i18n="exec_title">Experiment Execution</h3>
                     </div>
-                    <p class="text-xs leading-relaxed mb-3" style="color: var(--text-secondary);" data-i18n="exec_desc">End-to-end experiment automation: SSH remote execution, Slurm/rjob scheduling, real-time job monitoring, result collection, and AI-driven analysis — all orchestrated by 5 specialized AI roles.</p>
+                    <p class="text-xs leading-relaxed mb-3 clr-secondary" data-i18n="exec_desc">End-to-end experiment automation: SSH remote execution, Slurm/rjob scheduling, real-time job monitoring, result collection, and AI-driven analysis — all orchestrated by 5 specialized AI roles.</p>
                     <div class="flex flex-wrap gap-1.5">
                         <span class="tag">SSH</span>
                         <span class="tag">Slurm</span>
@@ -586,47 +900,72 @@
             <div class="mt-5 card rounded-2xl p-5 scroll-reveal relative overflow-hidden">
                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center text-amber-500" style="background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.2);"><i class="fas fa-eye"></i></div>
+                    <div class="feat-icon-lg text-amber-500" style="background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.2);"><i class="fas fa-eye"></i></div>
                     <h3 class="font-bold text-sm" data-i18n="viewers_title">Advanced File Viewers</h3>
-                    <span class="mono text-xs font-bold px-2 py-0.5 rounded" style="color: var(--tag-text); background: var(--tag-bg);" data-i18n="viewers_badge">Built-in</span>
+                    <span class="mono text-xs font-bold px-2 py-0.5 rounded tag-text tag-styled" data-i18n="viewers_badge">Built-in</span>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128196;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">PDF Viewer</span></div>
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128187;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">Code Editor</span></div>
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128208;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">Markdown</span></div>
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#127970;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">3D CAD</span></div>
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#129516;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">Molecule PDB</span></div>
-                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128451;&#65039;</div><span class="text-[11px] font-medium" style="color: var(--text-secondary);">Archives</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128196;</div><span class="text-[11px] font-medium clr-secondary">PDF Viewer</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128187;</div><span class="text-[11px] font-medium clr-secondary">Code Editor</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128208;</div><span class="text-[11px] font-medium clr-secondary">Markdown</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#127970;</div><span class="text-[11px] font-medium clr-secondary">3D CAD</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#129516;</div><span class="text-[11px] font-medium clr-secondary">Molecule PDB</span></div>
+                    <div class="card rounded-lg px-3 py-2.5 text-center"><div class="text-lg mb-1">&#128451;&#65039;</div><span class="text-[11px] font-medium clr-secondary">Archives</span></div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ======= QUICK START ======= -->
-    <section id="quickstart" class="py-20 relative overflow-hidden" style="background: var(--bg-secondary);">
+    <section id="quickstart" class="py-20 relative overflow-hidden bg-section">
         <div class="orb orb-2 bg-cyan-500" style="width: 400px; height: 400px; bottom: -150px; right: -100px; opacity: 0.06;"></div>
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;06</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2" data-i18n="qs_title">Get Started in Minutes</h2>
+                <h2 data-i18n="qs_title">Get Started in Minutes</h2>
             </div>
+
             <div class="flex flex-col lg:flex-row gap-6 items-start">
+                <!-- Terminal Block -->
                 <div class="flex-1 order-1">
                     <div class="code-block shadow-lg">
-                        <div class="flex items-center gap-2 px-4 py-2.5 border-b" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);"><div class="w-2.5 h-2.5 rounded-full bg-red-400"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><div class="w-2.5 h-2.5 rounded-full bg-green-400"></div><span class="ml-auto text-xs mono" style="color: #475569;">terminal</span></div>
-                        <div class="p-5 text-sm leading-relaxed overflow-x-auto" style="font-family: var(--font-mono);"><span class="comment"># Clone the repository</span><br><span class="cmd">git clone</span> <span class="str">https://github.com/zjowowen/InnoClaw.git</span><br><span class="cmd">cd</span> InnoClaw<br><br><span class="comment"># Install dependencies</span><br><span class="cmd">npm install</span><br><br><span class="comment"># Configure environment</span><br><span class="cmd">cp</span> .env.example .env.local<br><span class="comment"># Edit .env.local with your API keys</span><br><br><span class="comment"># Initialize database &amp; start</span><br><span class="cmd">mkdir</span> <span class="flag">-p</span> ./data &amp;&amp; <span class="cmd">npx</span> drizzle-kit migrate<br><span class="cmd">npm run</span> dev<br><br><span class="comment"># Open http://localhost:3000</span></div>
+                        <div class="flex items-center gap-2 px-4 py-2.5 border-b" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                            <span class="ml-auto text-xs mono" style="color: #475569;">terminal</span>
+                        </div>
+                        <div class="p-5 text-sm leading-relaxed overflow-x-auto" style="font-family: var(--font-mono);">
+                            <span class="comment"># Clone the repository</span><br>
+                            <span class="cmd">git clone</span> <span class="str">https://github.com/zjowowen/InnoClaw.git</span><br>
+                            <span class="cmd">cd</span> InnoClaw<br><br>
+                            <span class="comment"># Install dependencies</span><br>
+                            <span class="cmd">npm install</span><br><br>
+                            <span class="comment"># Configure environment</span><br>
+                            <span class="cmd">cp</span> .env.example .env.local<br>
+                            <span class="comment"># Edit .env.local with your API keys</span><br><br>
+                            <span class="comment"># Initialize database &amp; start</span><br>
+                            <span class="cmd">mkdir</span> <span class="flag">-p</span> ./data &amp;&amp; <span class="cmd">npx</span> drizzle-kit migrate<br>
+                            <span class="cmd">npm run</span> dev<br><br>
+                            <span class="comment"># Open http://localhost:3000</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Requirements Sidebar -->
                 <div class="flex-shrink-0 lg:w-80 order-2">
-                    <p class="text-sm leading-relaxed mb-5" style="color: var(--text-secondary);" data-i18n="qs_desc">Clone the repo, install dependencies, configure your API keys, and start the development server. <span class="font-semibold" style="color: var(--text-primary);">InnoClaw</span> runs on any machine with Node.js 20+.</p>
+                    <p class="text-sm leading-relaxed mb-5 clr-secondary" data-i18n="qs_desc">Clone the repo, install dependencies, configure your API keys, and start the development server. <span class="font-semibold clr-primary">InnoClaw</span> runs on any machine with Node.js 20+.</p>
                     <div class="card rounded-xl p-5 space-y-3">
                         <h4 class="font-semibold text-sm mb-2 uppercase tracking-wide" data-i18n="req_title">Requirements</h4>
-                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5" style="color: var(--text-accent); font-size: 0.75rem;"></i><span class="text-sm" style="color: var(--text-secondary);" data-i18n="req1">Node.js 20+ required</span></div>
-                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5" style="color: var(--text-accent); font-size: 0.75rem;"></i><span class="text-sm" style="color: var(--text-secondary);" data-i18n="req2">SQLite &mdash; zero-config database</span></div>
-                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5" style="color: var(--text-accent); font-size: 0.75rem;"></i><span class="text-sm" style="color: var(--text-secondary);" data-i18n="req3">Supports 9 LLM providers (OpenAI, Anthropic, Gemini, DeepSeek, Qwen, etc.)</span></div>
-                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5" style="color: var(--text-accent); font-size: 0.75rem;"></i><span class="text-sm" style="color: var(--text-secondary);" data-i18n="req4">Ready in under 3 minutes</span></div>
-                        <div class="pt-3 mt-1" style="border-top: 1px solid var(--border-default);"><h4 class="font-semibold text-sm mb-2 uppercase tracking-wide">Or via Claude Code</h4><div class="rounded-lg p-2.5 mono text-xs" style="background: var(--bg-card); border: 1px solid var(--border-default); color: var(--text-accent);">claude &rarr; /project:setup</div></div>
+                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5 clr-accent" style="font-size: 0.75rem;"></i><span class="text-sm clr-secondary" data-i18n="req1">Node.js 20+ required</span></div>
+                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5 clr-accent" style="font-size: 0.75rem;"></i><span class="text-sm clr-secondary" data-i18n="req2">SQLite &mdash; zero-config database</span></div>
+                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5 clr-accent" style="font-size: 0.75rem;"></i><span class="text-sm clr-secondary" data-i18n="req3">Supports 9 LLM providers (OpenAI, Anthropic, Gemini, DeepSeek, Qwen, etc.)</span></div>
+                        <div class="flex items-start gap-2.5"><i class="fas fa-check-circle mt-0.5 clr-accent" style="font-size: 0.75rem;"></i><span class="text-sm clr-secondary" data-i18n="req4">Ready in under 3 minutes</span></div>
+                        <div class="pt-3 mt-1" style="border-top: 1px solid var(--border-default);">
+                            <h4 class="font-semibold text-sm mb-2 uppercase tracking-wide">Or via Claude Code</h4>
+                            <div class="rounded-lg p-2.5 mono text-xs clr-accent" style="background: var(--bg-card); border: 1px solid var(--border-default);">claude &rarr; /project:setup</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -637,27 +976,62 @@
     <section id="ecosystem" class="py-20 relative">
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="text-center mb-12">
+            <div class="section-header">
                 <span class="section-num">&sect;07</span>
-                <h2 class="text-3xl sm:text-4xl font-bold mt-2"><span data-i18n="integ_pre">Integration</span> <span class="tech-shimmer" data-i18n="integ_eco">Ecosystem</span></h2>
+                <h2><span data-i18n="integ_pre">Integration</span> <span class="tech-shimmer" data-i18n="integ_eco">Ecosystem</span></h2>
                 <div class="w-20 h-[2px] bg-gradient-to-r from-cyan-500 to-purple-600 mx-auto rounded-full mt-4"></div>
             </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center" data-delay="1"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-blue-500 text-lg mb-3" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15);"><i class="fas fa-paper-plane"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ1_title">Feishu Bot</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ1_desc">WebSocket real-time messaging with interactive card messages. Agent tool-calling directly from Feishu conversations.</p></div>
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center" data-delay="2"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-purple-500 text-lg mb-3" style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15);"><i class="fas fa-dharmachakra"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ2_title">Kubernetes</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ2_desc">Submit GPU computing jobs via Volcano scheduler. Manage cluster resources directly from the Agent panel.</p></div>
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-lg mb-3" style="color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border-default);"><i class="fab fa-github"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ3_title">GitHub</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ3_desc">Clone and pull repositories with private repo support via personal access tokens. Integrated Git operations.</p></div>
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-amber-500 text-lg mb-3" style="background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.15);"><i class="fas fa-database"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ4_title">HuggingFace</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ4_desc">Browse and download datasets directly. Access Daily Papers for latest AI research. Integrated model discovery.</p></div>
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-orange-500 text-lg mb-3" style="background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.15);"><i class="fas fa-cloud-download-alt"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ5_title">ModelScope</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ5_desc">Download models and datasets from Alibaba ModelScope. Filter patterns, manifest building, and progress tracking.</p></div>
-                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center"><div class="integ-icon w-12 h-12 rounded-xl flex items-center justify-center text-green-500 text-lg mb-3" style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.15);"><i class="fas fa-terminal"></i></div><h3 class="font-semibold text-sm mb-1.5" data-i18n="integ6_title">Terminal</h3><p class="text-xs leading-relaxed flex-grow" style="color: var(--text-muted);" data-i18n="integ6_desc">Built-in shell access for workspace command execution. Supports bash, sh, and zsh with sandboxed directory context.</p></div>
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center" data-delay="1">
+                    <div class="integ-icon-box text-blue-500" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15);"><i class="fas fa-paper-plane"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ1_title">Feishu Bot</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ1_desc">WebSocket real-time messaging with interactive card messages. Agent tool-calling directly from Feishu conversations.</p>
+                </div>
+
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center" data-delay="2">
+                    <div class="integ-icon-box text-purple-500" style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15);"><i class="fas fa-dharmachakra"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ2_title">Kubernetes</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ2_desc">Submit GPU computing jobs via Volcano scheduler. Manage cluster resources directly from the Agent panel.</p>
+                </div>
+
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center">
+                    <div class="integ-icon-box clr-secondary" style="background: var(--bg-card); border: 1px solid var(--border-default);"><i class="fab fa-github"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ3_title">GitHub</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ3_desc">Clone and pull repositories with private repo support via personal access tokens. Integrated Git operations.</p>
+                </div>
+
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center">
+                    <div class="integ-icon-box text-amber-500" style="background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.15);"><i class="fas fa-database"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ4_title">HuggingFace</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ4_desc">Browse and download datasets directly. Access Daily Papers for latest AI research. Integrated model discovery.</p>
+                </div>
+
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center">
+                    <div class="integ-icon-box text-orange-500" style="background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.15);"><i class="fas fa-cloud-download-alt"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ5_title">ModelScope</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ5_desc">Download models and datasets from Alibaba ModelScope. Filter patterns, manifest building, and progress tracking.</p>
+                </div>
+
+                <div class="card rounded-xl p-5 integ-card scroll-reveal flex flex-col items-center text-center">
+                    <div class="integ-icon-box text-green-500" style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.15);"><i class="fas fa-terminal"></i></div>
+                    <h3 class="font-semibold text-sm mb-1.5" data-i18n="integ6_title">Terminal</h3>
+                    <p class="text-xs leading-relaxed flex-grow clr-muted" data-i18n="integ6_desc">Built-in shell access for workspace command execution. Supports bash, sh, and zsh with sandboxed directory context.</p>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- ======= TECH STACK ======= -->
-    <section class="py-14 relative" style="background: var(--bg-secondary);">
+    <section class="py-14 relative bg-section">
         <div class="glow-line"></div>
         <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
-            <div class="flex items-center justify-center gap-3 mb-6"><span class="section-num">&sect;08</span><div class="h-[1px] flex-1 max-w-[40px]" style="background: var(--divider);"></div><h3 class="text-xs font-bold uppercase tracking-[0.15em] mono" style="color: var(--text-muted);" data-i18n="built_with">Built With</h3><div class="h-[1px] flex-1 max-w-[40px]" style="background: var(--divider);"></div></div>
+            <div class="flex items-center justify-center gap-3 mb-6">
+                <span class="section-num">&sect;08</span>
+                <div class="h-[1px] flex-1 max-w-[40px] divider-bg"></div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.15em] mono clr-muted" data-i18n="built_with">Built With</h3>
+                <div class="h-[1px] flex-1 max-w-[40px] divider-bg"></div>
+            </div>
             <div class="flex flex-wrap justify-center gap-2.5 mb-10">
                 <span class="tech-pill mono text-xs px-3.5 py-1.5 rounded-full font-medium">Next.js 16</span>
                 <span class="tech-pill mono text-xs px-3.5 py-1.5 rounded-full font-medium">React 19</span>
@@ -670,12 +1044,17 @@
                 <span class="tech-pill mono text-xs px-3.5 py-1.5 rounded-full font-medium">next-intl</span>
                 <span class="tech-pill mono text-xs px-3.5 py-1.5 rounded-full font-medium">next-themes</span>
             </div>
-            <div class="flex items-center justify-center gap-3 mb-5"><div class="h-[1px] flex-1 max-w-[40px]" style="background: var(--divider);"></div><h3 class="text-xs font-bold uppercase tracking-[0.15em] mono" style="color: var(--text-muted);" data-i18n="themes">4 Visual Themes</h3><div class="h-[1px] flex-1 max-w-[40px]" style="background: var(--divider);"></div></div>
+
+            <div class="flex items-center justify-center gap-3 mb-5">
+                <div class="h-[1px] flex-1 max-w-[40px] divider-bg"></div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.15em] mono clr-muted" data-i18n="themes">4 Visual Themes</h3>
+                <div class="h-[1px] flex-1 max-w-[40px] divider-bg"></div>
+            </div>
             <div class="flex flex-wrap justify-center gap-3">
-                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500"></div><span class="text-xs font-medium" style="color: var(--text-secondary);">Default</span></div>
-                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-400"></div><span class="text-xs font-medium" style="color: var(--text-secondary);">Cartoon</span></div>
-                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"></div><span class="text-xs font-medium" style="color: var(--text-secondary);">Cyberpunk-Pixel</span></div>
-                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-green-500 to-lime-400"></div><span class="text-xs font-medium" style="color: var(--text-secondary);">Retro-Handheld</span></div>
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500"></div><span class="text-xs font-medium clr-secondary">Default</span></div>
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-orange-400 to-pink-400"></div><span class="text-xs font-medium clr-secondary">Cartoon</span></div>
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"></div><span class="text-xs font-medium clr-secondary">Cyberpunk-Pixel</span></div>
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full card"><div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-green-500 to-lime-400"></div><span class="text-xs font-medium clr-secondary">Retro-Handheld</span></div>
             </div>
         </div>
     </section>
@@ -686,7 +1065,7 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center pt-8">
             <span class="section-num">&sect;09</span>
             <h2 class="text-2xl sm:text-3xl font-bold mt-2 mb-2" data-i18n="partners_title">Research Partners</h2>
-            <p class="text-sm mb-10" style="color: var(--text-muted);" data-i18n="partners_subtitle">Collaborating with world-class institutions</p>
+            <p class="text-sm mb-10 clr-muted" data-i18n="partners_subtitle">Collaborating with world-class institutions</p>
             <div class="marquee-container">
                 <div class="marquee-track items-center">
                     <img src="logos/shlab_logo.png" alt="Shanghai AI Laboratory" class="h-9 md:h-11 object-contain partner-logo">
@@ -699,7 +1078,7 @@
                     <img src="logos/ustc_logo.png" alt="University of Science and Technology of China" class="h-8 md:h-10 object-contain partner-logo">
                     <img src="logos/NJU-logo.png" alt="Nanjing University" class="h-9 md:h-11 object-contain partner-logo">
                     <img src="logos/TUM-logo.jpeg" alt="Technical University of Munich" class="h-9 md:h-11 object-contain partner-logo">
-                    <!-- Duplicate for seamless loop -->
+                    <!-- Duplicate set for seamless marquee loop -->
                     <img src="logos/shlab_logo.png" alt="Shanghai AI Laboratory" class="h-9 md:h-11 object-contain partner-logo">
                     <img src="logos/CUHK_banner.svg" alt="The Chinese University of Hong Kong" class="h-9 md:h-11 object-contain partner-logo">
                     <img src="logos/PKU_leftright.png" alt="Peking University" class="h-9 md:h-11 object-contain partner-logo">
@@ -718,33 +1097,39 @@
     <!-- ======= Footer ======= -->
     <footer class="py-10 text-center text-sm relative">
         <div class="glow-line mb-8"></div>
-        <p class="font-medium" style="color: var(--text-muted);"><i class="fab fa-creative-commons"></i> InnoClaw &middot; MIT License</p>
-        <p class="mt-3" style="color: var(--text-muted); opacity: 0.7;"><a href="https://github.com/zjowowen/InnoClaw" class="hover:underline" style="color: var(--text-accent);"><i class="fab fa-github mr-1"></i> github.com/zjowowen/InnoClaw</a> &nbsp;&middot;&nbsp; <a href="en/" class="hover:underline" style="color: var(--text-accent);"><i class="fas fa-book mr-1"></i> Documentation</a></p>
-        <p class="mt-3 text-xs" style="color: var(--text-muted); opacity: 0.4;" data-i18n="footer_powered">Powered by Next.js, Vercel AI SDK &amp; SCP</p>
+        <p class="font-medium clr-muted"><i class="fab fa-creative-commons"></i> InnoClaw &middot; MIT License</p>
+        <p class="mt-3 clr-muted" style="opacity: 0.7;">
+            <a href="https://github.com/zjowowen/InnoClaw" class="hover:underline clr-accent"><i class="fab fa-github mr-1"></i> github.com/zjowowen/InnoClaw</a>
+            &nbsp;&middot;&nbsp;
+            <a href="en/" class="hover:underline clr-accent"><i class="fas fa-book mr-1"></i> Documentation</a>
+        </p>
+        <p class="mt-3 text-xs clr-muted" style="opacity: 0.4;" data-i18n="footer_powered">Powered by Next.js, Vercel AI SDK &amp; SCP</p>
     </footer>
 
     <!-- ======= Scripts ======= -->
     <script>
-        // ===== Theme Toggle =====
+        // ===== Theme =====
         function getPreferredTheme() {
-            var saved = localStorage.getItem('innoclaw-web-theme');
-            if (saved) return saved;
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            return localStorage.getItem('innoclaw-web-theme') ||
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         }
+
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('innoclaw-web-theme', theme);
-            var icon = document.getElementById('theme-icon');
-            if (icon) { icon.className = theme === 'dark' ? 'fas fa-moon text-sm' : 'fas fa-sun text-sm'; }
+            const icon = document.getElementById('theme-icon');
+            if (icon) icon.className = theme === 'dark' ? 'fas fa-moon text-sm' : 'fas fa-sun text-sm';
         }
+
         function toggleTheme() {
-            var current = document.documentElement.getAttribute('data-theme');
+            const current = document.documentElement.getAttribute('data-theme');
             applyTheme(current === 'dark' ? 'light' : 'dark');
         }
+
         applyTheme(getPreferredTheme());
 
-        // ===== i18n Translations =====
-        var translations = {
+        // ===== i18n =====
+        const translations = {
             zh: {
                 tagline: '\u81ea\u6258\u7ba1 AI \u79d1\u7814\u52a9\u624b',
                 tagline2: '\u7075\u611f\u6e90\u81ea OpenClaw',
@@ -979,7 +1364,7 @@
             }
         };
 
-        var featuresI18n = {
+        const featuresI18n = {
             en: [
                 { prefix: "Innovation for", text: "Vibe Research" },
                 { prefix: "Innovation for", text: "Biology & Related Technologies" },
@@ -1008,115 +1393,134 @@
             ]
         };
 
-        var currentLang = localStorage.getItem('innoclaw-web-lang') || 'en';
+        let currentLang = localStorage.getItem('innoclaw-web-lang') || 'en';
 
         function applyLanguage(lang) {
             currentLang = lang;
             localStorage.setItem('innoclaw-web-lang', lang);
             document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
             document.getElementById('lang-label').textContent = lang === 'en' ? '\u4e2d\u6587' : 'EN';
-            var dict = translations[lang];
-            document.querySelectorAll('[data-i18n]').forEach(function(el) {
-                var key = el.getAttribute('data-i18n');
-                if (dict[key] !== undefined) { el.innerHTML = dict[key]; }
+
+            const dict = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.innerHTML = dict[key];
             });
-            var twEl = document.getElementById('hero-typewriter');
+
+            const twEl = document.getElementById('hero-typewriter');
             if (twEl) {
                 twEl.textContent = '';
                 if (window._twTimer) clearTimeout(window._twTimer);
                 createTypewriter('hero-typewriter', featuresI18n[lang], { typeSpeed: 80, deleteSpeed: 50, pauseEnd: 2000, pauseStart: 300 });
             }
         }
-        function toggleLanguage() { applyLanguage(currentLang === 'en' ? 'zh' : 'en'); }
 
-        // Scroll Reveal
-        var observer = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+        function toggleLanguage() {
+            applyLanguage(currentLang === 'en' ? 'zh' : 'en');
+        }
+
+        // ===== Scroll Reveal =====
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
         }, { threshold: 0.1 });
-        document.querySelectorAll('.scroll-reveal').forEach(function(el) { observer.observe(el); });
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-        // Animated Counters
-        var counterObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    var el = entry.target;
-                    var target = parseInt(el.getAttribute('data-target'));
-                    var duration = 1500;
-                    var start = performance.now();
-                    function animate(now) {
-                        var elapsed = now - start;
-                        var progress = Math.min(elapsed / duration, 1);
-                        var eased = 1 - Math.pow(1 - progress, 3);
-                        el.textContent = Math.round(target * eased);
-                        if (progress < 1) requestAnimationFrame(animate);
-                    }
-                    requestAnimationFrame(animate);
-                    counterObserver.unobserve(el);
+        // ===== Animated Counters =====
+        const counterObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                const target = parseInt(el.getAttribute('data-target'));
+                const duration = 1500;
+                const start = performance.now();
+                function animate(now) {
+                    const elapsed = now - start;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    el.textContent = Math.round(target * eased);
+                    if (progress < 1) requestAnimationFrame(animate);
                 }
+                requestAnimationFrame(animate);
+                counterObserver.unobserve(el);
             });
         }, { threshold: 0.5 });
-        document.querySelectorAll('.stat-number').forEach(function(el) { counterObserver.observe(el); });
+        document.querySelectorAll('.stat-number').forEach(el => counterObserver.observe(el));
 
-        // Typewriter
-        function createTypewriter(elementId, words, options) {
-            options = options || {};
-            var element = document.getElementById(elementId);
-            var prefixEl = document.getElementById('hero-prefix');
-            var iconEl = document.getElementById('hero-icon');
+        // ===== Typewriter =====
+        function createTypewriter(elementId, words, options = {}) {
+            const element = document.getElementById(elementId);
+            const prefixEl = document.getElementById('hero-prefix');
+            const iconEl = document.getElementById('hero-icon');
             if (!element) return;
-            var wordIndex = 0, charIndex = 0, isDeleting = false;
-            var typeSpeed = options.typeSpeed || 100;
+
+            let wordIndex = 0, charIndex = 0, isDeleting = false;
+            let speed = options.typeSpeed || 100;
+
             function type() {
-                var item = words[wordIndex];
-                var currentWord = typeof item === 'string' ? item : item.text;
-                var currentPrefix = typeof item === 'string' ? null : item.prefix;
+                const item = words[wordIndex];
+                const currentWord = typeof item === 'string' ? item : item.text;
+                const currentPrefix = typeof item === 'string' ? null : item.prefix;
+
                 if (currentPrefix && !isDeleting && charIndex === 0) {
                     if (prefixEl) prefixEl.textContent = currentPrefix;
                     if (iconEl) iconEl.textContent = currentPrefix.startsWith('Claw') ? '\ud83e\udd0f' : '\ud83d\udca1';
                 }
-                if (isDeleting) { element.textContent = currentWord.substring(0, charIndex - 1); charIndex--; typeSpeed = options.deleteSpeed || 50; }
-                else { element.textContent = currentWord.substring(0, charIndex + 1); charIndex++; typeSpeed = options.typeSpeed || 100; }
-                if (!isDeleting && charIndex === currentWord.length) { isDeleting = true; typeSpeed = options.pauseEnd || 2000; }
-                else if (isDeleting && charIndex === 0) { isDeleting = false; wordIndex = (wordIndex + 1) % words.length; typeSpeed = options.pauseStart || 500; }
-                window._twTimer = setTimeout(type, typeSpeed);
+
+                if (isDeleting) {
+                    element.textContent = currentWord.substring(0, charIndex - 1);
+                    charIndex--;
+                    speed = options.deleteSpeed || 50;
+                } else {
+                    element.textContent = currentWord.substring(0, charIndex + 1);
+                    charIndex++;
+                    speed = options.typeSpeed || 100;
+                }
+
+                if (!isDeleting && charIndex === currentWord.length) {
+                    isDeleting = true;
+                    speed = options.pauseEnd || 2000;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    wordIndex = (wordIndex + 1) % words.length;
+                    speed = options.pauseStart || 500;
+                }
+
+                window._twTimer = setTimeout(type, speed);
             }
             type();
         }
 
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
-            anchor.addEventListener('click', function(e) {
+        // ===== Smooth Scroll =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', e => {
                 e.preventDefault();
-                var target = document.querySelector(this.getAttribute('href'));
+                const target = document.querySelector(anchor.getAttribute('href'));
                 if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
 
-        document.addEventListener("DOMContentLoaded", function() {
+        // ===== Init =====
+        document.addEventListener('DOMContentLoaded', () => {
             applyTheme(getPreferredTheme());
             applyLanguage(currentLang);
 
             // Mouse follow glow
-            var glow = document.getElementById('mouse-glow');
+            const glow = document.getElementById('mouse-glow');
             if (glow) {
-                var mx = 0, my = 0, gx = 0, gy = 0;
-                document.addEventListener('mousemove', function(e) {
-                    mx = e.clientX; my = e.clientY;
-                    glow.classList.add('active');
-                });
-                document.addEventListener('mouseleave', function() { glow.classList.remove('active'); });
-                function animateGlow() {
+                let mx = 0, my = 0, gx = 0, gy = 0;
+                document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; glow.classList.add('active'); });
+                document.addEventListener('mouseleave', () => glow.classList.remove('active'));
+                (function animateGlow() {
                     gx += (mx - gx) * 0.08;
                     gy += (my - gy) * 0.08;
                     glow.style.left = gx + 'px';
                     glow.style.top = gy + 'px';
                     requestAnimationFrame(animateGlow);
-                }
-                animateGlow();
+                })();
             }
 
-            // Stagger scroll-reveal with data-delay
-            document.querySelectorAll('.scroll-reveal').forEach(function(el) { observer.observe(el); });
+            // Re-observe scroll-reveal elements
+            document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
         });
     </script>
 </body>
