@@ -50,18 +50,20 @@ import type { Skill } from "@/types";
 import { swrFetcher as fetcher } from "@/lib/fetcher";
 import { AgentMessage } from "./agent-message";
 
-type AgentMode = "agent" | "plan" | "ask";
+type AgentMode = "long-agent" | "agent" | "plan" | "ask";
 
 /** Pixel threshold for considering the user "at the bottom" of the scroll area */
 const BOTTOM_THRESHOLD_PX = 80;
 
-const MODE_LABEL_KEYS: Record<AgentMode, "modeAgent" | "modePlan" | "modeAsk"> = {
+const MODE_LABEL_KEYS: Record<AgentMode, "modeLongAgent" | "modeAgent" | "modePlan" | "modeAsk"> = {
+  "long-agent": "modeLongAgent",
   agent: "modeAgent",
   plan: "modePlan",
   ask: "modeAsk",
 };
 
-const MODE_PLACEHOLDER_KEYS: Record<AgentMode, "placeholder" | "placeholderPlan" | "placeholderAsk"> = {
+const MODE_PLACEHOLDER_KEYS: Record<AgentMode, "placeholder" | "placeholderLongAgent" | "placeholderPlan" | "placeholderAsk"> = {
+  "long-agent": "placeholderLongAgent",
   agent: "placeholder",
   plan: "placeholderPlan",
   ask: "placeholderAsk",
@@ -553,7 +555,7 @@ export function AgentPanel({
   const prevStatusRef = useRef(status);
   const autoContinueCountRef = useRef(0);
   const autoContinueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const MAX_AUTO_CONTINUES = 20; // Prevent infinite loops
+  const maxAutoContinues = mode === "long-agent" ? 100 : 20; // long-agent supports extended interactions
 
   useEffect(() => {
     const wasStreaming = prevStatusRef.current === "streaming" || prevStatusRef.current === "submitted";
@@ -570,7 +572,7 @@ export function AgentPanel({
     }
 
     // Check if we've hit the auto-continue limit
-    if (autoContinueCountRef.current >= MAX_AUTO_CONTINUES) {
+    if (autoContinueCountRef.current >= maxAutoContinues) {
       return;
     }
 
@@ -604,7 +606,7 @@ export function AgentPanel({
         autoContinueTimerRef.current = null;
       }
     };
-  }, [status, messages, sendMessage, t]);
+  }, [status, messages, sendMessage, t, maxAutoContinues]);
   const overflowThreshold = getOverflowThresholdChars(
     selectedProvider ?? settings?.llmProvider ?? "openai",
     selectedModel ?? settings?.llmModel ?? "gpt-4o-mini",
@@ -1140,6 +1142,12 @@ export function AgentPanel({
               <DropdownMenuLabel className="text-xs">{t("modeLabel")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup value={mode} onValueChange={(v) => handleModeChange(v as AgentMode)}>
+                <DropdownMenuRadioItem value="long-agent">
+                  <div className="flex flex-col">
+                    <span>{t("modeLongAgent")}</span>
+                    <span className="text-xs text-muted-foreground">{t("modeLongAgentDesc")}</span>
+                  </div>
+                </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="agent">
                   <div className="flex flex-col">
                     <span>{t("modeAgent")}</span>

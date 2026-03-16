@@ -153,11 +153,15 @@ export async function POST(req: NextRequest) {
     const modelMessages = await convertToModelMessages(sanitizedMessages);
 
     const DEFAULT_MAX_STEPS = 50;
-    const MAX_STEPS_UPPER_BOUND = 100;
+    const LONG_AGENT_MAX_STEPS = 200;
+    const MAX_STEPS_UPPER_BOUND = 200;
     const parsedSteps = parseInt(process.env.AGENT_MAX_STEPS || "", 10);
-    const maxSteps = Number.isFinite(parsedSteps) && parsedSteps > 0
+    const envMaxSteps = Number.isFinite(parsedSteps) && parsedSteps > 0
       ? Math.min(parsedSteps, MAX_STEPS_UPPER_BOUND)
-      : DEFAULT_MAX_STEPS;
+      : undefined;
+    const maxSteps = mode === "long-agent"
+      ? (envMaxSteps ?? LONG_AGENT_MAX_STEPS)
+      : (envMaxSteps ?? DEFAULT_MAX_STEPS);
 
     // Skip tools for providers that don't support tool calling (e.g. vLLM without --enable-auto-tool-choice)
 
