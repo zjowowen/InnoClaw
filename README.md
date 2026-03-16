@@ -67,17 +67,13 @@ git --version
 
 #### 3. 安装 C++ 编译工具链
 
-本项目依赖 `better-sqlite3`，需要 C++ 编译环境。**选择以下任一方式：**
+本项目依赖 `better-sqlite3`，需要 C++ 编译环境。
 
-**方式 A：通过 npm 自动安装（推荐）**
-```powershell
-npm install -g windows-build-tools
-```
-
-**方式 B：手动安装 Visual Studio Build Tools**
 1. 下载 [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 2. 安装时选择 **"Desktop development with C++"** 工作负载
 3. 确保勾选了 **MSVC** 和 **Windows SDK**
+
+> **💡 提示：** 如果安装 Node.js 时勾选了 "Automatically install the necessary tools"，则已自动安装编译工具链，可跳过此步骤。
 
 #### 4. 安装 Python（如未自动安装）
 
