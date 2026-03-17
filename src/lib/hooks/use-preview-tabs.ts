@@ -42,9 +42,7 @@ export function usePreviewTabs(workspaceId: string) {
 
   // Keep a ref to the latest tabs so callbacks always see current state
   const tabsRef = useRef(previewTabs);
-  useEffect(() => {
-    tabsRef.current = previewTabs;
-  }, [previewTabs]);
+  tabsRef.current = previewTabs;
 
   // Persist to sessionStorage whenever tabs or activeTabId change
   useEffect(() => {
@@ -70,9 +68,7 @@ export function usePreviewTabs(workspaceId: string) {
       label: getFileName(filePath),
       filePath,
     };
-    const next = [...current, tab];
-    tabsRef.current = next;
-    setPreviewTabs(next);
+    setPreviewTabs([...current, tab]);
     setActiveTabId(id);
   }, []);
 
@@ -90,9 +86,7 @@ export function usePreviewTabs(workspaceId: string) {
       label: article.title.slice(0, 40),
       article,
     };
-    const next = [...current, tab];
-    tabsRef.current = next;
-    setPreviewTabs(next);
+    setPreviewTabs([...current, tab]);
     setActiveTabId(id);
   }, []);
 
@@ -101,7 +95,6 @@ export function usePreviewTabs(workspaceId: string) {
     const idx = current.findIndex((t) => t.id === id);
     if (idx === -1) return;
     const next = current.filter((t) => t.id !== id);
-    tabsRef.current = next;
     setPreviewTabs(next);
     setActiveTabId((currentActiveId) => {
       if (currentActiveId !== id) return currentActiveId;
