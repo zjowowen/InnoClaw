@@ -451,7 +451,7 @@ export function AgentPanel({
   const { messages, sendMessage, setMessages, stop, status, error: chatError } = useChat({ transport });
 
   // --- Message persistence via localStorage ---
-  const storageKey = `agent-messages:${workspaceId}:${sessionId}:${mode}`;
+  const storageKey = `agent-messages:${workspaceId}:${sessionId}`;
   // Counter-based gate: incremented on restore, decremented in the save effect
   // that sees the restored messages. Avoids save-during-restore race.
   const restoreGenRef = useRef(0);
@@ -1034,7 +1034,7 @@ export function AgentPanel({
     }
   };
 
-  // Switch mode: update body synchronously and clear stale conversation
+  // Switch mode: update body synchronously, keep conversation context
   const handleModeChange = (newMode: AgentMode) => {
     setMode(newMode);
     agentBody.mode = newMode; // synchronous — guarantees next request uses correct mode
