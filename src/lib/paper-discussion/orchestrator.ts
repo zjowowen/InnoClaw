@@ -45,7 +45,7 @@ export async function runPaperDiscussionStage(
   }
 
   const agentConfig = DISCUSSION_AGENTS[stage.roleId];
-  const systemPrompt = buildDiscussionPrompt(
+  const promptResult = buildDiscussionPrompt(
     agentConfig,
     state.context,
     state.transcript,
@@ -54,12 +54,10 @@ export async function runPaperDiscussionStage(
 
   const tokenLimit = STAGE_TOKEN_LIMITS[stage.id][state.context.mode];
 
-  const originalPrompt = `Begin your analysis of the paper "${state.context.article.title}".`;
-
   const result = await generateText({
     model,
-    system: systemPrompt,
-    prompt: originalPrompt,
+    system: promptResult.system,
+    messages: [{ role: "user", content: promptResult.userContent }],
     maxOutputTokens: tokenLimit,
     abortSignal,
   });
@@ -67,11 +65,13 @@ export async function runPaperDiscussionStage(
   let text = result.text.trim();
 
   // If the response was truncated due to token limit, attempt one continuation
+  // For continuations, use text-only prompt (no images) to save context
   if (result.finishReason === "length" && !abortSignal?.aborted) {
+    const continuationPrompt = `Begin your analysis of the paper "${state.context.article.title}".`;
     text = await continueTruncatedResponse({
       model,
-      systemPrompt,
-      originalPrompt,
+      systemPrompt: promptResult.system,
+      originalPrompt: continuationPrompt,
       partialResponse: text,
       continuationTokens: Math.ceil(tokenLimit * 0.4),
       abortSignal,

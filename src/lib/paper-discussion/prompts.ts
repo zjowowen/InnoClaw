@@ -1,5 +1,14 @@
 import type { DiscussionStageId, DiscussionRoleId, DiscussionTurn, PaperDiscussionSharedContext, DiscussionAgentConfig } from "./types";
 import { DISCUSSION_AGENTS, DISCUSSION_STAGES, SHARED_DISCUSSION_INSTRUCTION } from "./roles";
+import type { PaperContentPart } from "@/lib/files/pdf-image-extractor";
+import type { UserContent, TextPart, ImagePart } from "ai";
+
+export interface DiscussionPromptResult {
+  system: string;
+  userContent: UserContent;
+}
+
+type ContentPart = TextPart | ImagePart;
 
 // =============================================================
 // STAGE GUIDANCE — what the active role should do in each stage
@@ -83,30 +92,56 @@ function brevityInstruction(mode: "quick" | "full"): string {
   return "";
 }
 
+/**
+ * Convert PaperContentPart[] to AI SDK UserContent (multimodal parts array).
+ * Text parts become TextPart, image parts become ImagePart with base64 data.
+ */
+function paperContentToUserContent(parts: PaperContentPart[]): ContentPart[] {
+  const content: ContentPart[] = [];
+  for (const part of parts) {
+    if (part.type === "text" && part.text) {
+      content.push({ type: "text", text: part.text });
+    } else if (part.type === "image" && part.data && part.mimeType) {
+      content.push({
+        type: "image",
+        image: Buffer.from(part.data, "base64"),
+        mediaType: part.mimeType,
+      });
+    }
+  }
+  return content;
+}
+
 // =============================================================
 // UNIFIED PROMPT BUILDER
 // =============================================================
 
 /**
- * Build the complete system prompt for a discussion agent at a given stage.
+ * Build the complete prompt for a discussion agent at a given stage.
+ *
+ * Returns a structured result with:
+ * - `system`: text-only system prompt (role instructions, stage guidance, transcript)
+ * - `userContent`: user message content — multimodal (text + images) when paper
+ *   images are available and vision is supported, text-only otherwise
  *
  * Combines (in order):
  * 1. Shared discussion instruction
  * 2. Role-specific system prompt
- * 3. Paper context
- * 4. Retrieved evidence (if available)
- * 5. Prior transcript
- * 6. Stage-specific guidance
- * 7. Locale instruction
- * 8. Brevity instruction (quick mode)
+ * 3. Paper context (article metadata)
+ * 4. Prior transcript
+ * 5. Stage-specific guidance
+ * 6. Locale instruction
+ * 7. Brevity instruction (quick mode)
+ *
+ * Paper content (text + images) is placed in the user message for multimodal models.
  */
 export function buildDiscussionPrompt(
   agentConfig: DiscussionAgentConfig,
   context: PaperDiscussionSharedContext,
   transcript: DiscussionTurn[],
   stageId: DiscussionStageId,
-): string {
-  const parts: string[] = [
+): DiscussionPromptResult {
+  const systemParts: string[] = [
     SHARED_DISCUSSION_INSTRUCTION,
     "",
     agentConfig.systemPrompt,
@@ -114,24 +149,42 @@ export function buildDiscussionPrompt(
     formatArticleContext(context.article),
   ];
 
-  const evidence = formatRetrievedEvidence(context.retrievedEvidence);
-  if (evidence) {
-    parts.push("", evidence);
-  }
-
   const transcriptBlock = formatTranscript(transcript);
   if (transcriptBlock) {
-    parts.push("", transcriptBlock);
+    systemParts.push("", transcriptBlock);
   }
 
-  parts.push("", STAGE_GUIDANCE[stageId]);
+  systemParts.push("", STAGE_GUIDANCE[stageId]);
 
   const localeInstr = LOCALE_INSTRUCTION[context.locale] || LOCALE_INSTRUCTION.en;
-  parts.push("", localeInstr);
+  systemParts.push("", localeInstr);
 
-  parts.push(brevityInstruction(context.mode));
+  systemParts.push(brevityInstruction(context.mode));
 
-  return parts.join("\n");
+  // Build user content — multimodal when images available
+  const useVision = context.supportsVision && context.paperContent && context.paperContent.some((p) => p.type === "image");
+
+  const userParts: ContentPart[] = [];
+  const taskPrompt = `Begin your analysis of the paper "${context.article.title}".`;
+
+  if (useVision && context.paperContent) {
+    // Multimodal: paper pages (text + images) + task instruction
+    userParts.push({ type: "text", text: "## Full Paper Content (pages with figures)\n" });
+    userParts.push(...paperContentToUserContent(context.paperContent));
+    userParts.push({ type: "text", text: `\n\n${taskPrompt}` });
+  } else {
+    // Text-only: embed retrieved evidence in system prompt, simple user prompt
+    const evidence = formatRetrievedEvidence(context.retrievedEvidence);
+    if (evidence) {
+      systemParts.splice(systemParts.length - 3, 0, "", evidence);
+    }
+    userParts.push({ type: "text", text: taskPrompt });
+  }
+
+  return {
+    system: systemParts.join("\n"),
+    userContent: userParts,
+  };
 }
 
 // =============================================================

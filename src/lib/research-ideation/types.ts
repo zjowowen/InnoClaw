@@ -1,3 +1,5 @@
+import type { PaperContentPart } from "@/lib/files/pdf-image-extractor";
+
 // =============================================================
 // Ideation Stage IDs (deterministic 5-stage pipeline)
 // =============================================================
@@ -64,6 +66,10 @@ export interface IdeationSharedContext {
   };
   userSeed?: string;
   retrievedEvidence?: string;
+  /** Structured paper content with interleaved text + page images */
+  paperContent?: PaperContentPart[];
+  /** Whether the current model supports vision/image inputs */
+  supportsVision?: boolean;
   locale: string;
   mode: "quick" | "full";
 }

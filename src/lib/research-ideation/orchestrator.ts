@@ -44,7 +44,7 @@ export async function runIdeationStage(
   }
 
   const agentConfig = IDEATION_AGENTS[stage.roleId];
-  const systemPrompt = buildIdeationPrompt(
+  const promptResult = buildIdeationPrompt(
     agentConfig,
     state.context,
     state.transcript,
@@ -53,12 +53,10 @@ export async function runIdeationStage(
 
   const tokenLimit = STAGE_TOKEN_LIMITS[stage.id][state.context.mode];
 
-  const originalPrompt = `Begin your analysis of the paper "${state.context.article.title}".${state.context.userSeed ? ` The user's research seed idea: "${state.context.userSeed}"` : ""}`;
-
   const result = await generateText({
     model,
-    system: systemPrompt,
-    prompt: originalPrompt,
+    system: promptResult.system,
+    messages: [{ role: "user", content: promptResult.userContent }],
     maxOutputTokens: tokenLimit,
     abortSignal,
   });
@@ -67,10 +65,11 @@ export async function runIdeationStage(
 
   // If the response was truncated due to token limit, attempt one continuation
   if (result.finishReason === "length" && !abortSignal?.aborted) {
+    const continuationPrompt = `Begin your analysis of the paper "${state.context.article.title}".${state.context.userSeed ? ` The user's research seed idea: "${state.context.userSeed}"` : ""}`;
     text = await continueTruncatedResponse({
       model,
-      systemPrompt,
-      originalPrompt,
+      systemPrompt: promptResult.system,
+      originalPrompt: continuationPrompt,
       partialResponse: text,
       continuationTokens: Math.ceil(tokenLimit * 0.4),
       abortSignal,

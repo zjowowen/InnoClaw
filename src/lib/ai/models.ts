@@ -14,6 +14,7 @@ export const PROVIDERS = {
       { id: "o4-mini", name: "o4 Mini", contextWindow: 200000 },
     ],
     envKey: "OPENAI_API_KEY",
+    supportsVision: true,
   },
   anthropic: {
     id: "anthropic",
@@ -41,6 +42,7 @@ export const PROVIDERS = {
       },
     ],
     envKey: "ANTHROPIC_API_KEY",
+    supportsVision: true,
   },
   gemini: {
     id: "gemini",
@@ -73,6 +75,7 @@ export const PROVIDERS = {
       },
     ],
     envKey: "GEMINI_API_KEY",
+    supportsVision: true,
   },
   shlab: {
     id: "shlab",
@@ -83,6 +86,7 @@ export const PROVIDERS = {
     ],
     envKey: "SHLAB_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
   qwen: {
     id: "qwen",
@@ -93,6 +97,7 @@ export const PROVIDERS = {
     ],
     envKey: "QWEN_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
   moonshot: {
     id: "moonshot",
@@ -102,6 +107,7 @@ export const PROVIDERS = {
     ],
     envKey: "MOONSHOT_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
   deepseek: {
     id: "deepseek",
@@ -111,6 +117,7 @@ export const PROVIDERS = {
     ],
     envKey: "DEEPSEEK_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
   minimax: {
     id: "minimax",
@@ -120,6 +127,7 @@ export const PROVIDERS = {
     ],
     envKey: "MINIMAX_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
   zhipu: {
     id: "zhipu",
@@ -129,6 +137,7 @@ export const PROVIDERS = {
     ],
     envKey: "ZHIPU_API_KEY",
     supportsTools: true,
+    supportsVision: true,
   },
 } as const;
 
@@ -143,6 +152,16 @@ export function providerSupportsTools(providerId: string): boolean {
   const p = PROVIDERS[providerId as ProviderId];
   if (!p) return true;
   return (p as { supportsTools?: boolean }).supportsTools !== false;
+}
+
+/**
+ * Check whether a provider supports vision (image) inputs.
+ * Defaults to false for providers without an explicit `supportsVision` field.
+ */
+export function providerSupportsVision(providerId: string): boolean {
+  const p = PROVIDERS[providerId as ProviderId];
+  if (!p) return false;
+  return (p as { supportsVision?: boolean }).supportsVision === true;
 }
 
 /**

@@ -15,12 +15,16 @@ import {
   Download,
   Loader2,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  FileImage,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { Article } from "@/lib/article-search/types";
 import type { DiscussionTurn, DiscussionRoleId, DiscussionStageId } from "@/lib/paper-discussion/types";
 import { DISCUSSION_ROLES, DISCUSSION_STAGES } from "@/lib/paper-discussion/roles";
@@ -50,6 +54,9 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [paperPages, setPaperPages] = useState<Array<{ pageNumber: number; data: string; mimeType: string }>>([]);
+  const [pagesExpanded, setPagesExpanded] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<{ pageNumber: number; data: string; mimeType: string } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +64,9 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
 
   const startDiscussion = useCallback(async () => {
     setTurns([]);
+    setPaperPages([]);
+    setPagesExpanded(false);
+    setSelectedPage(null);
     setError(null);
     setSaved(false);
     setIsRunning(true);
@@ -96,15 +106,20 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
           const trimmed = line.trim();
           if (!trimmed) continue;
           try {
-            const turn: DiscussionTurn = JSON.parse(trimmed);
-            setTurns((prev) => [...prev, turn]);
-
-            // Set the next expected stage
-            const stageIndex = DISCUSSION_STAGES.findIndex((s) => s.id === turn.stageId);
-            if (stageIndex < DISCUSSION_STAGES.length - 1) {
-              setCurrentStage(DISCUSSION_STAGES[stageIndex + 1].id);
+            const parsed = JSON.parse(trimmed);
+            if (parsed.type === "paper_pages") {
+              setPaperPages(parsed.pages);
             } else {
-              setCurrentStage(null);
+              const turn = parsed as DiscussionTurn;
+              setTurns((prev) => [...prev, turn]);
+
+              // Set the next expected stage
+              const stageIndex = DISCUSSION_STAGES.findIndex((s) => s.id === turn.stageId);
+              if (stageIndex < DISCUSSION_STAGES.length - 1) {
+                setCurrentStage(DISCUSSION_STAGES[stageIndex + 1].id);
+              } else {
+                setCurrentStage(null);
+              }
             }
           } catch {
             // Skip malformed lines
@@ -297,6 +312,52 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
       {/* Transcript */}
       <ScrollArea ref={scrollRef} className="flex-1">
         <div className="p-3 space-y-4">
+          {/* Paper Pages Gallery */}
+          {paperPages.length > 0 && (
+            <div className="rounded-lg border border-border/50 bg-muted/10">
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setPagesExpanded((v) => !v)}
+              >
+                <FileImage className="h-3.5 w-3.5" />
+                <span>Paper Pages ({paperPages.length})</span>
+                {pagesExpanded ? <ChevronUp className="h-3.5 w-3.5 ml-auto" /> : <ChevronDown className="h-3.5 w-3.5 ml-auto" />}
+              </button>
+              {pagesExpanded && (
+                <div className="flex gap-2 px-3 pb-3 overflow-x-auto">
+                  {paperPages.map((page) => (
+                    <button
+                      key={page.pageNumber}
+                      className="flex-shrink-0 flex flex-col items-center gap-1 group"
+                      onClick={() => setSelectedPage(page)}
+                    >
+                      <img
+                        src={`data:${page.mimeType};base64,${page.data}`}
+                        alt={`Page ${page.pageNumber}`}
+                        className="h-32 w-auto rounded border border-border/50 shadow-sm group-hover:border-primary/50 transition-colors"
+                      />
+                      <span className="text-[10px] text-muted-foreground">Page {page.pageNumber}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Full-size page dialog */}
+          <Dialog open={!!selectedPage} onOpenChange={(open) => !open && setSelectedPage(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+              <DialogTitle>Page {selectedPage?.pageNumber}</DialogTitle>
+              {selectedPage && (
+                <img
+                  src={`data:${selectedPage.mimeType};base64,${selectedPage.data}`}
+                  alt={`Page ${selectedPage.pageNumber}`}
+                  className="w-full h-auto rounded"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
           {turns.map((turn, i) => {
             const role = DISCUSSION_ROLES[turn.roleId];
             const isReport = turn.stageId === "final_report";

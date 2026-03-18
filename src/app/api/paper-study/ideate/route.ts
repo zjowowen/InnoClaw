@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { getConfiguredModel, isAIAvailable } from "@/lib/ai/provider";
+import { getConfiguredModelWithProvider, isAIAvailable } from "@/lib/ai/provider";
+import { providerSupportsVision } from "@/lib/ai/models";
 import { runFullIdeation } from "@/lib/research-ideation/orchestrator";
-import { extractPaperFullText } from "../extract-paper-text";
+import { extractPaperContent, extractPaperFullText } from "../extract-paper-content";
 import { textError } from "@/lib/api-errors";
 import type { IdeationSharedContext, IdeationTurn } from "@/lib/research-ideation/types";
 
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const model = await getConfiguredModel();
+    const { providerId, model } = await getConfiguredModelWithProvider();
+    const visionCapable = providerSupportsVision(providerId);
 
     const context: IdeationSharedContext = {
       article: {
@@ -36,14 +38,29 @@ export async function POST(req: NextRequest) {
         abstract: article.abstract || "",
       },
       userSeed: userSeed || undefined,
+      supportsVision: visionCapable,
       locale,
       mode,
     };
 
-    // Extract full paper text for deeper analysis (local files only)
-    const paperText = await extractPaperFullText(article, 30_000);
-    if (paperText) {
-      context.retrievedEvidence = paperText;
+    // Extract paper content — with images for vision-capable providers
+    if (visionCapable) {
+      const paperContent = await extractPaperContent(article, true, 20);
+      if (paperContent) {
+        context.paperContent = paperContent;
+        const textOnly = paperContent
+          .filter((p) => p.type === "text")
+          .map((p) => p.text)
+          .join("\n\n");
+        if (textOnly.length > 0) {
+          context.retrievedEvidence = textOnly.slice(0, 30_000);
+        }
+      }
+    } else {
+      const paperText = await extractPaperFullText(article, 30_000);
+      if (paperText) {
+        context.retrievedEvidence = paperText;
+      }
     }
 
     // Stream each completed turn as a JSON line
@@ -51,6 +68,16 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Emit paper page images as initial metadata line
+          if (context.paperContent) {
+            const pages = context.paperContent
+              .filter((p) => p.type === "image")
+              .map((p) => ({ pageNumber: p.pageNumber, data: p.data, mimeType: p.mimeType }));
+            if (pages.length > 0) {
+              controller.enqueue(encoder.encode(JSON.stringify({ type: "paper_pages", pages }) + "\n"));
+            }
+          }
+
           await runFullIdeation(
             context,
             model,

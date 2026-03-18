@@ -53,6 +53,11 @@ flowchart LR
 
 <!-- whats-new-start -->
 
+#### 2026-03-18
+- **Vision multimodale pour discussion et ideation d'articles** : les fournisseurs compatibles vision recoivent maintenant les images de pages PDF extraites en plus du texte afin d'analyser figures, tableaux et schemas.
+- **UI de galerie des pages d'article** : les panneaux Discussion et Ideation affichent maintenant une galerie repliable de miniatures de pages avec apercu en grand format.
+- **Detection de la capacite vision des fournisseurs** : la configuration des fournisseurs expose maintenant la prise en charge vision pour basculer automatiquement entre contexte multimodal et texte seul.
+
 #### 2026-03-17
 - **Gestion des profils de jobs distants et durcissement SSH** : prise en charge de la creation, de l'edition et de l'envoi securise de jobs de recherche via SSH
 - **Rendu Markdown riche dans le panneau Agent** : les messages Agent affichent maintenant tableaux, formules LaTeX et blocs de code avec coloration syntaxique

@@ -1,5 +1,14 @@
 import type { IdeationStageId, IdeationTurn, IdeationSharedContext, IdeationAgentConfig } from "./types";
 import { IDEATION_AGENTS, SHARED_IDEATION_INSTRUCTION } from "./roles";
+import type { PaperContentPart } from "@/lib/files/pdf-image-extractor";
+import type { UserContent, TextPart, ImagePart } from "ai";
+
+export interface IdeationPromptResult {
+  system: string;
+  userContent: UserContent;
+}
+
+type ContentPart = TextPart | ImagePart;
 
 // =============================================================
 // STAGE GUIDANCE — what the active role should do in each stage
@@ -89,30 +98,43 @@ function brevityInstruction(mode: "quick" | "full"): string {
   return "";
 }
 
+/**
+ * Convert PaperContentPart[] to AI SDK UserContent (multimodal parts array).
+ */
+function paperContentToUserContent(parts: PaperContentPart[]): ContentPart[] {
+  const content: ContentPart[] = [];
+  for (const part of parts) {
+    if (part.type === "text" && part.text) {
+      content.push({ type: "text", text: part.text });
+    } else if (part.type === "image" && part.data && part.mimeType) {
+      content.push({
+        type: "image",
+        image: Buffer.from(part.data, "base64"),
+        mediaType: part.mimeType,
+      });
+    }
+  }
+  return content;
+}
+
 // =============================================================
 // UNIFIED PROMPT BUILDER
 // =============================================================
 
 /**
- * Build the complete system prompt for an ideation agent at a given stage.
+ * Build the complete prompt for an ideation agent at a given stage.
  *
- * Combines (in order):
- * 1. Shared ideation instruction
- * 2. Role-specific system prompt
- * 3. Paper context + user seed
- * 4. Retrieved evidence (if available)
- * 5. Prior transcript
- * 6. Stage-specific guidance
- * 7. Locale instruction
- * 8. Brevity instruction (quick mode)
+ * Returns a structured result with:
+ * - `system`: text-only system prompt (role instructions, stage guidance, transcript)
+ * - `userContent`: user message content — multimodal when paper images are available
  */
 export function buildIdeationPrompt(
   agentConfig: IdeationAgentConfig,
   context: IdeationSharedContext,
   transcript: IdeationTurn[],
   stageId: IdeationStageId,
-): string {
-  const parts: string[] = [
+): IdeationPromptResult {
+  const systemParts: string[] = [
     SHARED_IDEATION_INSTRUCTION,
     "",
     agentConfig.systemPrompt,
@@ -120,22 +142,38 @@ export function buildIdeationPrompt(
     formatArticleContext(context),
   ];
 
-  const evidence = formatRetrievedEvidence(context.retrievedEvidence);
-  if (evidence) {
-    parts.push("", evidence);
-  }
-
   const transcriptBlock = formatTranscript(transcript);
   if (transcriptBlock) {
-    parts.push("", transcriptBlock);
+    systemParts.push("", transcriptBlock);
   }
 
-  parts.push("", STAGE_GUIDANCE[stageId]);
+  systemParts.push("", STAGE_GUIDANCE[stageId]);
 
   const localeInstr = LOCALE_INSTRUCTION[context.locale] || LOCALE_INSTRUCTION.en;
-  parts.push("", localeInstr);
+  systemParts.push("", localeInstr);
 
-  parts.push(brevityInstruction(context.mode));
+  systemParts.push(brevityInstruction(context.mode));
 
-  return parts.join("\n");
+  // Build user content — multimodal when images available
+  const useVision = context.supportsVision && context.paperContent && context.paperContent.some((p) => p.type === "image");
+
+  const userParts: ContentPart[] = [];
+  const taskPrompt = `Begin your analysis of the paper "${context.article.title}".${context.userSeed ? ` The user's research seed idea: "${context.userSeed}"` : ""}`;
+
+  if (useVision && context.paperContent) {
+    userParts.push({ type: "text", text: "## Full Paper Content (pages with figures)\n" });
+    userParts.push(...paperContentToUserContent(context.paperContent));
+    userParts.push({ type: "text", text: `\n\n${taskPrompt}` });
+  } else {
+    const evidence = formatRetrievedEvidence(context.retrievedEvidence);
+    if (evidence) {
+      systemParts.splice(systemParts.length - 3, 0, "", evidence);
+    }
+    userParts.push({ type: "text", text: taskPrompt });
+  }
+
+  return {
+    system: systemParts.join("\n"),
+    userContent: userParts,
+  };
 }

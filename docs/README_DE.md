@@ -53,6 +53,11 @@ flowchart LR
 
 <!-- whats-new-start -->
 
+#### 2026-03-18
+- **Multimodale Vision fuer Paper-Diskussion und Ideation**: Vision-faehige Anbieter erhalten jetzt extrahierte PDF-Seitenbilder zusammen mit Text, damit Agents Abbildungen, Tabellen und Diagramme direkt analysieren koennen.
+- **Paper-Seitengalerie-UI**: Die Discussion- und Ideation-Panels zeigen jetzt eine einklappbare Miniaturgalerie der extrahierten Paper-Seiten mit Grossansicht im Dialog.
+- **Erkennung der Vision-Faehigkeit von Anbietern**: Provider-Konfigurationen enthalten jetzt Vision-Support, sodass Routen automatisch zwischen multimodalem und rein textbasiertem Kontext wechseln koennen.
+
 #### 2026-03-17
 - **Remote-Job-Profilverwaltung und SSH-Haertung**: sichere Erstellung, Bearbeitung und SSH-gehaertete Einreichung von Forschungsjobs auf Remote-Systemen
 - **Rich Markdown Rendering im Agent Panel**: Agent-Nachrichten rendern jetzt Tabellen, LaTeX-Mathematik und syntaxhervorgehobene Codebloecke

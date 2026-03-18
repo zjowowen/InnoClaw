@@ -5,6 +5,12 @@ import { useTranslations, useLocale } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -44,16 +50,15 @@ export function SkillList({
 
   const handleTranslate = useCallback(async () => {
     if (translated) {
-      // Toggle off — show original
       setTranslated(false);
       return;
     }
 
-    const descriptionsToTranslate = skills
+    const toTranslate = skills
       .filter((s) => s.description)
-      .map((s) => s.description!);
+      .map((s) => ({ id: s.id, text: s.description! }));
 
-    if (descriptionsToTranslate.length === 0) return;
+    if (toTranslate.length === 0) return;
 
     setTranslating(true);
     try {
@@ -62,7 +67,7 @@ export function SkillList({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          texts: descriptionsToTranslate,
+          texts: toTranslate.map((t) => t.text),
           targetLanguage: targetLang,
         }),
       });
@@ -74,13 +79,9 @@ export function SkillList({
 
       const { translations: results } = await res.json();
       const map: Record<string, string> = {};
-      let idx = 0;
-      for (const skill of skills) {
-        if (skill.description) {
-          map[skill.id] = results[idx] || skill.description;
-          idx++;
-        }
-      }
+      toTranslate.forEach((item, idx) => {
+        map[item.id] = results[idx] || item.text;
+      });
       setTranslations(map);
       setTranslated(true);
     } catch (err) {
@@ -91,88 +92,118 @@ export function SkillList({
   }, [skills, locale, translated]);
 
   if (skills.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Zap className="h-10 w-10 text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <table className="w-full text-sm table-fixed">
-        <colgroup>
-          <col className="w-[22%]" />
-          <col className="w-[40%]" />
-          <col className="w-[12%]" />
-          <col className="w-[12%]" />
-          <col className="w-[14%]" />
-        </colgroup>
-        <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="text-left font-medium px-4 py-3">{t("name")}</th>
-            <th className="text-left font-medium px-4 py-3 hidden md:table-cell">
-              <div className="flex items-center gap-2">
-                <span>{t("description")}</span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleTranslate}
-                        disabled={translating}
-                        className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-normal cursor-pointer hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {translating ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Languages className="h-3 w-3" />
-                        )}
-                        <span>{translated ? t("showOriginal") : t("aiTranslate")}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">{t("aiTranslateHint")}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </th>
-            <th className="text-left font-medium px-4 py-3">{t("scope")}</th>
-            <th className="text-left font-medium px-4 py-3">{t("status")}</th>
-            <th className="text-right font-medium px-4 py-3">{t("actions")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {skills.map((skill) => (
-            <tr
-              key={skill.id}
-              className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${!skill.isEnabled ? "opacity-60" : ""}`}
-            >
-              <td className="px-4 py-3">
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium truncate">{skill.name}</span>
-                  <Badge variant="secondary" className="font-mono text-xs w-fit">
-                    /{skill.slug}
-                  </Badge>
+    <div>
+      {/* Translate button */}
+      <div className="mb-4 flex justify-end">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleTranslate}
+                disabled={translating}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/50 px-3 py-1.5 text-xs cursor-pointer hover:bg-muted hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {translating ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Languages className="h-3 w-3" />
+                )}
+                <span>{translated ? t("showOriginal") : t("aiTranslate")}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">{t("aiTranslateHint")}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Card grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {skills.map((skill) => (
+          <Card
+            key={skill.id}
+            className={`group relative cursor-pointer overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 ${!skill.isEnabled ? "opacity-60" : ""}`}
+          >
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+            <CardHeader className="relative pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Icon */}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 transition-colors duration-300 group-hover:bg-primary/20">
+                    <Zap className="h-5 w-5 text-primary" />
+                  </div>
+                  {/* Name + slug */}
+                  <div>
+                    <CardTitle className="text-base font-semibold transition-colors duration-300 group-hover:text-primary">
+                      {skill.name}
+                    </CardTitle>
+                    <Badge variant="secondary" className="mt-1 font-mono text-[10px]">
+                      /{skill.slug}
+                    </Badge>
+                  </div>
                 </div>
-              </td>
-              <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
-                <span className="line-clamp-2">
-                  {translated && translations[skill.id]
-                    ? translations[skill.id]
-                    : skill.description || "—"}
-                </span>
-              </td>
-              <td className="px-4 py-3">
-                <Badge variant={skill.workspaceId ? "outline" : "default"}>
+
+                {/* Action buttons - visible on hover */}
+                <div className="flex items-center gap-0.5 opacity-0 transition-all duration-200 group-hover:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onEdit(skill)}
+                    title={t("edit")}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleExport(skill)}
+                    title={t("export")}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => onDelete(skill)}
+                    title={t("delete")}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                {translated && translations[skill.id]
+                  ? translations[skill.id]
+                  : skill.description || "—"}
+              </p>
+            </CardHeader>
+
+            <CardContent className="relative">
+              <div className="flex items-center justify-between text-xs">
+                {/* Scope badge */}
+                <Badge variant={skill.workspaceId ? "outline" : "default"} className="text-[10px]">
                   {skill.workspaceId ? t("workspace") : t("global")}
                 </Badge>
-              </td>
-              <td className="px-4 py-3">
+
+                {/* Enabled/disabled toggle */}
                 <button
-                  onClick={() => onToggleEnabled(skill)}
-                  className="inline-flex items-center gap-1 text-xs cursor-pointer hover:opacity-80"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleEnabled(skill);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs cursor-pointer hover:opacity-80 transition-opacity"
                 >
                   {skill.isEnabled ? (
                     <>
@@ -186,42 +217,11 @@ export function SkillList({
                     </>
                   )}
                 </button>
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onEdit(skill)}
-                    title={t("edit")}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleExport(skill)}
-                    title={t("export")}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => onDelete(skill)}
-                    title={t("delete")}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

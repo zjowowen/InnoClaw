@@ -42,6 +42,7 @@
     "@larksuiteoapi/node-sdk": "^1.59.0",
     "ai": "^6.0.99",
     "better-sqlite3": "^12.6.2",
+    "canvas": "^3.2.1",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
