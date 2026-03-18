@@ -4,17 +4,53 @@
   <img src="site/logos/20260316-112548.png" alt="InnoClaw Logo" width="200" />
 </p>
 
+[English](README_en.md) | **简体中文**
+
 一个可自托管的 AI 研究助手。将服务器文件夹作为工作空间，基于 RAG 与 AI 对话，内置 206 个科学技能。
 
-A self-hostable AI research assistant. Turn server-side folders into workspaces, chat with AI grounded in your documents via RAG, and leverage 206 built-in scientific skills.
-
-📖 **[完整文档 / Full Documentation](https://zjowowen.github.io/InnoClaw/)** (English & 简体中文)
+📖 **[完整文档](https://zjowowen.github.io/InnoClaw/)**
 
 ---
 
-## 概览 / Overview
+## 新增特性
 
-**核心亮点 / Key Highlights:**
+<!-- whats-new-start -->
+
+#### 2026-03-17
+- **远程作业配置管理与 SSH 安全加固**: 支持安全的远程配置文件创建、编辑及 SSH 加固的研究作业提交
+- **智能体面板富文本渲染**: 智能体消息支持表格、LaTeX 数学公式及代码高亮渲染
+- **API 提供商设置界面**: 可在设置页面直接配置 AI 提供商的 API 密钥与端点
+
+
+#### 2026-03-17
+- **rjob 配置与提交加固**: 远程配置现支持完整 rjob 默认值（镜像、GPU、CPU、内存、挂载、charged-group、私有机器、环境变量、host-network、示例命令）。`submitRemoteJob` 从存储配置内部构建 rjob 命令——Agent 无法修改 `--charged-group` 或 `--image` 等参数。SSH 传输修复：`-o StrictHostKeyChecking=no -tt`、init 脚本加载及双引号包装
+- **远程配置编辑**: Remotes 标签页中远程配置新增编辑按钮（铅笔图标），点击可将配置加载到表单进行更新，包含所有 rjob 配置字段
+- **直接任务提交捷径**: Agent-Long 模式可跳过 inspect/patch/sync 阶段直接提交简单任务：`listRemoteProfiles → prepareJobSubmission → approval → submitRemoteJob`
+
+
+#### 2026-03-16
+- **论文讨论与灵感生成稳定性提升**: 分角色 token 预算（提升 2–2.5 倍），空/短回复自动重试，UI 中显示错误信息。修复推理型模型（SH-Lab、Qwen 等）返回空或截断输出的问题
+- **全文送入讨论智能体**: 讨论和灵感生成智能体现可接收最多 30k 字符的论文全文（本地文件），而非仅摘要，支持更深入的方法论、实验和结果分析
+- **摘要提取修复**: 基于启发式正则的摘要提取，改进 AI 提示词以防止将作者名误提取为摘要
+
+
+#### 2026-03-14
+- **研究执行引擎**: 全新 AI 驱动的研究编排系统，支持远程配置、能力开关、运行历史和 Agent 工具
+- **自动更新 README 新功能板块**: GitHub Actions 工作流每日自动生成并提交新功能板块
+
+*暂无条目。当 CI 检测到重大新功能时会自动更新此栏目。*
+
+
+
+
+
+<!-- whats-new-end -->
+
+---
+
+## 概览
+
+**核心亮点：**
 - 🗂️ **工作空间 + 文件管理** — 映射服务器文件夹，支持浏览、上传、编辑
 - 🤖 **RAG 增强对话** — AI 基于文档内容回答问题，附带来源引用
 - 📝 **智能笔记生成** — 自动生成摘要、FAQ、简报、时间线
@@ -35,29 +71,25 @@ A self-hostable AI research assistant. Turn server-side folders into workspaces,
 
 ---
 
-## 社区交流 / Community
+## 社区交流
 
 加入 InnoClaw 用户社区，获取最新动态、交流使用心得、反馈问题建议！
 
-Join the InnoClaw community to get the latest updates, share your experience, and provide feedback!
-
-**飞书体验群 / Feishu Group：**
+**飞书体验群：**
 
 <img src="site/social/飞书体验群.png" alt="InnoClaw 飞书体验群" width="200" />
 
 > 扫码加入飞书体验群，与开发者和其他用户直接交流。欢迎反馈 Bug、提出功能建议或分享使用经验！
->
-> Scan the QR code to join our Feishu group. Feel free to report bugs, suggest features, or share your experience!
 
 ---
 
-## 快速开始 / Quick Start
+## 快速开始
 
-> **前置要求 / Prerequisites：** Node.js >=20.0.0, npm, Git, C++ 编译工具链（用于编译 `better-sqlite3` 原生模块）
+> **前置要求：** Node.js >=20.0.0, npm, Git, C++ 编译工具链（用于编译 `better-sqlite3` 原生模块）
 
 ---
 
-### 各系统安装前置依赖 / Install Prerequisites by OS
+### 各系统安装前置依赖
 
 <details>
 <summary><b>🪟 Windows</b></summary>
@@ -240,13 +272,11 @@ git --version
 
 ---
 
-### 方式一：手动安装（通用） / Manual Setup (Universal)
+### 方式一：手动安装（通用）
 
 适用于所有用户，无额外依赖。确保已按上面的指引安装好前置依赖。
 
-Works for all users with no extra dependencies. Make sure you've installed the prerequisites above.
-
-#### 第 1 步：克隆并安装 / Clone & Install
+#### 第 1 步：克隆并安装
 
 ```bash
 git clone https://github.com/zjowowen/InnoClaw.git
@@ -261,7 +291,7 @@ npm install
 
 > **💡 Windows 用户注意：** 如果遇到 `better-sqlite3` 编译错误，请确认已安装 Visual Studio Build Tools（见上方 Windows 前置依赖）。
 
-#### 第 2 步：最小配置 / Minimal Configuration
+#### 第 2 步：最小配置
 
 **Linux / macOS：**
 ```bash
@@ -280,11 +310,8 @@ copy .env.example .env.local
 
 编辑 `.env.local`，只需设置两项即可启动：
 
-Edit `.env.local`, only two settings are required to start:
-
 ```env
-# [必填/Required] 工作空间根目录（逗号分隔的绝对路径，目录必须已存在）
-# Workspace root directories (comma-separated absolute paths, directories must exist)
+# [必填] 工作空间根目录（逗号分隔的绝对路径，目录必须已存在）
 
 # Linux/macOS 示例：
 WORKSPACE_ROOTS=/home/yourname/research,/home/yourname/projects
@@ -292,18 +319,15 @@ WORKSPACE_ROOTS=/home/yourname/research,/home/yourname/projects
 # Windows 示例：
 # WORKSPACE_ROOTS=D:/Data/research,D:/Data/projects
 
-# [推荐/Recommended] 至少配置一个 AI API Key（不配置也能启动，但 AI 功能不可用）
-# At least one AI API Key (app starts without it, but AI features won't work)
+# [推荐] 至少配置一个 AI API Key（不配置也能启动，但 AI 功能不可用）
 OPENAI_API_KEY=sk-xxx
-# 或/or ANTHROPIC_API_KEY=sk-ant-xxx
-# 或/or GEMINI_API_KEY=xxx
+# 或 ANTHROPIC_API_KEY=sk-ant-xxx
+# 或 GEMINI_API_KEY=xxx
 ```
 
-> 完整环境变量列表见 [环境变量参考](#环境变量参考--environment-variables)。
->
-> For the full list of environment variables, see [Environment Variables](#环境变量参考--environment-variables).
+> 完整环境变量列表见 [环境变量参考](#环境变量参考)。
 
-#### 第 3 步：初始化并启动 / Init & Start
+#### 第 3 步：初始化并启动
 
 **Linux / macOS：**
 ```bash
@@ -333,63 +357,51 @@ npm run dev
 
 打开 **http://localhost:3000** 即可使用。如看到工作空间列表页面，说明安装成功。
 
-Open **http://localhost:3000** in your browser. If you see the workspace list page, the installation is successful.
-
 ---
 
-### 方式二：Claude Code 自动安装（可选） / Auto Setup via Claude Code (Optional)
+### 方式二：Claude Code 自动安装（可选）
 
-> **前提条件 / Prerequisites:**
+> **前提条件：**
 > - 需要已安装 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI 工具
 > - Claude Code 目前有**地区限制**，部分地区无法安装或使用
 > - 如果你无法安装或使用 Claude Code，请使用上面的**方式一手动安装**
 
 如果你已安装 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)，按照以下步骤操作：
 
-If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, follow these steps:
-
-**第 1 步：克隆仓库 / Step 1: Clone the Repository**
+**第 1 步：克隆仓库**
 
 ```bash
 git clone https://github.com/zjowowen/InnoClaw.git
 cd InnoClaw
 ```
 
-**第 2 步：启动 Claude Code / Step 2: Launch Claude Code**
+**第 2 步：启动 Claude Code**
 
 ```bash
 claude
 ```
 
-**第 3 步：在 Claude Code 中运行安装向导 / Step 3: Run the Setup Wizard Inside Claude Code**
+**第 3 步：在 Claude Code 中运行安装向导**
 
 在 Claude Code 交互界面中输入：
-
-Type the following in the Claude Code interactive prompt:
 
 ```
 /setup
 ```
 
-> **注意 / Note:**
+> **注意：**
 > - 请勿直接在终端运行 `claude /setup`，这不会触发安装向导。
-> - Do NOT run `claude /setup` directly in the terminal — this will not trigger the setup wizard.
 > - 正确的做法是先用 `claude` 命令进入 Claude Code，再在其中输入 `/setup`。
-> - The correct approach is to first enter Claude Code with the `claude` command, then type `/setup` inside it.
 
 `/setup` 会交互式引导你完成：依赖安装 → 环境配置（工作空间路径、AI API Key 等）→ 数据库初始化 → 启动服务。
 
-The `/setup` command interactively guides you through: dependency installation → environment configuration (workspace paths, AI API keys, etc.) → database initialization → server startup.
-
 ---
 
-## 通过 Skills 配置高级功能 / Setup Advanced Features via Skills
+## 通过 Skills 配置高级功能
 
 InnoClaw 的 **Skills 系统**是配置和扩展高级功能的首选方式。启动应用后，访问 `/skills` 页面即可导入和管理技能。
 
-The **Skills system** is the preferred way to configure and extend advanced features. After starting the app, visit `/skills` to import and manage skills.
-
-### 导入方式 / How to Import Skills
+### 导入方式
 
 **方式一：Web UI（推荐）**
 1. 访问 `/skills` 页面 → 点击 **"导入技能"**
@@ -410,7 +422,7 @@ node scripts/import-local-skills.mjs
 
 ---
 
-### 配置 SCP 科学技能 / SCP Scientific Skills
+### 配置 SCP 科学技能
 
 [SCP (Science Context Protocol)](https://github.com/InternScience/scp) 提供 **206 个预置科学技能**，通过 [Intern-Discovery 平台](https://scphub.intern-ai.org.cn/) 连接到真实的科学计算服务端点。
 
@@ -439,7 +451,7 @@ node scripts/import-local-skills.mjs
 
 ---
 
-### 配置飞书机器人 / Feishu Bot Setup
+### 配置飞书机器人
 
 飞书机器人通过 WebSocket 长连接实时接收消息，让用户在飞书中直接与 Agent 交互。
 
@@ -514,7 +526,7 @@ curl -X POST http://localhost:3000/api/bot/feishu/push \
 
 ---
 
-### 配置 K8s 集群任务 / K8s Job Submission
+### 配置 K8s 集群任务
 
 Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 
@@ -601,7 +613,7 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 
 ---
 
-## 使用指南 / Usage Guide
+## 使用指南
 
 ### 1. 创建工作空间
 访问首页 → **"打开工作空间"** → 选择目录 → 确认。也可通过 **"从 GitHub 克隆"** 导入仓库。
@@ -618,7 +630,7 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 ### 5. 设置
 访问 `/settings`：切换 AI 提供商和模型、MAX 模式开关、上下文策略、API Key 状态。
 
-### 6. 论文研读 / Paper Study
+### 6. 论文研读
 访问 `/paper` 页面，搜索 arXiv、HuggingFace Daily Papers 和 Semantic Scholar 的学术论文：
 - **关键词搜索**：添加关键词标签后点击 **"Search"** 进行精确搜索
 - **AI 智能搜索**：在任意输入框输入自然语言描述（如 "diffusion models for video generation"），点击 **"AI Search"** → AI 自动提取优化关键词并跨三源搜索
@@ -629,13 +641,13 @@ Agent 面板支持向 Kubernetes 集群提交 GPU 计算任务。
 - **论文笔记**：在 **"Notes"** 标签页管理本地笔记目录，保存讨论记录，AI 自动发现关联笔记
 - **Study Paper 一键研读**：在文件预览面板中，PDF/MD/TXT 文件会显示 **"Study Paper"** 按钮，点击后自动提取论文元数据并打开研读模式（含摘要、讨论、笔记、Discussion、Ideation 五个标签页），原文件预览保持打开
 
-### 7. 多 Agent 会话 / Multi-Agent Sessions
+### 7. 多 Agent 会话
 在工作空间的 Agent 面板中，点击 **"+"** 按钮创建新会话。每个会话独立维护对话上下文和记忆：
 - 标签栏显示所有活跃会话，点击切换
 - 双击标签或点击铅笔图标重命名
 - 关闭标签需两步确认（防止误操作）
 
-### 8. Agent 模式选择 / Agent Mode Selection
+### 8. Agent 模式选择
 Agent 面板输入栏左侧的模式选择器提供四种模式：
 
 | 模式 | 说明 | maxSteps | 自动续接 |
@@ -647,7 +659,7 @@ Agent 面板输入栏左侧的模式选择器提供四种模式：
 
 > **Agent-Long** 专为研究执行设计：系统提示词包含从代码审查到结果分析的 15 阶段管道指令，更高的步数和续接上限确保长流程实验不会中途断开。
 
-### 9. 研究执行工作区 / Research Execution Workspace
+### 9. 研究执行工作区
 在工作空间侧边栏打开 **Research Execution** 面板，管理远程实验全流程：
 
 **配置远程目标：**
@@ -667,7 +679,7 @@ rjob 后端支持指定容器镜像、GPU 数量、内存、挂载路径、charg
 
 ---
 
-## 环境变量参考 / Environment Variables
+## 环境变量参考
 
 所有变量在 `.env.local` 中配置，仅在服务器端使用，不会暴露给浏览器。
 
@@ -739,7 +751,7 @@ rjob 后端支持指定容器镜像、GPU 数量、内存、挂载路径、charg
 
 ---
 
-## 生产部署 / Production Deployment
+## 生产部署
 
 > **注意：** 生产部署通常在 Linux 服务器上进行。Windows 用户建议使用 WSL2 或 Docker 部署。
 
@@ -805,7 +817,7 @@ services:
 
 ---
 
-## 项目结构 / Project Structure
+## 项目结构
 
 ```
 src/
@@ -819,8 +831,8 @@ src/
 │       ├── files/                # 文件操作
 │       ├── chat/                 # AI 对话（流式）
 │       ├── agent/                # Agent 面板 API
-│       ├── paper-study/             # 论文研读 API（搜索/摘要/讨论/AI 查询扩展/灵感生成）
-│       ├── research-exec/           # 研究执行 API（配置/运行/监控）
+│       ├── paper-study/          # 论文研读 API（搜索/摘要/讨论/AI 查询扩展/灵感生成）
+│       ├── research-exec/        # 研究执行 API（配置/运行/监控）
 │       ├── skills/               # Skills CRUD + 导入
 │       ├── bot/feishu/           # 飞书 webhook + 推送
 │       ├── generate/             # 笔记生成
@@ -852,7 +864,7 @@ src/
 
 ---
 
-## RAG 管道架构 / RAG Pipeline Architecture
+## RAG 管道架构
 
 ```
 索引阶段（点击"同步"）:  文件 → 文本提取 → 分块 → 向量嵌入 → SQLite 存储
@@ -869,7 +881,7 @@ src/
 
 ---
 
-## 常见问题 / Troubleshooting
+## 常见问题
 
 ### Claude Code 相关
 
@@ -928,7 +940,7 @@ Turbopack 在网络文件系统上的缓存警告，不影响功能。可设置 
 
 ---
 
-## 开发 / Development
+## 开发
 
 ```bash
 npm run dev              # 开发模式（热更新）
