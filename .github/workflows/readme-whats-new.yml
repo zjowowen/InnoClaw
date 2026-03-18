@@ -75,16 +75,20 @@ jobs:
 
           OUTPUT FORMAT:
           If there ARE significant features, output EXACTLY in this format (no extra text before or after):
-          ---BEGIN_FEATURES---
-          - **Feature Name / 功能名称**: One-line English description / 一行中文描述
-          ---END_FEATURES---
+          ---BEGIN_FEATURES_EN---
+          - **Feature Name**: One-line English description
+          ---END_FEATURES_EN---
+          ---BEGIN_FEATURES_ZH---
+          - **功能名称**: 一行中文描述
+          ---END_FEATURES_ZH---
 
           If there are NO significant features, output EXACTLY:
           ---NO_FEATURES---
 
           IMPORTANT:
-          - Each bullet must be bilingual (English / Chinese) to match README style
-          - Keep descriptions concise (under 120 chars per language)
+          - Output TWO separate blocks: one English, one Chinese
+          - Feature names and descriptions must correspond 1:1 between the two blocks
+          - Keep descriptions concise (under 120 chars per line)
           - Group related commits into a single feature bullet
           - Maximum 3 feature bullets per day
           PROMPT_EOF
@@ -104,36 +108,50 @@ jobs:
           echo "$RESULT"
           echo "$RESULT" > /tmp/feature_detection.txt
 
-          if echo "$RESULT" | grep -q "BEGIN_FEATURES"; then
+          if echo "$RESULT" | grep -q "BEGIN_FEATURES_EN"; then
             echo "has_features=true" >> "$GITHUB_OUTPUT"
-            sed -n '/---BEGIN_FEATURES---/,/---END_FEATURES---/p' \
+            # Extract English features
+            sed -n '/---BEGIN_FEATURES_EN---/,/---END_FEATURES_EN---/p' \
               /tmp/feature_detection.txt \
-              | grep -vF -- '---' > /tmp/new_features.txt
-            echo "Detected features:"
-            cat /tmp/new_features.txt
+              | grep -vF -- '---' > /tmp/new_features_en.txt
+            # Extract Chinese features
+            sed -n '/---BEGIN_FEATURES_ZH---/,/---END_FEATURES_ZH---/p' \
+              /tmp/feature_detection.txt \
+              | grep -vF -- '---' > /tmp/new_features_zh.txt
+            echo "Detected English features:"
+            cat /tmp/new_features_en.txt
+            echo "Detected Chinese features:"
+            cat /tmp/new_features_zh.txt
           else
             echo "has_features=false" >> "$GITHUB_OUTPUT"
             echo "No significant features detected."
           fi
 
-      - name: Update README
+      - name: Update READMEs
         if: steps.detect.outputs.has_features == 'true'
         run: |
           TODAY=$(date +%Y-%m-%d)
-          NEW_FEATURES=$(cat /tmp/new_features.txt)
           MARKER_START="<!-- whats-new-start -->"
 
-          # Build the new entry
-          ENTRY=$(printf '#### %s\n%s\n' "$TODAY" "$NEW_FEATURES")
-
-          # Insert new entry after the start marker
-          awk -v marker="$MARKER_START" -v entry="$ENTRY" '
+          # Update README.md (Chinese)
+          NEW_FEATURES_ZH=$(cat /tmp/new_features_zh.txt)
+          ENTRY_ZH=$(printf '#### %s\n%s\n' "$TODAY" "$NEW_FEATURES_ZH")
+          awk -v marker="$MARKER_START" -v entry="$ENTRY_ZH" '
             { print }
             index($0, marker) { printf "\n%s\n", entry }
           ' README.md > /tmp/README_updated.md
           mv /tmp/README_updated.md README.md
+          echo "README.md (ZH) updated with new entry for $TODAY"
 
-          echo "README updated with new entry for $TODAY"
+          # Update README_en.md (English)
+          NEW_FEATURES_EN=$(cat /tmp/new_features_en.txt)
+          ENTRY_EN=$(printf '#### %s\n%s\n' "$TODAY" "$NEW_FEATURES_EN")
+          awk -v marker="$MARKER_START" -v entry="$ENTRY_EN" '
+            { print }
+            index($0, marker) { printf "\n%s\n", entry }
+          ' README_en.md > /tmp/README_en_updated.md
+          mv /tmp/README_en_updated.md README_en.md
+          echo "README_en.md (EN) updated with new entry for $TODAY"
 
       - name: Trim old entries
         if: steps.detect.outputs.has_features == 'true'
@@ -141,39 +159,41 @@ jobs:
           python3 <<'PYEOF'
           import re
 
-          with open("README.md", "r", encoding="utf-8") as f:
-              content = f.read()
-
-          start_marker = "<!-- whats-new-start -->"
-          end_marker = "<!-- whats-new-end -->"
-
-          start_idx = content.find(start_marker)
-          end_idx = content.find(end_marker)
-
-          if start_idx == -1 or end_idx == -1:
-              print("Markers not found, skipping trim.")
-              exit(0)
-
-          before = content[:start_idx + len(start_marker)]
-          section = content[start_idx + len(start_marker):end_idx]
-          after = content[end_idx:]
-
-          # Split into date-headed entries
-          entries = re.split(r'(?=\n#### \d{4}-\d{2}-\d{2})', section)
-          entries = [e for e in entries if e.strip() and '####' in e]
-
           MAX_ENTRIES = 10
-          if len(entries) > MAX_ENTRIES:
-              entries = entries[:MAX_ENTRIES]
-              print(f"Trimmed to {MAX_ENTRIES} entries.")
-          else:
-              print(f"Have {len(entries)} entries (max {MAX_ENTRIES}), no trimming needed.")
 
-          trimmed = "\n".join(entries) + "\n\n"
-          new_content = before + "\n" + trimmed + after
+          for readme_file in ["README.md", "README_en.md"]:
+              with open(readme_file, "r", encoding="utf-8") as f:
+                  content = f.read()
 
-          with open("README.md", "w", encoding="utf-8") as f:
-              f.write(new_content)
+              start_marker = "<!-- whats-new-start -->"
+              end_marker = "<!-- whats-new-end -->"
+
+              start_idx = content.find(start_marker)
+              end_idx = content.find(end_marker)
+
+              if start_idx == -1 or end_idx == -1:
+                  print(f"{readme_file}: Markers not found, skipping trim.")
+                  continue
+
+              before = content[:start_idx + len(start_marker)]
+              section = content[start_idx + len(start_marker):end_idx]
+              after = content[end_idx:]
+
+              # Split into date-headed entries
+              entries = re.split(r'(?=\n#### \d{4}-\d{2}-\d{2})', section)
+              entries = [e for e in entries if e.strip() and '####' in e]
+
+              if len(entries) > MAX_ENTRIES:
+                  entries = entries[:MAX_ENTRIES]
+                  print(f"{readme_file}: Trimmed to {MAX_ENTRIES} entries.")
+              else:
+                  print(f"{readme_file}: Have {len(entries)} entries (max {MAX_ENTRIES}), no trimming needed.")
+
+              trimmed = "\n".join(entries) + "\n\n"
+              new_content = before + "\n" + trimmed + after
+
+              with open(readme_file, "w", encoding="utf-8") as f:
+                  f.write(new_content)
           PYEOF
 
       - name: Create branch and PR
@@ -187,10 +207,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Create or reset branch from current state (README already modified)
+          # Create or reset branch from current state (READMEs already modified)
           git checkout -B "${BRANCH}"
 
-          git add README.md
+          git add README.md README_en.md
           git commit -m "docs: update What's New section (${TODAY})" || {
             echo "No changes to commit."
             exit 0
@@ -204,17 +224,22 @@ jobs:
           if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
             echo "PR #${EXISTING_PR} already exists. Branch updated."
           else
-            NEW_FEATURES=$(cat /tmp/new_features.txt)
+            NEW_FEATURES_EN=$(cat /tmp/new_features_en.txt)
+            NEW_FEATURES_ZH=$(cat /tmp/new_features_zh.txt)
             gh pr create \
               --title "docs: What's New - ${TODAY}" \
               --body "$(cat <<PR_EOF
           ## Summary
 
-          Auto-detected significant new features from today's commits and updated the README **What's New** section.
+          Auto-detected significant new features from today's commits and updated the **What's New** section in both README.md (Chinese) and README_en.md (English).
 
-          ### New entries added:
+          ### New entries (English):
 
-          ${NEW_FEATURES}
+          ${NEW_FEATURES_EN}
+
+          ### New entries (Chinese):
+
+          ${NEW_FEATURES_ZH}
 
           ---
           *Auto-generated by the \`readme-whats-new\` workflow. Please review for accuracy before merging.*
