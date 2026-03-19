@@ -23,12 +23,31 @@ interface CacheEnvelope {
   savedAt: number;
 }
 
+function isValidCacheEnvelope(value: unknown): value is CacheEnvelope {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const envelope = value as { data?: unknown; savedAt?: unknown };
+  if (typeof envelope.savedAt !== "number" || !Number.isFinite(envelope.savedAt)) {
+    return false;
+  }
+  if (typeof envelope.data !== "object" || envelope.data === null) {
+    return false;
+  }
+  return true;
+}
+
 function readCache(): PaperStudyCacheData | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const envelope: CacheEnvelope = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!isValidCacheEnvelope(parsed)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    const envelope = parsed;
     if (Date.now() - envelope.savedAt > TTL_MS) {
       localStorage.removeItem(STORAGE_KEY);
       return null;
