@@ -12,63 +12,40 @@ import { Button } from "@/components/ui/button";
 import { Copy, CheckCheck } from "lucide-react";
 import { useFileContent } from "@/lib/hooks/use-file-content";
 import { useClipboard } from "@/lib/hooks/use-clipboard";
+import { SaveStatus } from "@/components/preview/save-status";
 import { getFileName } from "@/lib/utils";
 
-/** Map file extension to display name */
+/** Map file extension overrides to display name (extensions not listed fall back to the raw ext) */
 const EXT_TO_DISPLAY: Record<string, string> = {
   js: "javascript",
   jsx: "javascript",
   ts: "typescript",
   tsx: "typescript",
   py: "python",
-  json: "json",
-  html: "html",
-  xml: "xml",
-  css: "css",
-  scss: "scss",
   sass: "scss",
-  less: "less",
-  yaml: "yaml",
   yml: "yaml",
   sh: "bash",
   bat: "bash",
-  java: "java",
-  go: "go",
   rs: "rust",
   rb: "ruby",
-  php: "php",
-  c: "c",
   h: "c",
-  cpp: "cpp",
   hpp: "cpp",
-  sql: "sql",
   kt: "kotlin",
-  swift: "swift",
-  scala: "scala",
-  lua: "lua",
   pl: "perl",
   pm: "perl",
-  r: "r",
-  dart: "dart",
-  groovy: "groovy",
-  toml: "toml",
-  dockerfile: "dockerfile",
-  makefile: "makefile",
   cmake: "makefile",
-  graphql: "graphql",
   proto: "protobuf",
 };
 
-function getDisplayLanguage(filePath: string): string | undefined {
+function getDisplayLanguage(filePath: string): string {
   const filename = getFileName(filePath).toLowerCase();
   if (filename === "dockerfile") return "dockerfile";
   if (filename === "makefile") return "makefile";
   const ext = filename.split(".").pop() ?? "";
-  return EXT_TO_DISPLAY[ext];
+  return EXT_TO_DISPLAY[ext] ?? ext;
 }
 
 export function CodePreview({ filePath }: { filePath: string }) {
-  const t = useTranslations("preview");
   const tCommon = useTranslations("common");
   const { resolvedTheme } = useTheme();
   const { copied, copy } = useClipboard();
@@ -79,11 +56,6 @@ export function CodePreview({ filePath }: { filePath: string }) {
   const displayLanguage = useMemo(
     () => getDisplayLanguage(filePath),
     [filePath],
-  );
-
-  const lineCount = useMemo(
-    () => (content || "").split("\n").length,
-    [content],
   );
 
   // Dynamically load CodeMirror language support based on file extension
@@ -140,18 +112,9 @@ export function CodePreview({ filePath }: { filePath: string }) {
               {displayLanguage}
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
-            {lineCount} lines
-          </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {saving
-              ? t("autoSaving")
-              : modified
-                ? tCommon("modified")
-                : ""}
-          </span>
+          <SaveStatus saving={saving} modified={modified} />
           <Button
             variant="ghost"
             size="sm"

@@ -12,25 +12,23 @@ import { Header } from "@/components/layout/header";
 import { FileBrowser } from "@/components/files/file-browser";
 import { AgentPanel } from "@/components/agent/agent-panel";
 import { AgentSessionTabs } from "@/components/agent/agent-session-tabs";
-import { ReportPanel } from "@/components/report/report-panel";
 import { PaperStudyPanel } from "@/components/paper-study/paper-study-panel";
 import { ArticlePreview } from "@/components/paper-study/article-preview";
 import { NotesPanel } from "@/components/notes/notes-panel";
 import { FilePreviewPanel } from "@/components/preview/file-preview-panel";
 import { useWorkspace } from "@/lib/hooks/use-workspaces";
-import { useReport } from "@/lib/hooks/use-report";
 import { useMinimalMode } from "@/lib/hooks/use-minimal-mode";
 import { useAgentSessions } from "@/lib/hooks/use-agent-sessions";
 import { usePreviewTabs } from "@/lib/hooks/use-preview-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Bot, FileText, GraduationCap, Server, FlaskConical, Maximize2, Loader2 } from "lucide-react";
+import { Bot, GraduationCap, Server, FlaskConical, Maximize2, Loader2 } from "lucide-react";
 import { ClusterPanel } from "@/components/cluster/cluster-panel";
 import { ResearchExecPanel } from "@/components/research-exec/research-exec-panel";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 
-type MiddlePanel = "agent" | "report" | "paperStudy" | "cluster" | "research";
+type MiddlePanel = "agent" | "paperStudy" | "cluster" | "research";
 
 export default function WorkspacePage({
   params,
@@ -48,7 +46,6 @@ export default function WorkspacePage({
     openArticleTab,
     closeTab,
   } = usePreviewTabs(workspaceId);
-  const { report, isAvailable: reportAvailable } = useReport(workspaceId);
   const { isMinimal, toggleMinimalMode } = useMinimalMode();
   const {
     sessions,
@@ -89,10 +86,6 @@ export default function WorkspacePage({
       setExtractingArticle(false);
     }
   }, [openArticleTab]);
-
-  const handleStudyFile = useCallback(async (filePath: string) => {
-    await handleFileToArticle(filePath);
-  }, [handleFileToArticle]);
 
   if (isLoading) {
     return (
@@ -201,18 +194,6 @@ export default function WorkspacePage({
                           <span className="text-xs hidden lg:inline">Agent</span>
                         </Button>
                         <Button
-                          variant={middlePanel === "report" ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setMiddlePanel("report")}
-                          disabled={!reportAvailable}
-                          title={t("reportToggle")}
-                          aria-label={t("reportToggle")}
-                          className="h-7 px-2 gap-1"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          <span className="text-xs hidden lg:inline">Report</span>
-                        </Button>
-                        <Button
                           variant={middlePanel === "paperStudy" ? "default" : "ghost"}
                           size="sm"
                           onClick={() => setMiddlePanel("paperStudy")}
@@ -292,9 +273,6 @@ export default function WorkspacePage({
                       </div>
                     </div>
                   </div>
-                  <div className={middlePanel === "report" ? "flex-1 min-h-0" : "hidden"}>
-                    <ReportPanel report={report} />
-                  </div>
                   <div className={middlePanel === "paperStudy" ? "flex-1 min-h-0" : "hidden"}>
                     <PaperStudyPanel
                       workspaceId={workspaceId}
@@ -338,7 +316,7 @@ export default function WorkspacePage({
                           <FilePreviewPanel
                             filePath={tab.filePath}
                             onClose={() => closeTab(tab.id)}
-                            onStudyPaper={handleStudyFile}
+                            onStudyPaper={handleFileToArticle}
                           />
                         )}
                         {tab.type === "article" && tab.article && (

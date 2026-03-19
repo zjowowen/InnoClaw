@@ -2,41 +2,14 @@ import * as cheerio from "cheerio";
 import { readFileBuffer, readFile } from "./filesystem";
 import { extractPdfText } from "./pdf-parser";
 import path from "path";
+import { ALL_TEXT_EXTS } from "@/lib/constants";
 
-// Supported file extensions for RAG indexing
-export const SUPPORTED_EXTENSIONS = new Set([
-  ".pdf",
-  ".txt",
-  ".md",
-  ".csv",
-  ".html",
-  ".htm",
-  ".json",
-  ".xml",
-  ".yaml",
-  ".yml",
-  ".toml",
-  ".ini",
-  ".cfg",
-  ".log",
-  ".py",
-  ".js",
-  ".ts",
-  ".tsx",
-  ".jsx",
-  ".java",
-  ".go",
-  ".rs",
-  ".c",
-  ".cpp",
-  ".h",
-  ".hpp",
-  ".rb",
-  ".php",
-  ".sh",
-  ".bat",
-  ".sql",
-  ".r",
+// Supported file extensions for RAG indexing — derived from shared constants
+// plus pdf, md, markdown, htm which are handled specially.
+const EXTRA_EXTS = [".pdf", ".md", ".markdown", ".htm"] as const;
+export const SUPPORTED_EXTENSIONS = new Set<string>([
+  ...ALL_TEXT_EXTS.map((ext) => `.${ext}`),
+  ...EXTRA_EXTS,
 ]);
 
 /**

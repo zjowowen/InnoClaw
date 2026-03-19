@@ -5,11 +5,12 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Eye, X, FileDown, AlertCircle, Loader2, GraduationCap } from "lucide-react";
-import { PAPER_ELIGIBLE_EXTENSIONS } from "@/lib/constants";
+import { PAPER_ELIGIBLE_EXTENSIONS, PLAIN_TEXT_EXTS, CODE_EXTS, MOL_EXTS, CAD_EXTS, IMAGE_EXTS } from "@/lib/constants";
 import { getFileName } from "@/lib/utils";
 import { PdfViewer } from "@/components/files/pdf-viewer";
 import { MolViewer } from "@/components/files/mol-viewer";
 import { useFileContent } from "@/lib/hooks/use-file-content";
+import { SaveStatus } from "@/components/preview/save-status";
 
 // Lazy-load CadViewer so Three.js is only fetched when a CAD file is opened
 const CadViewer = dynamic(
@@ -46,30 +47,18 @@ interface FilePreviewPanelProps {
   onStudyPaper?: (filePath: string) => void;
 }
 
-const PLAIN_TEXT_EXTS = ["txt", "log", "csv", "env", "ini", "cfg", "conf"];
-const CODE_EXTS = [
-  "json", "html", "css", "js", "ts", "tsx", "jsx",
-  "py", "yaml", "yml", "xml", "toml", "sh", "bat",
-  "c", "cpp", "h", "hpp", "java", "go", "rs", "rb", "php",
-  "sql", "r", "scala", "kt", "swift", "dart", "lua", "pl", "pm", "groovy",
-  "scss", "sass", "less", "graphql", "proto",
-];
-const MOL_EXTS = ["pdb", "mol", "mol2", "sdf", "sd", "xyz", "cif"];
-const CAD_EXTS = ["stl", "obj", "ply", "vtk", "vtp", "gltf", "glb", "fbx", "dae", "3ds", "3mf", "pcd"];
-const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"];
-
 function getFileType(filePath: string) {
-  const filename = filePath.split("/").pop()?.toLowerCase() ?? "";
+  const filename = getFileName(filePath).toLowerCase();
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   // Special filenames without extensions
   if (filename === "dockerfile" || filename === "makefile") return "code" as const;
   if (ext === "pdf") return "pdf" as const;
   if (ext === "md" || ext === "markdown") return "text" as const;
-  if (MOL_EXTS.includes(ext)) return "mol" as const;
-  if (CAD_EXTS.includes(ext)) return "cad" as const;
-  if (IMAGE_EXTS.includes(ext)) return "image" as const;
-  if (CODE_EXTS.includes(ext)) return "code" as const;
-  if (PLAIN_TEXT_EXTS.includes(ext)) return "text" as const;
+  if ((MOL_EXTS as readonly string[]).includes(ext)) return "mol" as const;
+  if ((CAD_EXTS as readonly string[]).includes(ext)) return "cad" as const;
+  if ((IMAGE_EXTS as readonly string[]).includes(ext)) return "image" as const;
+  if ((CODE_EXTS as readonly string[]).includes(ext)) return "code" as const;
+  if ((PLAIN_TEXT_EXTS as readonly string[]).includes(ext)) return "text" as const;
   return "unknown" as const;
 }
 
@@ -101,15 +90,13 @@ function ImagePreview({ filePath }: { filePath: string }) {
 }
 
 function TextPreview({ filePath }: { filePath: string }) {
-  const tCommon = useTranslations("common");
-  const tPreview = useTranslations("preview");
   const { content, loading, saving, modified, handleSave, updateContent } =
     useFileContent({ filePath });
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
-        {tCommon("loading")}
+        Loading...
       </div>
     );
   }
@@ -117,13 +104,7 @@ function TextPreview({ filePath }: { filePath: string }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-end gap-2 border-b px-3 py-1.5">
-        <span className="text-xs text-muted-foreground">
-          {saving
-            ? tPreview("autoSaving")
-            : modified
-              ? tCommon("modified")
-              : ""}
-        </span>
+        <SaveStatus saving={saving} modified={modified} />
       </div>
       <Textarea
         className="flex-1 resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0"

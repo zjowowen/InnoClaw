@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { PAPER_ELIGIBLE_EXTENSIONS } from "@/lib/constants";
+import { useClipboard as useSystemClipboard } from "@/lib/hooks/use-clipboard";
 import {
   ChevronRight,
   ChevronDown,
@@ -150,6 +151,7 @@ function TreeNode({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const clipboard = useClipboard();
+  const { copy: copyToSystemClipboard } = useSystemClipboard();
 
   const isDirectory = entry.type === "directory";
   const isSelected = selectedPath === entry.path;
@@ -340,9 +342,9 @@ function TreeNode({
   }, [clipboard, entry, isDirectory, onRefresh, t]);
 
   const handleCopyPath = useCallback(() => {
-    navigator.clipboard.writeText(entry.path);
+    copyToSystemClipboard(entry.path);
     toast.success(t("pathCopied"));
-  }, [entry.path, t]);
+  }, [entry.path, copyToSystemClipboard, t]);
 
   // --- Drag and Drop ---
 
