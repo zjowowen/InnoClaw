@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import path from "path";
 import { execInWorkspace } from "@/lib/utils/shell";
-import { TRUNCATE, BUFFER, getTruncateLimits } from "@/lib/constants";
+import { BUFFER, getTruncateLimits } from "@/lib/constants";
 import { copyToResearchHistory } from "./research-history";
 import type { ToolContext } from "./types";
 

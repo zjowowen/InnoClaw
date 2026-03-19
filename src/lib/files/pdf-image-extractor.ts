@@ -35,6 +35,7 @@ interface ExtractOptions {
  * pdfjs internals.
  */
 class CustomCanvasFactory {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(_opts?: { enableHWA?: boolean; ownerDocument?: unknown }) {
     // opts ignored — node-canvas doesn't use HWA or ownerDocument
   }

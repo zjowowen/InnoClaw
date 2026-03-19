@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { GraduationCap, AlertCircle, Sparkles, CheckSquare, Flame } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,6 +10,7 @@ import { ArticleCard } from "./article-card";
 import { PaperSummarySection } from "./paper-summary-section";
 import { PaperRoastSection } from "./paper-roast-section";
 import type { Article, ArticleSource } from "@/lib/article-search/types";
+import type { PaperStudyCacheData } from "@/lib/hooks/use-paper-study-cache";
 
 /** Composite key for identifying an article across sources. */
 const articleKey = (a: Article) => `${a.source}-${a.id}`;
@@ -18,26 +19,32 @@ interface PaperStudyPanelProps {
   workspaceId: string;
   onArticleSelect: (article: Article | null) => void;
   notesDir?: string;
+  initialCache?: PaperStudyCacheData | null;
+  onStateChange?: (state: PaperStudyCacheData) => void;
 }
 
 export function PaperStudyPanel({
   workspaceId,
   onArticleSelect,
   notesDir,
+  initialCache,
+  onStateChange,
 }: PaperStudyPanelProps) {
   const t = useTranslations("paperStudy");
 
   // Search params
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [sources, setSources] = useState<ArticleSource[]>(["arxiv", "huggingface"]);
+  const [keywords, setKeywords] = useState<string[]>(initialCache?.keywords ?? []);
+  const [dateFrom, setDateFrom] = useState(initialCache?.dateFrom ?? "");
+  const [dateTo, setDateTo] = useState(initialCache?.dateTo ?? "");
+  const [sources, setSources] = useState<ArticleSource[]>(initialCache?.sources ?? ["arxiv", "huggingface"]);
 
   // Results
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-  const [summary, setSummary] = useState("");
+  const [articles, setArticles] = useState<Article[]>(initialCache?.articles ?? []);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(initialCache?.selectedArticle ?? null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(
+    () => new Set(initialCache?.checkedIds ?? [])
+  );
+  const [summary, setSummary] = useState(initialCache?.summary ?? "");
   const [searchErrors, setSearchErrors] = useState<Record<string, string> | undefined>();
 
   // Loading states
@@ -45,15 +52,32 @@ export function PaperStudyPanel({
   const [isAISearching, setIsAISearching] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(initialCache?.hasSearched ?? false);
 
   // Abort controller for summarization
   const summarizeAbortRef = useRef<AbortController | null>(null);
 
   // Roast state
-  const [roast, setRoast] = useState("");
+  const [roast, setRoast] = useState(initialCache?.roast ?? "");
   const [isRoasting, setIsRoasting] = useState(false);
   const roastAbortRef = useRef<AbortController | null>(null);
+
+  // Notify parent of state changes for cache persistence
+  useEffect(() => {
+    const snapshot: PaperStudyCacheData = {
+      keywords,
+      dateFrom,
+      dateTo,
+      sources,
+      articles,
+      selectedArticle,
+      checkedIds: Array.from(checkedIds),
+      summary,
+      roast,
+      hasSearched,
+    };
+    onStateChange?.(snapshot);
+  }, [keywords, dateFrom, dateTo, sources, articles, selectedArticle, checkedIds, summary, roast, hasSearched, onStateChange]);
 
   /** Click card → preview in right panel. */
   const handleSelectArticle = useCallback(

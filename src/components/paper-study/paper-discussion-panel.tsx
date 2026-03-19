@@ -331,6 +331,7 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
                       className="flex-shrink-0 flex flex-col items-center gap-1 group"
                       onClick={() => setSelectedPage(page)}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={`data:${page.mimeType};base64,${page.data}`}
                         alt={`Page ${page.pageNumber}`}
@@ -349,6 +350,7 @@ export function PaperDiscussionPanel({ article, workspaceId }: PaperDiscussionPa
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
               <DialogTitle>Page {selectedPage?.pageNumber}</DialogTitle>
               {selectedPage && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={`data:${selectedPage.mimeType};base64,${selectedPage.data}`}
                   alt={`Page ${selectedPage.pageNumber}`}

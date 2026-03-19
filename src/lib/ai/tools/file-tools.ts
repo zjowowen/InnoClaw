@@ -5,7 +5,7 @@ import {
   writeFile as fsWriteFile,
   listDirectory as fsListDirectory,
 } from "@/lib/files/filesystem";
-import { TRUNCATE, getTruncateLimits } from "@/lib/constants";
+import { getTruncateLimits } from "@/lib/constants";
 import { copyToResearchHistory } from "./research-history";
 import type { ToolContext } from "./types";
 
