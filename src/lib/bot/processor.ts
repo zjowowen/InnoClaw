@@ -11,6 +11,7 @@ import os from "os";
 import fsp from "fs/promises";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { getConfiguredModel, isAIAvailable } from "@/lib/ai/provider";
+import { ALL_TEXT_EXTS } from "@/lib/constants";
 import type { BotAdapter, BotMessage, BotReply } from "./types";
 
 /** Directory where downloaded bot files are stored */
@@ -74,14 +75,12 @@ export async function processMessage(
       let fileContent = "";
       try {
         const stat = await fsp.stat(localPath);
-        const textExtensions = [
-          ".txt", ".md", ".csv", ".json", ".xml", ".yaml", ".yml",
-          ".log", ".py", ".js", ".ts", ".java", ".c", ".cpp", ".h",
-          ".html", ".css", ".sql", ".sh", ".bat", ".ini", ".conf",
-          ".toml", ".env", ".gitignore", ".dockerfile",
-        ];
+        const textExtensions = new Set(ALL_TEXT_EXTS.map((e) => `.${e}`));
+        textExtensions.add(".md");
+        textExtensions.add(".gitignore");
+        textExtensions.add(".dockerfile");
         const ext = path.extname(message.fileName).toLowerCase();
-        if (textExtensions.includes(ext) && stat.size < MAX_TEXT_READ_SIZE) {
+        if (textExtensions.has(ext) && stat.size < MAX_TEXT_READ_SIZE) {
           fileContent = await fsp.readFile(localPath, "utf-8");
         }
       } catch {

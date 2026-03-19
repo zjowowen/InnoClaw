@@ -87,10 +87,6 @@ export default function WorkspacePage({
     }
   }, [openArticleTab]);
 
-  const handleStudyFile = useCallback(async (filePath: string) => {
-    await handleFileToArticle(filePath);
-  }, [handleFileToArticle]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -320,7 +316,7 @@ export default function WorkspacePage({
                           <FilePreviewPanel
                             filePath={tab.filePath}
                             onClose={() => closeTab(tab.id)}
-                            onStudyPaper={handleStudyFile}
+                            onStudyPaper={handleFileToArticle}
                           />
                         )}
                         {tab.type === "article" && tab.article && (

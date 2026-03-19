@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 
 export function useClipboard(timeoutMs = 2000) {
   const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
@@ -18,7 +18,7 @@ export function useClipboard(timeoutMs = 2000) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-        timeoutRef.current = window.setTimeout(
+        timeoutRef.current = setTimeout(
           () => setCopied(false),
           timeoutMs,
         );

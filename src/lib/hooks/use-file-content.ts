@@ -5,10 +5,9 @@ import { toast } from "sonner";
 
 interface UseFileContentOptions {
   filePath: string;
-  onLoad?: () => void;
 }
 
-export function useFileContent({ filePath, onLoad }: UseFileContentOptions) {
+export function useFileContent({ filePath }: UseFileContentOptions) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +34,6 @@ export function useFileContent({ filePath, onLoad }: UseFileContentOptions) {
       .then((data) => {
         if (!canceled) {
           setContent(data.content);
-          onLoad?.();
         }
       })
       .catch(() => {
@@ -48,9 +46,6 @@ export function useFileContent({ filePath, onLoad }: UseFileContentOptions) {
     return () => {
       canceled = true;
     };
-    // onLoad is intentionally excluded from deps — callers should pass a stable callback
-    // (e.g., via useCallback) if they rely on the latest closure values
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filePath]);
 
   // Stable callback — only changes when filePath changes
@@ -89,7 +84,13 @@ export function useFileContent({ filePath, onLoad }: UseFileContentOptions) {
       handleSave();
     }, 1500);
     return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        // Flush pending save so edits are not lost on unmount/file-switch
+        if (modifiedRef.current && !savingRef.current) {
+          handleSave();
+        }
+      }
     };
   }, [modified, content, handleSave]);
 

@@ -16,9 +16,9 @@ import {
   rehypePlugins,
 } from "@/lib/markdown/shared-components";
 import { useFileContent } from "@/lib/hooks/use-file-content";
+import { SaveStatus } from "@/components/preview/save-status";
 
 export function MarkdownPreview({ filePath }: { filePath: string }) {
-  const t = useTranslations("preview");
   const tCommon = useTranslations("common");
 
   const { content, loading, saving, modified, handleSave, updateContent } =
@@ -39,13 +39,7 @@ export function MarkdownPreview({ filePath }: { filePath: string }) {
     <div className="flex h-full flex-col">
       {/* Status bar */}
       <div className="flex items-center justify-end gap-2 border-b px-3 py-1.5">
-        <span className="text-xs text-muted-foreground">
-          {saving
-            ? t("autoSaving")
-            : modified
-              ? tCommon("modified")
-              : ""}
-        </span>
+        <SaveStatus saving={saving} modified={modified} />
       </div>
 
       {/* Editor + Preview split */}

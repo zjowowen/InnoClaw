@@ -63,3 +63,35 @@ export const BUFFER = {
 
 /** File extensions eligible for paper study (discuss / ideate). */
 export const PAPER_ELIGIBLE_EXTENSIONS = ["pdf", "md", "markdown", "txt"] as const;
+
+// ---------------------------------------------------------------------------
+// File-type extension lists — single source of truth for preview routing,
+// RAG indexing, and bot file reading.
+// ---------------------------------------------------------------------------
+
+/** Plain text files (no syntax highlighting). */
+export const PLAIN_TEXT_EXTS = ["txt", "log", "csv", "env", "ini", "cfg", "conf"] as const;
+
+/** Code / structured files (syntax highlighted in CodeMirror). */
+export const CODE_EXTS = [
+  "json", "html", "css", "js", "ts", "tsx", "jsx",
+  "py", "yaml", "yml", "xml", "toml", "sh", "bat",
+  "c", "cpp", "h", "hpp", "java", "go", "rs", "rb", "php",
+  "sql", "r", "scala", "kt", "swift", "dart", "lua", "pl", "pm", "groovy",
+  "scss", "sass", "less", "graphql", "proto",
+] as const;
+
+/** Molecular / chemical file formats. */
+export const MOL_EXTS = ["pdb", "mol", "mol2", "sdf", "sd", "xyz", "cif"] as const;
+
+/** 3D CAD / mesh file formats. */
+export const CAD_EXTS = ["stl", "obj", "ply", "vtk", "vtp", "gltf", "glb", "fbx", "dae", "3ds", "3mf", "pcd"] as const;
+
+/** Image file formats. */
+export const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"] as const;
+
+/**
+ * All text-readable extensions (plain text + code).
+ * Useful for RAG indexing and bot file reading.
+ */
+export const ALL_TEXT_EXTS = [...PLAIN_TEXT_EXTS, ...CODE_EXTS] as const;
