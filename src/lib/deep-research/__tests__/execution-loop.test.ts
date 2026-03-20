@@ -481,9 +481,9 @@ describe("experiment-analysis", () => {
 
   it("shouldStopExecution detects consecutive failures", () => {
     const rounds = [
-      { validationResult: { verdict: "fail" } as any, analysisResult: null },
-      { validationResult: { verdict: "fail" } as any, analysisResult: null },
-      { validationResult: { verdict: "fail" } as any, analysisResult: null },
+      { validationResult: { verdict: "fail" } as unknown as ExecutionValidationResult, analysisResult: null },
+      { validationResult: { verdict: "fail" } as unknown as ExecutionValidationResult, analysisResult: null },
+      { validationResult: { verdict: "fail" } as unknown as ExecutionValidationResult, analysisResult: null },
     ];
     const result = shouldStopExecution(rounds);
     expect(result.shouldStop).toBe(true);
@@ -492,9 +492,9 @@ describe("experiment-analysis", () => {
 
   it("shouldStopExecution allows continuation after success", () => {
     const rounds = [
-      { validationResult: { verdict: "fail" } as any, analysisResult: null },
-      { validationResult: { verdict: "pass" } as any, analysisResult: null },
-      { validationResult: { verdict: "fail" } as any, analysisResult: null },
+      { validationResult: { verdict: "fail" } as unknown as ExecutionValidationResult, analysisResult: null },
+      { validationResult: { verdict: "pass" } as unknown as ExecutionValidationResult, analysisResult: null },
+      { validationResult: { verdict: "fail" } as unknown as ExecutionValidationResult, analysisResult: null },
     ];
     const result = shouldStopExecution(rounds);
     expect(result.shouldStop).toBe(false);
@@ -701,7 +701,7 @@ describe("execution-lineage", () => {
   });
 
   it("detects max rounds stop condition", () => {
-    let lineage = createExecutionLineage("sess-001", 2);
+    const lineage = createExecutionLineage("sess-001", 2);
     lineage.currentRound = 2;
     const stop = checkStopConditions(lineage);
     expect(stop.shouldStop).toBe(true);
@@ -709,7 +709,7 @@ describe("execution-lineage", () => {
   });
 
   it("detects hypothesis falsification", () => {
-    let lineage = createExecutionLineage("sess-001", 10);
+    const lineage = createExecutionLineage("sess-001", 10);
     lineage.hypothesisFalsified = true;
     const stop = checkStopConditions(lineage);
     expect(stop.shouldStop).toBe(true);

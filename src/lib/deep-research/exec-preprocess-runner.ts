@@ -71,6 +71,7 @@ export function resetRunnerOverrides(): void {
 
 function defaultFileExists(path: string): boolean {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     return fs.existsSync(path);
   } catch { return false; }
@@ -80,7 +81,9 @@ async function defaultRunCommand(
   cmd: string,
   opts?: { timeout?: number },
 ): Promise<{ stdout: string; exitCode: number }> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { exec } = require("child_process");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { promisify } = require("util");
   const execAsync = promisify(exec);
   try {
@@ -97,6 +100,7 @@ async function defaultRunCommand(
 
 function defaultReadHash(path: string): string | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     return fs.readFileSync(path, "utf-8").trim();
   } catch { return null; }

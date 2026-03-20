@@ -223,7 +223,7 @@ describe("exec-config", () => {
   });
 
   it("merges overrides with defaults", () => {
-    const config = resolveConfig({ chargedGroup: "custom_group", defaultResources: { gpu: 8 } as any });
+    const config = resolveConfig({ chargedGroup: "custom_group", defaultResources: { gpu: 8 } as Partial<ExperimentResources> } as Partial<ExecutionPipelineConfig>);
     expect(config.chargedGroup).toBe("custom_group");
     expect(config.defaultResources.gpu).toBe(8);
     expect(config.defaultResources.cpu).toBeDefined(); // Still has CPU from defaults

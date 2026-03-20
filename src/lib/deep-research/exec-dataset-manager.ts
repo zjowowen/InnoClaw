@@ -84,6 +84,7 @@ export function resetFileExistenceChecker(): void {
 
 function defaultFileExists(path: string): boolean {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     const stat = fs.statSync(path);
     return stat.isDirectory() ? fs.readdirSync(path).length > 0 : stat.size > 0;
@@ -172,7 +173,9 @@ async function defaultCommandExecutor(
   command: string,
   opts?: { timeout?: number },
 ): Promise<{ stdout: string; exitCode: number }> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { exec } = require("child_process");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { promisify } = require("util");
   const execAsync = promisify(exec);
 
