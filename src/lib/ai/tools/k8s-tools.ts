@@ -12,12 +12,7 @@ import { isValidDnsLabel, isValidImageRef } from "@/lib/utils/validators";
 import { logAndIgnore } from "@/lib/utils/log";
 import type { ToolContext } from "./types";
 
-const DEFAULT_A3_IMAGE =
-  "registry2.d.pjlab.org.cn/ccr-hw/910c:82rc2ipc";
-
-const DEFAULT_MUXI_IMAGE =
-  process.env.K8S_MUXI_DEFAULT_IMAGE ||
-  "registry2.d.pjlab.org.cn/ccr-ailabdev/mace-maca:3.3.0.5-ubuntu22.04-amd64-driver";
+import type { K8sConfig } from "@/lib/cluster/config";
 
 /** Cluster short-name enum used by all K8s tools. */
 const CLUSTER_ENUM = ["a3", "muxi"] as const;
@@ -63,14 +58,14 @@ function resolveContext(ctx: ToolContext, cluster: ClusterName): string {
 }
 
 /** Return the default container image for the given cluster. */
-function defaultImageForCluster(cluster: ClusterName): string {
-  return cluster === "muxi" ? DEFAULT_MUXI_IMAGE : DEFAULT_A3_IMAGE;
+function defaultImageForCluster(k8s: K8sConfig, cluster: ClusterName): string {
+  return cluster === "muxi" ? k8s.muxi.defaultImage : k8s.a3.defaultImage;
 }
 
 /**
  * Generate a Volcano Job YAML for the A3 cluster (Ascend 910B NPUs).
  */
-function generateA3VolcanoJobYaml(params: {
+function generateA3VolcanoJobYaml(k8s: K8sConfig, params: {
   jobName: string;
   command: string;
   image: string;
@@ -84,13 +79,12 @@ function generateA3VolcanoJobYaml(params: {
   const safeNamespace = yamlEscape(namespace);
   const safeJobName = yamlEscape(jobName);
 
-  const rawSubmitter = process.env.K8S_SUBMITTER || "tangshixiang";
-  const submitter = yamlEscape(rawSubmitter);
-  const imagePullSecret = yamlEscape(process.env.K8S_IMAGE_PULL_SECRET || rawSubmitter);
-  const pvcAi4s = yamlEscape(process.env.K8S_PVC_AI4S || "pvc-mdjl8");
-  const pvcUser = yamlEscape(process.env.K8S_PVC_USER || "pvc-tzsf9");
-  const pvcAi4sA2 = yamlEscape(process.env.K8S_PVC_AI4S_A2 || "pvc-r4sjn");
-  const mountUser = yamlEscape(process.env.K8S_MOUNT_USER || rawSubmitter);
+  const submitter = yamlEscape(k8s.submitter);
+  const imagePullSecret = yamlEscape(k8s.imagePullSecret);
+  const pvcAi4s = yamlEscape(k8s.a3.pvcAi4s);
+  const pvcUser = yamlEscape(k8s.a3.pvcUser);
+  const pvcAi4sA2 = yamlEscape(k8s.a3.pvcAi4sA2);
+  const mountUser = yamlEscape(k8s.mountUser);
 
   return `apiVersion: batch.volcano.sh/v1alpha1
 kind: Job
@@ -193,7 +187,7 @@ spec:
 /**
  * Generate a Volcano Job YAML for the Muxi cluster (MetaX GPUs).
  */
-function generateMuxiVolcanoJobYaml(params: {
+function generateMuxiVolcanoJobYaml(k8s: K8sConfig, params: {
   jobName: string;
   command: string;
   image: string;
@@ -207,13 +201,12 @@ function generateMuxiVolcanoJobYaml(params: {
   const safeNamespace = yamlEscape(namespace);
   const safeJobName = yamlEscape(jobName);
 
-  const rawSubmitter = process.env.K8S_SUBMITTER || "tangshixiang";
-  const submitter = yamlEscape(rawSubmitter);
-  const imagePullSecret = yamlEscape(process.env.K8S_IMAGE_PULL_SECRET || rawSubmitter);
-  const pvcAi4s = yamlEscape(process.env.K8S_MUXI_PVC_AI4S || "pvc-kf48f");
-  const pvcUser = yamlEscape(process.env.K8S_MUXI_PVC_USER || "pvc-55nv5");
-  const pvcAi4sA2 = yamlEscape(process.env.K8S_MUXI_PVC_AI4S_A2 || "pvc-cbb8x");
-  const mountUser = yamlEscape(process.env.K8S_MOUNT_USER || rawSubmitter);
+  const submitter = yamlEscape(k8s.submitter);
+  const imagePullSecret = yamlEscape(k8s.imagePullSecret);
+  const pvcAi4s = yamlEscape(k8s.muxi.pvcAi4s);
+  const pvcUser = yamlEscape(k8s.muxi.pvcUser);
+  const pvcAi4sA2 = yamlEscape(k8s.muxi.pvcAi4sA2);
+  const mountUser = yamlEscape(k8s.mountUser);
 
   return `apiVersion: batch.volcano.sh/v1alpha1
 kind: Job
@@ -311,15 +304,20 @@ spec:
 
 /** Select the correct YAML generator based on cluster. */
 function generateVolcanoJobYaml(
+  k8s: K8sConfig,
   cluster: ClusterName,
   params: { jobName: string; command: string; image: string; gpuCount: number; namespace: string },
 ): string {
   return cluster === "muxi"
-    ? generateMuxiVolcanoJobYaml(params)
-    : generateA3VolcanoJobYaml(params);
+    ? generateMuxiVolcanoJobYaml(k8s, params)
+    : generateA3VolcanoJobYaml(k8s, params);
 }
 
 export function createK8sTools(ctx: ToolContext) {
+  const k8s = ctx.k8sConfig;
+  const DEFAULT_A3_IMAGE = k8s.a3.defaultImage;
+  const DEFAULT_MUXI_IMAGE = k8s.muxi.defaultImage;
+
   return {
     kubectl: tool({
       description:
@@ -539,7 +537,7 @@ export function createK8sTools(ctx: ToolContext) {
           };
         }
 
-        const resolvedImage = image || defaultImageForCluster(resolvedCluster);
+        const resolvedImage = image || defaultImageForCluster(k8s, resolvedCluster);
         const resolvedGpuCount = gpuCount ?? 4;
         const resolvedNamespace = namespace || "default";
 
@@ -586,7 +584,7 @@ export function createK8sTools(ctx: ToolContext) {
           };
         }
 
-        const yaml = generateVolcanoJobYaml(resolvedCluster, {
+        const yaml = generateVolcanoJobYaml(k8s, resolvedCluster, {
           jobName,
           command,
           image: resolvedImage,
