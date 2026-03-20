@@ -281,9 +281,9 @@ echo "  Logs:       ${LOG_DIR}/"
 echo ""
 
 # Count results
-completed=$( { grep -rl "Final status: completed" "${LOG_DIR}"/ 2>/dev/null || true; } | wc -l | tr -d ' ')
-failed=$( { grep -rl "Final status: failed" "${LOG_DIR}"/ 2>/dev/null || true; } | wc -l | tr -d ' ')
-timeout=$( { grep -rl "Final status: timeout" "${LOG_DIR}"/ 2>/dev/null || true; } | wc -l | tr -d ' ')
+completed=$( { grep -l "Final status: completed" "${LOG_DIR}"/*.log 2>/dev/null || true; } | wc -l | tr -d ' ')
+failed=$( { grep -l "Final status: failed" "${LOG_DIR}"/*.log 2>/dev/null || true; } | wc -l | tr -d ' ')
+timeout=$( { grep -l "Final status: timeout" "${LOG_DIR}"/*.log 2>/dev/null || true; } | wc -l | tr -d ' ')
 
 echo -e "  ${GREEN}Completed: ${completed}${NC}"
 echo -e "  ${RED}Failed:    ${failed}${NC}"
