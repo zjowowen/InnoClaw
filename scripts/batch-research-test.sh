@@ -151,7 +151,7 @@ run_session() {
       status=$(echo "$sess_data" | jq -r '.status // "unknown"')
 
       # Terminal states
-      if [[ "$status" == "completed" || "$status" == "failed" || "$status" == "stopped" ]]; then
+      if [[ "$status" == "completed" || "$status" == "failed" || "$status" == "stopped" || "$status" == "stopped_by_user" || "$status" == "cancelled" ]]; then
         final_status="$status"
         echo "[${elapsed}s] Terminal status: ${status}"
         break
