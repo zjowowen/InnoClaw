@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
+import { streamText, convertToModelMessages, UIMessage } from "ai";
 import { getConfiguredModel, getModelFromOverride, isAIAvailable } from "@/lib/ai/provider";
 import { providerSupportsTools } from "@/lib/ai/models";
 import { buildPaperChatPrompt, buildPaperChatWithNotesPrompt } from "@/lib/ai/prompts";
