@@ -153,10 +153,29 @@ export function PaperSummarySection({
       if (filtered.length === 0) return;
 
       const section = buildRelatedNotesSection(filtered);
+
+      // Best-effort: re-read the latest file content to avoid clobbering concurrent changes.
+      let latestContent = currentContent;
+      try {
+        const readRes = await fetch("/api/files/read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: filePath }),
+        });
+        if (readRes.ok) {
+          const readData = await readRes.json();
+          if (typeof readData.content === "string") {
+            latestContent = readData.content;
+          }
+        }
+      } catch {
+        // If re-reading fails, fall back to the previously captured content.
+      }
+
       await fetch("/api/files/write", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: filePath, content: currentContent + section }),
+        body: JSON.stringify({ path: filePath, content: latestContent + section }),
       });
       toast.success(t("relatedNotesAppended"));
     } catch {
