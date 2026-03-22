@@ -59,7 +59,7 @@ function rjobSummary(jsonStr: string | null | undefined): string | null {
 export function ExecutionStatusPanel({
   executions,
   workspaceId,
-  sessionId,
+  sessionId: _sessionId,
   remoteProfileId,
   onBindProfile,
 }: ExecutionStatusPanelProps) {

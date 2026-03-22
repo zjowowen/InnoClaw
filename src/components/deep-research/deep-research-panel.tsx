@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Play, Brain, Trash2, RotateCcw } from "lucide-react";
+import { Play, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   useDeepResearchSessions,
@@ -63,17 +63,9 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
 
-  // Extract requirement state and battle result from artifacts for panels
-  const requirementStateArtifact = artifacts.find(a => a.artifactType === "checkpoint" && (a.content as Record<string, unknown>).requirementState);
+  // Extract battle result from artifacts for panels
   const latestBattleArtifact = [...artifacts].reverse().find(a => a.artifactType === "reviewer_battle_result");
   const battleResult = latestBattleArtifact?.content as unknown as ReviewerBattleResultExtended | null ?? null;
-
-  // Auto-switch tab based on phase
-  const autoTabForPhase = useCallback((phase: string) => {
-    if (phase === "reviewer_deliberation" || phase === "validation_review") return "reviewers";
-    if (phase === "experiment_execution" || phase === "resource_acquisition") return "execution";
-    return null;
-  }, []);
 
   // Requirement state from SWR - placeholder (would need its own API endpoint or derive from artifacts)
   const requirementState: RequirementState | null = null;
