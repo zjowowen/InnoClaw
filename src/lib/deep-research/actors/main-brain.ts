@@ -3,6 +3,10 @@ import { getModelChainForRole, checkBudget, trackUsage } from "../model-router";
 import * as store from "../event-store";
 import { buildMainBrainSystemPrompt } from "../prompts";
 import {
+  buildNodeTranscriptMetadata,
+  serializeTranscriptPayload,
+} from "../node-transcript";
+import {
   loadWorkspaceSkillCatalog,
   createWorkspaceSkillTools,
 } from "../workspace-skill-loader";
@@ -19,6 +23,114 @@ import type {
 } from "../types";
 
 export class MainBrain {
+  async replyToNodeMessage(
+    session: DeepResearchSession,
+    node: DeepResearchNode,
+    userMessage: string,
+    options?: {
+      abortSignal?: AbortSignal;
+      contextNote?: string;
+    },
+  ): Promise<{ message: string; tokensUsed: number }> {
+    const budgetCheck = checkBudget("main_brain", session.budget, session.config.budget);
+    if (!budgetCheck.allowed) {
+      return {
+        message: "Current budget is exhausted. I recorded your note, but I cannot generate a detailed response right now.",
+        tokensUsed: 0,
+      };
+    }
+
+    const messages = await store.getMessages(session.id);
+    const nodes = await store.getNodes(session.id);
+    const artifacts = await store.getArtifacts(session.id);
+    const skillCatalog = await loadWorkspaceSkillCatalog(session.workspaceId);
+    const skillTools = skillCatalog.length > 0
+      ? await createWorkspaceSkillTools(session.workspaceId)
+      : undefined;
+
+    const relatedArtifacts = artifacts.filter((artifact) => artifact.nodeId === node.id);
+    const relatedMessages = messages
+      .filter((message) => message.relatedNodeId === node.id)
+      .slice(-8)
+      .map((message) => `[${message.role}] ${message.content.slice(0, 400)}`)
+      .join("\n");
+
+    const nodeContext = [
+      `Current node: ${node.label}`,
+      `Node type: ${node.nodeType}`,
+      `Assigned role: ${node.assignedRole}`,
+      `Node status: ${node.status}`,
+      node.phase ? `Phase: ${node.phase}` : "",
+      node.input ? `Node input:\n${serializeTranscriptPayload(node.input)}` : "",
+      node.output ? `Node output snapshot:\n${serializeTranscriptPayload(node.output)}` : "",
+      node.error ? `Node error:\n${node.error}` : "",
+      relatedArtifacts.length > 0
+        ? `Node artifacts:\n${relatedArtifacts.map((artifact) => `- ${artifact.artifactType}: ${artifact.title}`).join("\n")}`
+        : "",
+      relatedMessages ? `Recent node transcript:\n${relatedMessages}` : "",
+    ].filter(Boolean).join("\n\n");
+
+    const systemPrompt = `${buildMainBrainSystemPrompt(
+      session,
+      messages,
+      nodes,
+      artifacts,
+      session.phase,
+      undefined,
+      skillCatalog,
+    )}
+
+You are replying inside a node-specific transcript panel in the deep-research UI.
+Respond conversationally to the user's latest node-scoped message.
+Prioritize the currently selected node and its execution context over unrelated session details.
+Be concrete about what this node is doing, what changed, and any next step or limitation.
+Do not return JSON. Keep the response concise, but actually answer the user's request.
+If a workspace skill is relevant, use it before generic reasoning.`;
+
+    const userPrompt = `${nodeContext}
+
+${options?.contextNote ? `Execution note:\n${options.contextNote}\n\n` : ""}Latest user message for this node:
+${userMessage}
+
+Reply as the agent responsible for this node.`;
+
+    const modelChain = await getModelChainForRole("main_brain", session.config);
+    let lastError: Error | null = null;
+
+    for (const { model, provider, modelId } of modelChain) {
+      try {
+        const result = await generateText({
+          model,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+          ...(skillTools && Object.keys(skillTools).length > 0
+            ? { tools: skillTools as Record<string, never>, stopWhen: stepCountIs(8) }
+            : {}),
+          abortSignal: options?.abortSignal,
+        });
+
+        const message = result.text.trim() || "I recorded your message for this node.";
+        const budget = trackUsage(
+          session.budget,
+          "main_brain",
+          `node_reply_${node.id}`,
+          result.usage?.totalTokens ?? 0,
+        );
+        await store.updateSession(session.id, { budget });
+
+        return {
+          message,
+          tokensUsed: result.usage?.totalTokens ?? 0,
+        };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`[MainBrain.replyToNodeMessage] ${provider}/${modelId} failed: ${lastError.message}. Trying next model...`);
+      }
+    }
+
+    throw lastError ?? new Error("No available model for node reply");
+  }
+
   async decide(
     session: DeepResearchSession,
     options?: {
@@ -113,6 +225,21 @@ export class MainBrain {
       throw new Error(`Budget exceeded: ${budgetCheck.reason}`);
     }
 
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      serializeTranscriptPayload(node.input ?? { task: node.label }),
+      buildNodeTranscriptMetadata(node, "input"),
+      node.id,
+    );
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      `Started ${node.nodeType} with ${node.assignedRole.replace("_", " ")}.`,
+      buildNodeTranscriptMetadata(node, "status"),
+      node.id,
+    );
+
     const modelChain = await getModelChainForRole("main_brain", ctx.session.config);
     let lastError: Error | null = null;
 
@@ -140,6 +267,14 @@ export class MainBrain {
           result.tokensUsed,
         );
         await store.updateSession(ctx.session.id, { budget: updatedBudget });
+        await store.addMessage(
+          ctx.session.id,
+          "system",
+          serializeTranscriptPayload(result.output),
+          buildNodeTranscriptMetadata(node, "output"),
+          node.id,
+          createdArtifacts.map((artifact) => artifact.id),
+        );
 
         return {
           output: result.output,
@@ -161,6 +296,13 @@ export class MainBrain {
       error: `All models failed. Last error: ${message}`,
       completedAt: new Date().toISOString(),
     });
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      message,
+      buildNodeTranscriptMetadata(node, "error"),
+      node.id,
+    );
     throw lastError ?? new Error(message);
   }
 
@@ -186,12 +328,15 @@ export class MainBrain {
     const taskPrompt = node.input
       ? JSON.stringify(node.input)
       : `Execute the ${node.nodeType} task: ${node.label}`;
+    const skillFirstTaskPrompt = ctx.skillCatalog && ctx.skillCatalog.length > 0
+      ? `Use relevant workspace skills first if any skill plausibly matches this task. Only fall back to generic execution if no skill fits.\n\n${taskPrompt}`
+      : taskPrompt;
 
     const hasTools = ctx.skillTools && Object.keys(ctx.skillTools).length > 0;
     const result = await generateText({
       model,
       system: systemPrompt,
-      messages: [{ role: "user", content: taskPrompt }],
+      messages: [{ role: "user", content: skillFirstTaskPrompt }],
       ...(hasTools ? { tools: ctx.skillTools as Record<string, never>, stopWhen: stepCountIs(20) } : {}),
       abortSignal,
     });

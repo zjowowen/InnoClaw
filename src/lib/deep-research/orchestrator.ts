@@ -664,7 +664,7 @@ async function generateCheckpointAndHalt(
   isFinalStep = false
 ): Promise<void> {
   const freshNodes = await store.getNodes(session.id);
-  const freshNode = freshNodes.find(n => n.id === completedNode.id) ?? completedNode;
+  const freshNode = await resolveCheckpointNode(session.id, session.phase, freshNodes, completedNode);
   const artifacts = await store.getArtifacts(session.id);
 
   // Compute transition action
@@ -754,6 +754,64 @@ async function generateCheckpointAndHalt(
     freshNode.id,
     checkpointPkg.artifactsToReview
   );
+}
+
+async function resolveCheckpointNode(
+  sessionId: string,
+  phase: Phase,
+  freshNodes: DeepResearchNode[],
+  completedNode: DeepResearchNode,
+): Promise<DeepResearchNode> {
+  const checkpointableStatuses = new Set(["completed", "failed", "skipped"]);
+  const directNode = freshNodes.find(n => n.id === completedNode.id) ?? completedNode;
+  if (checkpointableStatuses.has(directNode.status)) {
+    return directNode;
+  }
+
+  const fallback = [...freshNodes]
+    .reverse()
+    .find((node) =>
+      node.phase === phase &&
+      checkpointableStatuses.has(node.status)
+    );
+  if (fallback) {
+    return fallback;
+  }
+
+  const summaryNode = await store.createNode(sessionId, {
+    nodeType: "deliberate",
+    label: `${phase} checkpoint summary`,
+    assignedRole: "main_brain",
+    input: {
+      reason: "Phase handler returned a non-terminal node for checkpointing",
+      originalNodeId: completedNode.id,
+      originalNodeLabel: completedNode.label,
+      originalNodeStatus: directNode.status,
+    },
+    phase,
+  });
+  const completedAt = new Date().toISOString();
+  const output = {
+    summaryType: "checkpoint_fallback",
+    originalNodeId: completedNode.id,
+    originalNodeLabel: completedNode.label,
+    originalNodeStatus: directNode.status,
+    note: "Generated a synthetic summary node because the reported completed node was not in a terminal state.",
+  };
+
+  await store.updateNode(summaryNode.id, {
+    status: "completed",
+    output,
+    completedAt,
+  });
+
+  return {
+    ...summaryNode,
+    status: "completed",
+    output,
+    completedAt,
+    updatedAt: completedAt,
+  };
 }
 
 async function generateCheckpointContent(

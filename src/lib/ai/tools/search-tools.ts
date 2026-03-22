@@ -5,6 +5,7 @@ import {
   findRelatedArticles,
 } from "@/lib/article-search";
 import type { Article } from "@/lib/article-search";
+import { readPaperText, resolvePaperPdfUrl } from "@/lib/article-search/paper-content";
 import { PAPER } from "@/lib/constants";
 
 /** Format an Article for LLM-friendly output. */
@@ -128,6 +129,62 @@ export function createSearchTools() {
           articles: result.articles.map(formatArticle),
           totalCount: result.totalCount,
           errors: result.errors,
+        };
+      },
+    }),
+    readPaper: tool({
+      description:
+        "Download a paper PDF over HTTPS when needed and extract readable text from the paper. " +
+        "Use this after searchArticles when you need to verify findings beyond the abstract.",
+      inputSchema: z
+        .object({
+          title: z.string().optional().describe("Paper title for reference"),
+          url: z.string().describe("Canonical paper URL or local file path"),
+          pdfUrl: z
+            .string()
+            .optional()
+            .describe("Direct PDF URL when available; arXiv links will be normalized to HTTPS"),
+          source: z
+            .enum(["arxiv", "huggingface", "semantic-scholar", "local"])
+            .describe("Source of the paper"),
+          maxChars: z
+            .number()
+            .min(1000)
+            .max(120000)
+            .optional()
+            .describe("Maximum number of characters to extract from the paper text"),
+        }),
+      execute: async ({ title, url, pdfUrl, source, maxChars }) => {
+        const result = await readPaperText(
+          {
+            title,
+            url,
+            pdfUrl,
+            source,
+          },
+          { maxChars },
+        );
+
+        if (!result) {
+          return {
+            title,
+            url,
+            pdfUrl: resolvePaperPdfUrl({ title, url, pdfUrl, source }),
+            source,
+            downloaded: false,
+            error: "Could not resolve or read a paper PDF for this source.",
+          };
+        }
+
+        return {
+          title,
+          url,
+          pdfUrl: result.pdfUrl ?? resolvePaperPdfUrl({ title, url, pdfUrl, source }),
+          source,
+          downloaded: true,
+          charsExtracted: result.charsExtracted,
+          truncated: result.truncated,
+          text: result.text,
         };
       },
     }),

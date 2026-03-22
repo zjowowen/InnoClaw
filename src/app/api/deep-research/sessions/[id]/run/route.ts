@@ -1,33 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runManager } from "@/lib/deep-research/run-manager";
-import { getSession, updateSession, appendEvent } from "@/lib/deep-research/event-store";
+import { updateSession, appendEvent } from "@/lib/deep-research/event-store";
 import { PHASE_ORDER, type Phase } from "@/lib/deep-research/types";
+import {
+  conflict,
+  handleDeepResearchRouteError,
+  isRecord,
+  readSessionId,
+  requireSession,
+  type DeepResearchRouteParams,
+} from "@/lib/deep-research/api-helpers";
+import { canResumeSessionRun } from "@/lib/deep-research/session-status";
 
-type RouteParams = { params: Promise<{ id: string }> };
+function isPhase(value: unknown): value is Phase {
+  return typeof value === "string" && PHASE_ORDER.includes(value as Phase);
+}
 
-export async function POST(req: NextRequest, { params }: RouteParams) {
+function parseRunRequest(body: unknown): {
+  targetPhase?: Phase;
+  action?: "run" | "skip" | "rerun";
+} {
+  if (!isRecord(body)) {
+    return {};
+  }
+  const targetPhase = isPhase(body.targetPhase) ? body.targetPhase : undefined;
+  const action = body.action === "run" || body.action === "skip" || body.action === "rerun"
+    ? body.action
+    : undefined;
+  return { targetPhase, action };
+}
+
+export async function POST(req: NextRequest, { params }: DeepResearchRouteParams) {
   try {
-    const { id: sessionId } = await params;
-
-    const session = await getSession(sessionId);
-    if (!session) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
+    const sessionId = await readSessionId(params);
+    const session = await requireSession(sessionId);
 
     // Parse optional body for phase control
-    let targetPhase: Phase | undefined;
-    let action: "run" | "skip" | "rerun" | undefined;
+    let requestBody: unknown = undefined;
     try {
-      const body = await req.json();
-      targetPhase = body.targetPhase;
-      action = body.action;
+      requestBody = await req.json();
     } catch {
       // No body — default behavior (backward compatible)
     }
+    const { targetPhase, action } = parseRunRequest(requestBody);
 
     // Validate targetPhase if provided
-    if (targetPhase && !PHASE_ORDER.includes(targetPhase)) {
-      return NextResponse.json({ error: `Invalid phase: ${targetPhase}` }, { status: 400 });
+    if (isRecord(requestBody) && requestBody.targetPhase !== undefined && !targetPhase) {
+      return NextResponse.json(
+        { error: `Invalid phase: ${String(requestBody.targetPhase)}` },
+        { status: 400 },
+      );
     }
 
     // Handle skip action — advance past the target phase without running it
@@ -49,7 +71,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // If targetPhase provided (run/rerun/jump), allow even from halted state
     if (targetPhase) {
       if (runManager.isRunning(sessionId)) {
-        return NextResponse.json({ error: "A run is already in progress" }, { status: 409 });
+        conflict("A run is already in progress");
       }
       await updateSession(sessionId, {
         phase: targetPhase,
@@ -66,10 +88,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // Cannot /run if awaiting_user_confirmation — must use /confirm instead
     if (session.status === "awaiting_user_confirmation") {
-      return NextResponse.json(
-        { error: "Session is awaiting user confirmation. Use /confirm endpoint instead." },
-        { status: 409 }
-      );
+      conflict("Session is awaiting user confirmation. Use /confirm endpoint instead.");
     }
 
     // If already running in the run manager, report that
@@ -78,14 +97,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     // If awaiting approval, paused, failed, or stuck in "running" without an active run, resume
-    if (["awaiting_approval", "paused", "running", "failed"].includes(session.status)) {
+    if (canResumeSessionRun(session.status)) {
       await updateSession(sessionId, { status: "running", error: null });
     }
 
     const started = runManager.startRun(sessionId);
     return NextResponse.json({ started, running: runManager.isRunning(sessionId) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to start run";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleDeepResearchRouteError(error, "Failed to start run");
   }
 }

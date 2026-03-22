@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Play, Brain, Trash2, RotateCcw } from "lucide-react";
+import { Play, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
   useDeepResearchSessions,
@@ -37,12 +37,35 @@ import { RequirementPanel } from "./requirement-panel";
 import { ReviewerBattlePanel } from "./reviewer-battle-panel";
 import { ExecutionStatusPanel } from "./execution-status-panel";
 import type { ConfirmationOutcome, ReviewerBattleResultExtended, RequirementState, Phase } from "@/lib/deep-research/types";
+import {
+  canStartSession,
+  isActiveSessionStatus,
+  isAwaitingConfirmationSessionStatus,
+  isCompletedSessionStatus,
+} from "@/lib/deep-research/session-status";
 
 type PanelView = "list" | "intake" | "session";
 type TabView = "chat" | "requirements" | "reviewers" | "execution";
+type SessionMessageOptions = {
+  relatedNodeId?: string;
+  metadata?: Record<string, unknown>;
+  relatedArtifactIds?: string[];
+};
 
 interface DeepResearchPanelProps {
   workspaceId: string;
+}
+
+const TAB_LABELS: Record<TabView, string> = {
+  chat: "Chat",
+  requirements: "Requirements",
+  reviewers: "Reviewers",
+  execution: "Execution",
+};
+
+async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+  const data = await response.json().catch(() => null);
+  return (data && typeof data.error === "string" && data.error) || fallback;
 }
 
 export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
@@ -60,13 +83,27 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
   const { artifacts } = useDeepResearchArtifacts(activeSessionId ?? undefined);
   const { events } = useDeepResearchEvents(activeSessionId ?? undefined);
   const { executions } = useDeepResearchExecutions(activeSessionId ?? undefined);
+  const activeSessionPath = activeSessionId ? `/api/deep-research/sessions/${activeSessionId}` : null;
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
 
-  // Extract requirement state and battle result from artifacts for panels
-  const requirementStateArtifact = artifacts.find(a => a.artifactType === "checkpoint" && (a.content as Record<string, unknown>).requirementState);
-  const latestBattleArtifact = [...artifacts].reverse().find(a => a.artifactType === "reviewer_battle_result");
-  const battleResult = latestBattleArtifact?.content as unknown as ReviewerBattleResultExtended | null ?? null;
+  const requirementState = useMemo(() => {
+    const artifact = artifacts.find((candidate) => {
+      if (candidate.artifactType !== "checkpoint") {
+        return false;
+      }
+      const content = candidate.content as Record<string, unknown>;
+      return Boolean(content.requirementState);
+    });
+    return (artifact?.content as { requirementState?: RequirementState } | undefined)?.requirementState ?? null;
+  }, [artifacts]);
+
+  const battleResult = useMemo(() => {
+    const latestBattleArtifact = [...artifacts]
+      .reverse()
+      .find((artifact) => artifact.artifactType === "reviewer_battle_result");
+    return latestBattleArtifact?.content as ReviewerBattleResultExtended | null | undefined ?? null;
+  }, [artifacts]);
 
   // Auto-switch tab based on phase
   const autoTabForPhase = useCallback((phase: string) => {
@@ -75,8 +112,29 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
     return null;
   }, []);
 
-  // Requirement state from SWR - placeholder (would need its own API endpoint or derive from artifacts)
-  const requirementState: RequirementState | null = null;
+  const runSessionRequest = useCallback(
+    async <T,>(
+      pathSuffix: string,
+      init: RequestInit,
+      fallbackError: string,
+    ): Promise<T | null> => {
+      if (!activeSessionPath) {
+        return null;
+      }
+
+      try {
+        const response = await fetch(`${activeSessionPath}${pathSuffix}`, init);
+        if (!response.ok) {
+          throw new Error(await readErrorMessage(response, fallbackError));
+        }
+        return response.status === 204 ? null : ((await response.json().catch(() => null)) as T | null);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : fallbackError);
+        return null;
+      }
+    },
+    [activeSessionPath],
+  );
 
   // --- Navigation ---
 
@@ -141,54 +199,59 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
   // --- Session actions ---
 
   const handleSendMessage = useCallback(
-    async (content: string) => {
-      if (!activeSessionId) return;
-      try {
-        await fetch(`/api/deep-research/sessions/${activeSessionId}/message`, {
+    async (content: string, options?: SessionMessageOptions) => {
+      const response = await runSessionRequest<{ message: unknown; reply: unknown; autoAction: unknown }>(
+        "/message",
+        {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
-        });
-        mutateMessages();
-        mutateSession();
-      } catch {
-        toast.error("Failed to send message");
+          body: JSON.stringify({
+            content,
+            relatedNodeId: options?.relatedNodeId,
+            metadata: options?.metadata,
+            relatedArtifactIds: options?.relatedArtifactIds,
+          }),
+        },
+        "Failed to send message",
+      );
+      if (response) {
+        await Promise.all([mutateMessages(), mutateSession()]);
       }
     },
-    [activeSessionId, mutateMessages, mutateSession]
+    [mutateMessages, mutateSession, runSessionRequest],
   );
 
   const handleApprove = useCallback(
     async (nodeId: string, approved: boolean, feedback?: string) => {
-      if (!activeSessionId) return;
-      try {
-        await fetch(`/api/deep-research/sessions/${activeSessionId}/approve`, {
+      const response = await runSessionRequest<{ success: boolean }>(
+        "/approve",
+        {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nodeId, approved, feedback }),
-        });
-        mutateSession();
-      } catch {
-        toast.error("Failed to process approval");
+        },
+        "Failed to process approval",
+      );
+      if (response) {
+        await mutateSession();
       }
     },
-    [activeSessionId, mutateSession]
+    [mutateSession, runSessionRequest],
   );
 
   const handleConfirm = useCallback(
     async (nodeId: string, outcome: ConfirmationOutcome, feedback?: string) => {
-      if (!activeSessionId) return;
-      try {
-        const res = await fetch(`/api/deep-research/sessions/${activeSessionId}/confirm`, {
+      const response = await runSessionRequest<{ started: boolean; running: boolean }>(
+        "/confirm",
+        {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nodeId, outcome, feedback }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to confirm");
-        }
-        mutateSession();
+        },
+        "Failed to process confirmation",
+      );
+      if (response) {
+        await mutateSession();
         toast.success(
           outcome === "confirmed"
             ? "Confirmed — continuing research"
@@ -196,67 +259,49 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
               ? "Research stopped"
               : `Feedback sent: ${outcome.replace("_", " ")}`
         );
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to process confirmation");
       }
     },
-    [activeSessionId, mutateSession]
+    [mutateSession, runSessionRequest],
   );
 
   const handleStartRun = useCallback(async () => {
-    if (!activeSessionId) return;
-    try {
-      const res = await fetch(`/api/deep-research/sessions/${activeSessionId}/run`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to start");
-      }
-      mutateSession();
+    const response = await runSessionRequest<{ started: boolean; running: boolean }>(
+      "/run",
+      { method: "POST" },
+      "Failed to start research",
+    );
+    if (response) {
+      await mutateSession();
       toast.success("Research started");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start research");
     }
-  }, [activeSessionId, mutateSession]);
+  }, [mutateSession, runSessionRequest]);
+
+  const handlePhaseAction = useCallback(
+    async (phase: Phase, action: "run" | "skip", successLabel: string, fallbackError: string) => {
+      const response = await runSessionRequest<{ phase: Phase; started?: boolean; skipped?: Phase }>(
+        "/run",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetPhase: phase, action }),
+        },
+        fallbackError,
+      );
+      if (response) {
+        await mutateSession();
+        toast.success(`${successLabel}: ${phase}`);
+      }
+    },
+    [mutateSession, runSessionRequest],
+  );
 
   const handleRunPhase = useCallback(async (phase: Phase) => {
-    if (!activeSessionId) return;
-    try {
-      const res = await fetch(`/api/deep-research/sessions/${activeSessionId}/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetPhase: phase, action: "run" }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to run phase");
-      }
-      mutateSession();
-      toast.success(`Running phase: ${phase}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to run phase");
-    }
-  }, [activeSessionId, mutateSession]);
+    await handlePhaseAction(phase, "run", "Running phase", "Failed to run phase");
+  }, [handlePhaseAction]);
 
   const handleSkipPhase = useCallback(async (phase: Phase) => {
-    if (!activeSessionId) return;
-    try {
-      const res = await fetch(`/api/deep-research/sessions/${activeSessionId}/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetPhase: phase, action: "skip" }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to skip phase");
-      }
-      mutateSession();
-      toast.success(`Skipped phase: ${phase}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to skip phase");
-    }
-  }, [activeSessionId, mutateSession]);
+    await handlePhaseAction(phase, "skip", "Skipped phase", "Failed to skip phase");
+  }, [handlePhaseAction]);
 
   const handleNodeSelect = useCallback((nodeId: string) => {
     setSelectedNodeId(nodeId);
@@ -265,22 +310,52 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
   const handleBindProfile = useCallback(
     async (profileId: string | null) => {
-      if (!activeSessionId) return;
-      try {
-        await fetch(`/api/deep-research/sessions/${activeSessionId}`, {
+      const response = await runSessionRequest(
+        "",
+        {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ remoteProfileId: profileId }),
-        });
-        mutateSession();
-      } catch {
-        toast.error("Failed to bind remote profile");
+        },
+        "Failed to bind remote profile",
+      );
+      if (response) {
+        await mutateSession();
       }
     },
-    [activeSessionId, mutateSession],
+    [mutateSession, runSessionRequest],
   );
 
-  // --- Render views ---
+  const sessionFlags = useMemo(() => {
+    if (!session) {
+      return null;
+    }
+
+    return {
+      isRunning: isActiveSessionStatus(session.status),
+      isAwaitingConfirmation: isAwaitingConfirmationSessionStatus(session.status),
+      isCompleted: isCompletedSessionStatus(session.status),
+      isFailed: session.status === "failed",
+      isLiteratureBlocked: session.status === "literature_blocked",
+      isStopped: session.status === "stopped_by_user",
+      canStart: canStartSession(session.status),
+    };
+  }, [session]);
+
+  const completedPhases = useMemo(
+    () => new Set(nodes.filter((node) => node.status === "completed").map((node) => node.phase)),
+    [nodes],
+  );
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+    const nextTab = autoTabForPhase(session.phase);
+    if (nextTab && nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+  }, [activeTab, autoTabForPhase, session]);
 
   if (view === "intake") {
     return (
@@ -292,7 +367,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
     );
   }
 
-  if (view === "list" || !activeSessionId || !session) {
+  if (view === "list" || !activeSessionId || !session || !sessionFlags) {
     return (
       <SessionList
         sessions={sessions}
@@ -303,17 +378,15 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
     );
   }
 
-  // Active session view
-  const isRunning = session.status === "running" || session.status === "reviewing" || session.status === "awaiting_resource" || session.status === "literature_in_progress" || session.status === "planning_in_progress" || session.status === "reviewer_battle_in_progress" || session.status === "execution_in_progress" || session.status === "validation_planning_in_progress";
-  const isAwaitingConfirmation = session.status === "awaiting_user_confirmation" || session.status === "execution_prepared" || session.status === "awaiting_additional_literature";
-  const isCompleted = session.status === "completed" || session.status === "final_report_generated";
-  const isFailed = session.status === "failed";
-  const isLiteratureBlocked = session.status === "literature_blocked";
-  const isStopped = session.status === "stopped_by_user";
-  const canStart = ["intake", "paused", "awaiting_approval", "failed"].includes(session.status);
-  const completedPhases = new Set(
-    nodes.filter(n => n.status === "completed").map(n => n.phase)
-  );
+  const {
+    isRunning,
+    isAwaitingConfirmation,
+    isCompleted,
+    isFailed,
+    isLiteratureBlocked,
+    isStopped,
+    canStart,
+  } = sessionFlags;
 
   return (
     <div className="flex flex-col h-full">
@@ -428,7 +501,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
                   />
                   {/* Tab bar */}
                   <div className="flex gap-0.5 px-2 py-1 border-b border-border/50 bg-muted/20 shrink-0">
-                    {(["chat", "requirements", "reviewers", "execution"] as TabView[]).map((tab) => (
+                    {(Object.keys(TAB_LABELS) as TabView[]).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -438,7 +511,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
                             : "text-muted-foreground hover:text-foreground hover:bg-muted"
                         }`}
                       >
-                        {tab === "chat" ? "Chat" : tab === "requirements" ? "Requirements" : tab === "reviewers" ? "Reviewers" : "Execution"}
+                        {TAB_LABELS[tab]}
                       </button>
                     ))}
                   </div>
@@ -465,7 +538,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
                       <ExecutionStatusPanel
                         executions={executions}
                         workspaceId={workspaceId}
-                        sessionId={activeSessionId!}
+                        sessionId={activeSessionId}
                         remoteProfileId={session.remoteProfileId}
                         onBindProfile={handleBindProfile}
                       />
@@ -488,11 +561,13 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
       {/* Node detail drawer */}
       <NodeDetailDrawer
         node={selectedNode}
+        messages={messages}
         artifacts={artifacts}
         events={events}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onApprove={handleApprove}
+        onSendMessage={handleSendMessage}
       />
 
       {/* Delete dialog for active session */}

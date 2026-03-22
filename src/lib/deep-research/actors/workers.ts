@@ -13,6 +13,10 @@ import {
   parseClaimMap,
 } from "../synthesizer-runtime";
 import {
+  buildNodeTranscriptMetadata,
+  serializeTranscriptPayload,
+} from "../node-transcript";
+import {
   buildScientificReviewPrompt,
   parseScientificReviewPacket,
 } from "../scientific-review-runtime";
@@ -46,6 +50,21 @@ abstract class MetaWorker {
       throw new Error(`Budget exceeded: ${budgetCheck.reason}`);
     }
 
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      serializeTranscriptPayload(node.input ?? { task: node.label }),
+      buildNodeTranscriptMetadata(node, "input"),
+      node.id,
+    );
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      `Started ${node.nodeType} with ${node.assignedRole.replace("_", " ")}.`,
+      buildNodeTranscriptMetadata(node, "status"),
+      node.id,
+    );
+
     const modelChain = await getModelChainForRole(node.assignedRole, ctx.session.config);
     let lastError: Error | null = null;
 
@@ -68,6 +87,14 @@ abstract class MetaWorker {
         const artifacts = await createArtifacts(ctx.session.id, node.id, result.artifactDrafts);
         const updatedBudget = trackUsage(ctx.session.budget, node.assignedRole, node.id, result.tokensUsed);
         await store.updateSession(ctx.session.id, { budget: updatedBudget });
+        await store.addMessage(
+          ctx.session.id,
+          "system",
+          serializeTranscriptPayload(result.output),
+          buildNodeTranscriptMetadata(node, "output"),
+          node.id,
+          artifacts.map((artifact) => artifact.id),
+        );
 
         return {
           output: result.output,
@@ -89,6 +116,13 @@ abstract class MetaWorker {
       error: `All models failed. Last error: ${message}`,
       completedAt: new Date().toISOString(),
     });
+    await store.addMessage(
+      ctx.session.id,
+      "system",
+      message,
+      buildNodeTranscriptMetadata(node, "error"),
+      node.id,
+    );
     throw lastError ?? new Error(message);
   }
 
@@ -169,10 +203,14 @@ abstract class PromptWorker extends MetaWorker {
     const parentArtifacts = this.getParentArtifacts(node, ctx);
     const tools = this.getTools(node, ctx);
     const stepLimit = this.getStepLimit(node);
+    const userPrompt = this.buildUserPrompt(node, ctx, parentArtifacts);
+    const skillFirstPrompt = ctx.skillCatalog && ctx.skillCatalog.length > 0
+      ? `Use a relevant workspace skill first if one plausibly matches this task. Only fall back to generic execution if no skill fits.\n\n${userPrompt}`
+      : userPrompt;
     const result = await generateText({
       model,
       system: this.buildSystemPrompt(node, ctx, parentArtifacts),
-      messages: [{ role: "user", content: this.buildUserPrompt(node, ctx, parentArtifacts) }],
+      messages: [{ role: "user", content: skillFirstPrompt }],
       ...(tools ? { tools: tools as Record<string, never>, stopWhen: stepCountIs(stepLimit) } : {}),
       abortSignal,
     });
@@ -199,7 +237,7 @@ class EvidenceGatherWorker extends PromptWorker {
   }
 
   protected getStepLimit(): number {
-    return 15;
+    return 24;
   }
 
   protected buildSystemPrompt(
@@ -211,13 +249,14 @@ class EvidenceGatherWorker extends PromptWorker {
   }
 
   protected buildUserPrompt(node: DeepResearchNode): string {
-    const input = (node.input as Record<string, unknown>) ?? {};
-    const query = (input.query as string)
-      || (input.researchQuestion as string)
-      || node.label;
-    const maxSources = (input.maxPapers as number) || (input.maxSources as number) || 10;
-    const focusAreas = input.focusAreas as string[] | undefined;
-    return buildEvidenceGatherPrompt(query, { maxSources, focusAreas });
+    const request = buildEvidenceGatherRequest(node);
+    return buildEvidenceGatherPrompt(request.query, {
+      maxSources: request.maxSources,
+      focusAreas: request.focusAreas,
+      keywords: request.keywords,
+      task: request.task,
+      subQuestion: request.subQuestion,
+    });
   }
 
   protected parseOutput(
@@ -226,10 +265,8 @@ class EvidenceGatherWorker extends PromptWorker {
     _parentArtifacts: DeepResearchArtifact[],
     result: GenerateResultLike,
   ): Record<string, unknown> {
-    const input = (node.input as Record<string, unknown>) ?? {};
-    const query = (input.query as string)
-      || (input.researchQuestion as string)
-      || node.label;
+    const request = buildEvidenceGatherRequest(node);
+    const query = request.query;
 
     let output = safeParseJson(result.text);
     if (Object.keys(output).length > 0 && !("text" in output && Object.keys(output).length === 1)) {
@@ -278,6 +315,61 @@ class EvidenceGatherWorker extends PromptWorker {
       provenance: this.buildProvenance(node, parentArtifacts.map(artifact => artifact.id)),
     }];
   }
+}
+
+export type EvidenceGatherRequest = {
+  query: string;
+  maxSources: number;
+  focusAreas?: string[];
+  keywords?: string[];
+  task?: string;
+  subQuestion?: string;
+};
+
+export function buildEvidenceGatherRequest(node: DeepResearchNode): EvidenceGatherRequest {
+  const input = (node.input as Record<string, unknown>) ?? {};
+  const task = stringOrUndefined(input.task);
+  const subQuestion = stringOrUndefined(input.subQuestion);
+  const query = stringOrUndefined(input.query)
+    || stringOrUndefined(input.researchQuestion)
+    || subQuestion
+    || task
+    || node.label;
+
+  const rawFocusAreas = stringArrayOrUndefined(input.focusAreas);
+  const rawKeywords = stringArrayOrUndefined(input.keywords);
+  const focusAreas = dedupeStrings(rawFocusAreas);
+  const keywords = dedupeStrings([
+    ...(rawKeywords ?? []),
+    ...(focusAreas ?? []),
+  ]);
+
+  return {
+    query,
+    maxSources: (input.maxPapers as number) || (input.maxSources as number) || 10,
+    focusAreas,
+    keywords,
+    task,
+    subQuestion,
+  };
+}
+
+function stringOrUndefined(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function stringArrayOrUndefined(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .filter((item): item is string => typeof item === "string")
+    .map(item => item.trim())
+    .filter(Boolean);
+  return items.length > 0 ? items : undefined;
+}
+
+function dedupeStrings(items?: string[]): string[] | undefined {
+  if (!items || items.length === 0) return undefined;
+  return [...new Set(items.map(item => item.trim()).filter(Boolean))];
 }
 
 class SummaryWorker extends PromptWorker {

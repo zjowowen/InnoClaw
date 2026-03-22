@@ -1,28 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listSessions, createSession, addMessage } from "@/lib/deep-research/event-store";
+import {
+  handleDeepResearchRouteError,
+  parseOptionalString,
+  parseRequiredString,
+  parseOptionalStringArray,
+} from "@/lib/deep-research/api-helpers";
 
 export async function GET(req: NextRequest) {
-  const workspaceId = req.nextUrl.searchParams.get("workspaceId");
-  if (!workspaceId) {
-    return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
+  try {
+    const workspaceId = parseRequiredString(
+      req.nextUrl.searchParams.get("workspaceId"),
+      "Missing workspaceId",
+    );
+    const sessions = await listSessions(workspaceId);
+    return NextResponse.json(sessions);
+  } catch (error) {
+    return handleDeepResearchRouteError(error, "Failed to fetch sessions");
   }
-
-  const sessions = await listSessions(workspaceId);
-  return NextResponse.json(sessions);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { workspaceId, title, config, content, files } = await req.json();
+    const body = await req.json();
+    const workspaceId = parseRequiredString(body.workspaceId, "Missing workspaceId");
+    const title = parseRequiredString(body.title, "Missing title");
+    const content = parseOptionalString(body.content, "Invalid content");
+    const files = parseOptionalStringArray(body.files, "Invalid files");
 
-    if (!workspaceId) {
-      return NextResponse.json({ error: "Missing workspaceId" }, { status: 400 });
-    }
-    if (!title) {
-      return NextResponse.json({ error: "Missing title" }, { status: 400 });
-    }
-
-    const session = await createSession(workspaceId, title, config);
+    const session = await createSession(workspaceId, title, body.config);
 
     // If content is provided (from text intake or uploaded file contents),
     // create the initial user message automatically.
@@ -39,7 +45,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(session, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create session";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleDeepResearchRouteError(error, "Failed to create session");
   }
 }

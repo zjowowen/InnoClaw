@@ -310,6 +310,14 @@ export async function getMessages(sessionId: string): Promise<DeepResearchMessag
 
 // --- Nodes ---
 
+export async function getNode(nodeId: string): Promise<DeepResearchNode | null> {
+  const [row] = await db
+    .select()
+    .from(deepResearchNodes)
+    .where(eq(deepResearchNodes.id, nodeId));
+  return row ? parseNode(row) : null;
+}
+
 export async function createNode(
   sessionId: string,
   spec: NodeCreationSpec
@@ -354,17 +362,17 @@ export async function updateNode(
   nodeId: string,
   updates: Partial<{
     status: NodeStatus;
-    assignedModel: string;
-    output: Record<string, unknown>;
+    assignedModel: string | null;
+    output: Record<string, unknown> | null;
     error: string | null;
     supersededById: string;
-    startedAt: string;
-    completedAt: string;
+    startedAt: string | null;
+    completedAt: string | null;
     positionX: number;
     positionY: number;
-    confirmedAt: string;
-    confirmedBy: string;
-    confirmationOutcome: ConfirmationOutcome;
+    confirmedAt: string | null;
+    confirmedBy: string | null;
+    confirmationOutcome: ConfirmationOutcome | null;
   }>
 ): Promise<void> {
   const dbUpdates: Record<string, unknown> = {

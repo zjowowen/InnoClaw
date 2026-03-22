@@ -9,9 +9,11 @@ import {
   assessEvidenceHonesty,
   evidenceCardToMarkdown,
 } from "../evidence-cards";
+import { buildEvidenceGatherPrompt } from "../prompts";
+import { buildEvidenceGatherRequest } from "../actors/workers";
 import { validateRecipe, createDefaultRecipe, estimatePreprocessingDuration } from "../preprocessing";
 import { defaultSkillRegistry } from "../skill-library";
-import type { EvidenceCard, ClaimMap } from "../types";
+import type { EvidenceCard, ClaimMap, DeepResearchNode } from "../types";
 
 // -------------------------------------------------------------------
 // Evidence Card Tests
@@ -107,6 +109,71 @@ describe("Evidence Cards", () => {
     expect(md).toContain("Scaling Laws for Neural LMs");
     expect(md).toContain("2020");
     expect(md).toContain("empirical scaling laws");
+  });
+
+  it("builds a rich evidence gather request from planner input", () => {
+    const node = {
+      id: "node-1",
+      sessionId: "sess-1",
+      parentId: null,
+      nodeType: "evidence_gather",
+      label: "Search LLM foundations",
+      status: "pending",
+      assignedRole: "worker",
+      assignedModel: null,
+      input: {
+        task: "Search for papers on transformer architecture, attention mechanisms, and scaling laws for LLMs.",
+        subQuestion: "What are the foundational architectural concepts of LLMs?",
+        keywords: ["large language models", "transformer", "attention", "GPT"],
+        maxPapers: 5,
+        focusAreas: ["transformer architecture", "attention mechanisms", "scaling laws"],
+      },
+      output: null,
+      error: null,
+      dependsOn: [],
+      supersedesId: null,
+      supersededById: null,
+      branchKey: null,
+      retryOfId: null,
+      retryCount: 0,
+      phase: "evidence_collection",
+      stageNumber: 1,
+      requiresConfirmation: true,
+      confirmedAt: null,
+      confirmedBy: null,
+      confirmationOutcome: null,
+      positionX: null,
+      positionY: null,
+      startedAt: null,
+      completedAt: null,
+      createdAt: "",
+      updatedAt: "",
+    } satisfies DeepResearchNode;
+
+    const request = buildEvidenceGatherRequest(node);
+    expect(request.query).toContain("foundational architectural concepts");
+    expect(request.task).toContain("transformer architecture");
+    expect(request.keywords).toContain("GPT");
+    expect(request.keywords).toContain("scaling laws");
+    expect(request.maxSources).toBe(5);
+  });
+
+  it("includes task, sub-question, keywords, and multi-search instructions in evidence prompt", () => {
+    const prompt = buildEvidenceGatherPrompt("Foundational LLM architecture", {
+      maxSources: 5,
+      task: "Search for transformer architecture, attention mechanisms, and scaling laws for LLMs.",
+      subQuestion: "What are the foundational architectural concepts of LLMs?",
+      keywords: ["transformer", "attention", "scaling laws", "GPT", "BERT"],
+      focusAreas: ["transformer architecture", "attention mechanisms", "model size trends"],
+    });
+
+    expect(prompt).toContain("Overall task");
+    expect(prompt).toContain("Target sub-question");
+    expect(prompt).toContain("Keywords supplied by planner");
+    expect(prompt).toContain("Run MULTIPLE searchArticles calls");
+    expect(prompt).toContain("findRelatedTo");
+    expect(prompt).toContain("readPaper");
+    expect(prompt).toContain("Do not stop after a single search");
   });
 });
 

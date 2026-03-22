@@ -42,9 +42,10 @@ describe("arxiv", () => {
       title: "Test Paper Title",
       authors: ["John Doe", "Jane Smith"],
       abstract: "This is a test abstract about transformers.",
+      url: "https://arxiv.org/abs/2401.12345v1",
       source: "arxiv",
     });
-    expect(result[0].pdfUrl).toBe("http://arxiv.org/pdf/2401.12345v1");
+    expect(result[0].pdfUrl).toBe("https://arxiv.org/pdf/2401.12345v1");
   });
 
   it("returns empty array for empty keywords", async () => {

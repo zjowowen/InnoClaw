@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Send, Brain, User, CheckCircle, XCircle, Loader2, FileText, Tag, PlayCircle, Square, RotateCcw } from "lucide-react";
 import { CheckpointReview } from "./checkpoint-review";
 import { ArtifactViewer } from "./artifact-viewer";
+import { isNodeDetailOnlyMessage } from "@/lib/deep-research/node-transcript";
+import {
+  isActiveSessionStatus,
+  isAwaitingConfirmationSessionStatus,
+  isCompletedSessionStatus,
+  isTerminalSessionStatus,
+} from "@/lib/deep-research/session-status";
 import type {
   DeepResearchMessage,
   DeepResearchSession,
@@ -41,13 +48,13 @@ export function ResearchChat({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const awaitingApprovalNodes = nodes.filter((n) => n.status === "awaiting_approval");
-  const isRunning = session.status === "running";
-  const isAwaitingConfirmation = session.status === "awaiting_user_confirmation";
-  const isCompleted = session.status === "completed" || session.status === "final_report_generated";
+  const isRunning = isActiveSessionStatus(session.status);
+  const isAwaitingConfirmation = isAwaitingConfirmationSessionStatus(session.status);
+  const isCompleted = isCompletedSessionStatus(session.status);
   const isFailed = session.status === "failed";
   const isCancelled = session.status === "cancelled";
   const isStopped = session.status === "stopped_by_user";
-  const isTerminal = isCompleted || isFailed || isCancelled || isStopped;
+  const isTerminal = isTerminalSessionStatus(session.status);
 
   // Get the pending checkpoint data
   const pendingCheckpoint = isAwaitingConfirmation && session.pendingCheckpointId
@@ -56,12 +63,13 @@ export function ResearchChat({
 
   // Get the final report artifact (for completed sessions)
   const finalReportArtifact = artifacts.find((a) => a.artifactType === "final_report");
+  const visibleMessages = messages.filter((message) => !isNodeDetailOnlyMessage(message));
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length, isAwaitingConfirmation, isCompleted]);
+  }, [visibleMessages.length, isAwaitingConfirmation, isCompleted]);
 
   const handleSend = async () => {
     const content = input.trim();
@@ -129,7 +137,7 @@ export function ResearchChat({
       {/* Messages */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
         <div className="p-3 space-y-3">
-          {messages.map((msg) => {
+          {visibleMessages.map((msg) => {
             const relatedNode = msg.relatedNodeId
               ? nodes.find(n => n.id === msg.relatedNodeId) ?? null
               : null;

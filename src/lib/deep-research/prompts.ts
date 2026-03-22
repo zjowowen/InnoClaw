@@ -31,26 +31,32 @@ function buildSkillCatalogSection(
     return `
 
 ## Available Workspace Skills
-You have access to ${skillCatalog.length} workspace skills. When planning research tasks, consider whether sub-tasks match available skills. Workers can invoke skills using the **getSkillInstructions** tool to load detailed instructions, then use **bash** to execute the code.
+You have access to ${skillCatalog.length} workspace skills. When planning or executing research tasks, you MUST treat skills as the default path whenever a skill is even plausibly relevant. Workers can invoke skills using the **getSkillInstructions** tool to load detailed instructions, then use **bash** to execute the code.
 
 <skill-catalog>
 ${skillList}
 </skill-catalog>
 
 ### How to Use Skills
-1. When creating worker nodes, note in the node's input if a skill should be used (e.g. "use skill /slug-name").
-2. Workers will automatically detect matching skills and invoke them via getSkillInstructions + bash.
-3. If no skill matches a task, workers proceed with their normal capabilities.`;
+1. Before planning or executing without skills, first check whether any listed skill is relevant.
+2. If a skill is relevant, call **getSkillInstructions** first and follow that workflow before generic reasoning or ad-hoc tool use.
+3. When creating worker nodes, note in the node's input if a skill should be used (e.g. "use skill /slug-name").
+4. Only fall back to non-skill execution if no listed skill fits or the skill output is insufficient.`;
   }
 
   return `
 
 ## Available Skills
-If your task matches a skill below, use the **getSkillInstructions** tool with the skill's slug to load its full workflow, then follow the returned instructions using the **bash** tool to execute the code.
+If your task matches a skill below, you MUST use the **getSkillInstructions** tool with the skill's slug before any generic ad-hoc execution. Skills are the default path, not an optional extra.
 
 <skill-catalog>
 ${skillList}
 </skill-catalog>
+
+### Skill Priority Rules
+1. Inspect the catalog first and prefer a relevant skill over generic reasoning or generic search.
+2. If a skill is relevant, call **getSkillInstructions** before using non-skill tools.
+3. Only fall back to generic tool use if no skill matches or the skill instructions are clearly insufficient.
 
 ### SCP MCP Connection Rules
 When writing Python code that connects to SCP MCP servers:
@@ -152,6 +158,11 @@ BAD decomposition (too broad):
 - "Do the literature review"
 - "Analyze everything about the topic"
 - "Complete all validation"
+
+## CRITICAL: Skill-First Execution
+- If workspace skills are available and any skill plausibly matches the task, you MUST use the skill path first.
+- Do not default to plain prompting or generic tool usage when a skill can do the work.
+- For literature or analysis tasks, prefer creating worker inputs that preserve full retrieval context: task, subQuestion, keywords, focusAreas, constraints, and explicit skill hints when available.
 
 ## Current State
 - Session: "${session.title}" (id: ${session.id})
@@ -557,6 +568,7 @@ export function buildWorkerSystemPrompt(
 - Do NOT self-assign additional tasks or redefine the plan.
 - Do NOT dispatch other workers or make final conclusions.
 - Be thorough but concise. Quality over quantity.
+- If any listed skill plausibly matches this task, you MUST call **getSkillInstructions** first and follow the skill before generic execution.
 
 ## Your Task
 ${node.label}
@@ -731,26 +743,46 @@ Respond with valid JSON:
 
 export function buildEvidenceGatherPrompt(
   query: string,
-  constraints?: { maxSources?: number; focusAreas?: string[] }
+  constraints?: {
+    maxSources?: number;
+    focusAreas?: string[];
+    keywords?: string[];
+    task?: string;
+    subQuestion?: string;
+  }
 ): string {
   const maxSources = constraints?.maxSources ?? 10;
+  const keywordLine = constraints?.keywords?.length
+    ? constraints.keywords.join(", ")
+    : "none specified";
+  const taskLine = constraints?.task?.trim() || "not provided";
+  const subQuestionLine = constraints?.subQuestion?.trim() || "not provided";
   return `Search for and gather evidence related to:
 
 ## Query
 ${query}
 
+## Task Context
+- Overall task: ${taskLine}
+- Target sub-question: ${subQuestionLine}
+
 ## Constraints
 - Maximum sources to find: ${maxSources}
 - Focus areas: ${constraints?.focusAreas?.join(", ") || "none specified — use your judgment"}
+- Keywords supplied by planner: ${keywordLine}
 
 ## Instructions
 
-**You MUST use the searchArticles tool to find papers.** Do not skip tool usage.
+**You MUST use the searchArticles tool to find papers, and you should use readPaper to download/read the strongest papers once you have candidates.** Do not skip tool usage.
 
-1. First, call searchArticles with broad keywords extracted from the query (2-4 keywords).
-2. If the first search returns few results, try again with different/broader keywords.
-3. Try variations: synonyms, related terms, shorter keyword lists.
-4. Search both arXiv and Hugging Face sources.
+1. Build a search plan that covers the full task context, not just a single short query.
+2. Run MULTIPLE searchArticles calls using distinct keyword clusters until you either reach ${maxSources} strong sources or exhaust relevant variants.
+3. Use the supplied keywords, focus areas, task, and sub-question to create search variants.
+4. Always include explicit searches for seminal topics or named works if they are mentioned in the task. Examples here include transformer architecture, attention mechanisms, GPT, BERT, decoder-only models, and scaling laws.
+5. If one search returns a seminal paper, use findRelatedTo on that result to expand the evidence set.
+6. After you identify the most relevant papers, use readPaper to download and read the paper text for the strongest candidates. Do not rely only on title/abstract when the paper PDF is available.
+7. Search across all supported sources unless a source is clearly irrelevant.
+8. If an initial search returns few results, broaden or re-cluster keywords instead of stopping early.
 
 For each source found, extract:
 1. Source (paper title, URL)
@@ -758,6 +790,7 @@ For each source found, extract:
 3. Methodology used
 4. Confidence in evidence quality (high/medium/low)
 5. How it relates to the query
+6. Prefer findings grounded in the downloaded paper text when readPaper succeeded
 
 After searching, respond with a JSON object:
 \`\`\`json
@@ -770,7 +803,8 @@ After searching, respond with a JSON object:
 \`\`\`
 
 Be systematic. Cover the query from multiple angles if possible.
-STOP when you have found ${maxSources} relevant sources or exhausted available search results.
+Do not stop after a single search if the task clearly contains multiple facets.
+STOP when you have found ${maxSources} relevant sources or exhausted multiple relevant search strategies.
 Do NOT do unbounded searching. Quality over quantity.`;
 }
 
