@@ -1,6 +1,6 @@
 "use client";
 
-import { ParticleEffect, FloatingOrbs } from "@/components/ui/particle-effect";
+import { FloatingOrbs } from "@/components/ui/particle-effect";
 
 interface PageBackgroundProps {
   isActive: boolean;
@@ -22,8 +22,6 @@ export function PageBackground({ isActive }: PageBackgroundProps) {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       {/* Floating orbs */}
       <FloatingOrbs isActive={isActive} />
-      {/* Particle effect */}
-      <ParticleEffect isActive={isActive} particleCount={30} />
     </div>
   );
 }

@@ -39,7 +39,7 @@ const TASK_TYPES = [
   "custom",
 ] as const;
 
-export function ScheduledTasksCard() {
+export function ScheduledTasksCard({ className }: { className?: string }) {
   const t = useTranslations("scheduledTasks");
   const tCommon = useTranslations("common");
   const { tasks, mutate } = useScheduledTasks();
@@ -170,7 +170,7 @@ export function ScheduledTasksCard() {
 
   return (
     <>
-      <Card>
+      <Card className={className}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

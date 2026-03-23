@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { FolderOpen, FolderPlus, GitBranch, Sparkles, Cpu, Zap, Brain, Code2, GraduationCap, Server, ChevronDown } from "lucide-react";
+import { FolderOpen, FolderPlus, GitBranch, Sparkles, Cpu, Zap, Brain, Code2, GraduationCap, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { WorkspaceList } from "@/components/workspaces/workspace-list";
@@ -77,7 +77,7 @@ export default function HomePage() {
             <div className="mb-16 text-center">
               {/* Animated badge */}
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary backdrop-blur-sm animate-slide-in-up">
-                <Sparkles className="h-4 w-4 animate-pulse" />
+                <Sparkles className="h-4 w-4" />
                 <span>AI-Powered Research Assistant</span>
               </div>
 
@@ -87,7 +87,7 @@ export default function HomePage() {
                   Welcome to
                 </span>{" "}
                 <span className="relative inline-block animate-slide-in-up [animation-delay:100ms]">
-                  <span className="relative z-10 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] bg-clip-text text-transparent animate-[gradient-rotate_3s_linear_infinite]">
+                  <span className="relative z-10 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     InnoClaw
                   </span>
                   {/* Glow behind text */}
@@ -165,12 +165,7 @@ export default function HomePage() {
                   <span>Paper Study</span>
                 </Button>
               </Link>
-              <Link href="/cluster">
-                <Button variant="outline" size="lg" className="gap-2 group border-border/50 hover:border-green-500/50 hover:bg-green-500/5 transition-all">
-                  <Server className="h-4 w-4 transition-transform group-hover:scale-110 text-green-500" />
-                  <span>Cluster</span>
-                </Button>
-              </Link>
+
             </div>
 
             {/* Workspace Section */}

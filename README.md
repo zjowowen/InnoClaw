@@ -29,6 +29,18 @@
   <a href="https://SpectrAI-Initiative.github.io/InnoClaw/">Documentation</a> · <a href="#quick-start">Quick Start</a> · <a href="#community-support">Community</a>
 </p>
 
+<p align="center">
+  <a href="#community-support">
+    <img src="site/social/飞书体验群.png" alt="Join Feishu Community" width="200" />
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="#community-support">
+    <img src="site/social/微信体验群.jpg" alt="Join WeChat Community" width="200" />
+  </a>
+  <br/>
+  <sub>Scan to join our community · 扫码加入飞书/微信体验群</sub>
+</p>
+
 InnoClaw turns server-side folders into AI-native workspaces for grounded chat, paper study, scientific workflows, and research execution.
 
 It is built for researchers, developers, labs, and self-hosters who want more than a generic chat UI: cited answers over real files, reusable skills, and a path from reading to execution.
@@ -43,15 +55,38 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 <!-- whats-new-start -->
 
+#### 2026-03-21
+- **Remote HPC/SLURM Execution**: Deep research sessions can now run on remote clusters via SSH, supporting rjob, rlaunch, and SLURM schedulers with file staging and job lifecycle management
+- **Kubernetes Cluster Config UI**: New settings panel for runtime configuration of K8s contexts, PVC bindings, and container images across multi-cluster deployments without restarting
+- **Remote Profile Binding**: Deep research sessions can be bound to pre-configured SSH/remote compute profiles, enabling reproducible distributed research workflows
+
+
+
+#### 2026-03-20
+- **Deep Research Module**: Full AI-driven scientific research pipeline with multi-phase orchestration, reviewer deliberation, execution planning, and workflow graph UI
+- **Execution Pipeline**: Automated experiment execution system with Slurm job submission, dataset management, preprocessing, and remote executor support
+
+
+
+
+<details>
+<summary>Show earlier updates</summary>
+
 #### 2026-03-19
 - **ClawHub Skill Import**: New integration to import skills directly from ClawHub via a dedicated API endpoint and import dialog
 - **Code Preview Panel**: New in-editor code preview component supporting syntax highlighting and save-status tracking
 - **Paper Study Cache**: Persistent caching layer for paper study sessions, improving reload performance and state continuity
 
 
+
+
+
 #### 2026-03-18
 - **Multimodal Vision for Paper Analysis**: PDF images are now extracted and analyzed visually during paper discussion and research ideation sessions
 - **Claude Code Skills Integration**: Import skills directly from local folders or Claude Code projects via a new dedicated import workflow
+
+
+
 
 
 
@@ -62,10 +97,16 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
+
 #### 2026-03-17
 - **Remote Job Profile Management & SSH Hardening**: Secure remote profile creation, editing, and SSH-hardened job submission for research execution
 - **Rich Markdown Rendering in Agent Panel**: Agent messages now render tables, LaTeX math, and syntax-highlighted code blocks
 - **API Provider Settings UI**: Configure AI provider API keys and endpoints directly from the Settings page
+
+
+
 
 
 
@@ -78,10 +119,16 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
+
 #### 2026-03-16
 - **Paper Discussion & Ideation Robustness**: Per-role token budgets (2-2.5x increase), automatic retry on empty/short responses, and error visibility in the UI. Fixes agents returning empty or truncated output with reasoning-capable models (SH-Lab, Qwen, etc.)
 - **Full Paper Context**: Discussion and ideation agents now receive up to 30k chars of the full paper text (local files) instead of just the abstract, enabling deeper analysis of methodology, experiments, and results
 - **Abstract Extraction Fix**: Heuristic regex-based abstract extraction with improved AI prompt to prevent extracting author names instead of the actual abstract
+
+
+
 
 
 
@@ -94,6 +141,15 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
+
+
+
+
+
+
+</details>
 
 
 <!-- whats-new-end -->
@@ -227,4 +283,10 @@ Go from code inspection to job submission and result analysis inside a guided ex
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=SpectrAI-Initiative/InnoClaw&type=Date)](https://star-history.com/#SpectrAI-Initiative/InnoClaw&Date)
+<a href="https://www.star-history.com/?repos=SpectrAI-Initiative%2FInnoClaw&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&legend=top-left" />
+ </picture>
+</a>

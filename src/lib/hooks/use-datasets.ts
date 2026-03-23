@@ -6,7 +6,7 @@ export function useDatasets() {
   const { data, error, isLoading, mutate } = useSWR<HfDataset[]>(
     "/api/datasets",
     fetcher,
-    { refreshInterval: 5000 }
+    { refreshInterval: 15000 }
   );
 
   return {
@@ -21,7 +21,7 @@ export function useDatasetProgress(datasetId: string | null) {
   const { data } = useSWR<HfDownloadProgress>(
     datasetId ? `/api/datasets/${datasetId}/status` : null,
     fetcher,
-    { refreshInterval: 2000 }
+    { refreshInterval: 5000 }
   );
 
   return data ?? null;
@@ -58,7 +58,7 @@ export function useActiveProgress(datasets: HfDataset[]) {
       );
       return results;
     },
-    { refreshInterval: 2000 }
+    { refreshInterval: 5000 }
   );
 
   return data ?? {};
@@ -76,7 +76,7 @@ export function useNetworkSpeed() {
   const { data } = useSWR<NetworkSpeed>(
     "/api/system/network",
     fetcher,
-    { refreshInterval: 3000 }
+    { refreshInterval: 10000 }
   );
 
   return data ?? null;

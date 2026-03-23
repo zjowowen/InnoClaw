@@ -77,7 +77,7 @@ export function useClusterOperations(workspaceId?: string) {
   const { data, error, isLoading, mutate } = useSWR<ClusterOperation[]>(
     url,
     fetcher,
-    { refreshInterval: 15_000 }
+    { refreshInterval: 30_000 }
   );
 
   return {
