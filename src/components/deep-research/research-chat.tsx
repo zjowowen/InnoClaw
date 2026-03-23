@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Send, Brain, User, CheckCircle, XCircle, Loader2, FileText, Tag, PlayCircle, Square, RotateCcw } from "lucide-react";
+import { Send, Brain, User, CheckCircle, XCircle, Loader2, FileText, PlayCircle, Square, RotateCcw } from "lucide-react";
 import { CheckpointReview } from "./checkpoint-review";
 import { ArtifactViewer } from "./artifact-viewer";
 import { isNodeDetailOnlyMessage } from "@/lib/deep-research/node-transcript";
@@ -15,6 +15,7 @@ import {
   isCompletedSessionStatus,
   isTerminalSessionStatus,
 } from "@/lib/deep-research/session-status";
+import { getNodeDisplayLabel, getStructuredRoleDisplayName, RESEARCHER_ROLE_ID } from "@/lib/deep-research/role-registry";
 import type {
   DeepResearchMessage,
   DeepResearchSession,
@@ -22,7 +23,6 @@ import type {
   DeepResearchArtifact,
   ConfirmationOutcome,
 } from "@/lib/deep-research/types";
-import { PHASE_STAGE_NUMBER, type Phase } from "@/lib/deep-research/types";
 
 interface ResearchChatProps {
   session: DeepResearchSession;
@@ -55,6 +55,7 @@ export function ResearchChat({
   const isCancelled = session.status === "cancelled";
   const isStopped = session.status === "stopped_by_user";
   const isTerminal = isTerminalSessionStatus(session.status);
+  const assistantLabel = getStructuredRoleDisplayName(RESEARCHER_ROLE_ID);
 
   // Get the pending checkpoint data
   const pendingCheckpoint = isAwaitingConfirmation && session.pendingCheckpointId
@@ -116,7 +117,7 @@ export function ResearchChat({
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
         <Brain className="h-4 w-4 text-purple-500" />
-        <span className="text-sm font-medium flex-1">Main Brain</span>
+        <span className="text-sm font-medium flex-1">{assistantLabel}</span>
         <Badge
           variant={
             isRunning ? "default"
@@ -128,9 +129,6 @@ export function ResearchChat({
           className="text-[10px]"
         >
           {session.status.replace(/_/g, " ")}
-        </Badge>
-        <Badge variant="outline" className="text-[10px]">
-          S{PHASE_STAGE_NUMBER[session.phase as Phase] ?? "?"} — {session.phase}
         </Badge>
       </div>
 
@@ -165,18 +163,12 @@ export function ResearchChat({
                   >
                     {msg.content}
                   </div>
-                  {/* Phase badge + related node/artifact chips */}
+                  {/* Related node/artifact chips */}
                   {msg.role !== "user" && (relatedNode || relatedArts.length > 0) && (
                     <div className="flex flex-wrap gap-1 px-1">
                       {relatedNode && (
-                        <Badge variant="secondary" className="text-[9px] gap-0.5">
-                          <Tag className="h-2.5 w-2.5" />
-                          S{PHASE_STAGE_NUMBER[relatedNode.phase as Phase] ?? "?"} {relatedNode.phase}
-                        </Badge>
-                      )}
-                      {relatedNode && (
                         <Badge variant="outline" className="text-[9px]">
-                          {relatedNode.label.slice(0, 30)}{relatedNode.label.length > 30 ? "..." : ""}
+                          {getNodeDisplayLabel(relatedNode.label).slice(0, 30)}{getNodeDisplayLabel(relatedNode.label).length > 30 ? "..." : ""}
                         </Badge>
                       )}
                       {relatedArts.map(a => (
@@ -213,10 +205,12 @@ export function ResearchChat({
                 currentFindings: string;
                 openQuestions: string[];
                 recommendedNextAction: string;
+                recommendedWorker?: { roleId: string; roleName: string; nodeType: string; label: string };
+                promptUsed?: { title: string; kind: string; objective: string };
                 continueWillDo?: string;
                 alternativeNextActions: string[];
                 artifactsToReview: string[];
-                phase: string;
+                contextTag: string;
                 stepType: string;
                 mainBrainAudit?: {
                   whatWasCompleted: string;
@@ -227,10 +221,18 @@ export function ResearchChat({
                   alternativeActions: Array<{ label: string; description: string; actionType: string }>;
                   canProceed: boolean;
                 };
-                literatureRoundInfo?: { roundNumber: number; papersCollected: number; coverageSummary: string };
-                reviewerBattleInfo?: { combinedVerdict: string; combinedConfidence: number; agreements: string[]; disagreements: string[]; needsMoreLiterature: boolean; needsExperimentalValidation: boolean };
+                literatureRoundInfo?: {
+                  roundNumber: number;
+                  papersCollected: number;
+                  retrievalTaskCount: number;
+                  successfulTaskCount: number;
+                  failedTaskCount: number;
+                  emptyTaskCount: number;
+                  coverageSummary: string;
+                };
+                reviewInfo?: { combinedVerdict: string; combinedConfidence: number; needsMoreLiterature: boolean; needsExperimentalValidation: boolean };
                 executionInfo?: { stepsCompleted: number; stepsTotal: number; currentStatus: string };
-                transitionAction?: { nextPhase: string; description: string };
+                transitionAction?: { nextContextTag: string; description: string };
               }}
               artifacts={artifacts}
               onConfirm={handleCheckpointConfirm}
@@ -245,12 +247,9 @@ export function ResearchChat({
                 <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">
                   Awaiting your decision
                 </span>
-                <Badge variant="outline" className="text-[10px]">
-                  S{PHASE_STAGE_NUMBER[session.phase as Phase] ?? "?"} — {session.phase.replace(/_/g, " ")}
-                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                The session is paused and waiting for your input. You can continue to the next phase, or stop the research.
+                The session is paused and waiting for your input. You can continue and let the Researcher choose the next workflow, or stop the research.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -355,7 +354,7 @@ export function ResearchChat({
           </div>
           {awaitingApprovalNodes.map((node) => (
             <div key={node.id} className="flex items-center gap-2">
-              <span className="text-xs flex-1 truncate">{node.label}</span>
+              <span className="text-xs flex-1 truncate">{getNodeDisplayLabel(node.label)}</span>
               <Button
                 size="sm"
                 variant="outline"
@@ -387,7 +386,7 @@ export function ResearchChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message the Main Brain..."
+              placeholder={`Message the ${assistantLabel}...`}
               className="min-h-[40px] max-h-[120px] resize-none text-sm"
               rows={1}
             />

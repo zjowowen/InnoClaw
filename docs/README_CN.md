@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://SpectrAI-Initiative.github.io/InnoClaw/">完整文档</a> · <a href="#cn-quick-start">快速开始</a> · <a href="#cn-community-support">社区交流</a>
+  <a href="https://SpectrAI-Initiative.github.io/InnoClaw/">完整文档</a> · <a href="#cn-quick-start">安装与使用</a> · <a href="#cn-community-support">社区交流</a>
 </p>
 
 > 此翻译页可能会略晚于英文主页 `README.md` 更新。
@@ -134,17 +134,94 @@ InnoClaw 是一个面向研究工作的可自托管 Web 应用，把工作空间
 
 ## 🚀 快速开始
 
+如果你是自托管或线上部署，建议优先使用 Git tag/release，而不是直接跟随持续变化的 `main` 分支：
+
 ```bash
 git clone https://github.com/SpectrAI-Initiative/InnoClaw.git
 cd InnoClaw
+git fetch --tags
+# 生产环境建议固定版本：
+# git checkout vX.Y.Z
+```
+
+InnoClaw 需要 Node.js 20+，以 `package.json` 中的要求为准。
+
+### 1. 安装
+
+```bash
 npm install
+cp .env.example .env.local
+mkdir -p ./data /absolute/path/to/workspaces
+npx drizzle-kit migrate
+```
+
+在 `.env.local` 中至少配置工作空间路径和一个模型提供商，例如：
+
+```ini
+WORKSPACE_ROOTS=/absolute/path/to/workspaces
+OPENAI_API_KEY=sk-...
+```
+
+注意：
+
+- `WORKSPACE_ROOTS` 中的目录需要提前创建，应用不会自动创建
+- `npx drizzle-kit migrate` 会初始化或升级默认位于 `./data/innoclaw.db` 的 SQLite 数据库
+- 如果项目放在 NFS/CIFS 等网络文件系统上，请把 `DATABASE_URL` 和 `NEXT_BUILD_DIR` 指到本地磁盘路径
+
+### 2. 启动
+
+```bash
 npm run dev
 ```
 
-- 打开 `http://localhost:3000`
-- 在 Settings 页面配置至少一个 AI 提供商
-- 打开或克隆一个工作空间后，点击 `Sync` 建立 RAG 索引
-- 需要系统依赖或生产部署说明？见 `getting-started/installation.md`
+浏览器打开 `http://localhost:3000`。
+
+### 3. 首次使用
+
+进入界面后，建议按这个顺序操作：
+
+1. 在 `Settings` 中配置至少一个 AI 提供商
+2. 从 `WORKSPACE_ROOTS` 下打开已有目录，或创建一个新的 workspace
+3. 点击 `Sync`，让 InnoClaw 为当前工作空间建立 RAG 索引
+4. 先从基于文件的问答开始，再进入论文研读、笔记、技能或研究执行流程
+
+### 4. 常见使用路径
+
+- **基于文件的对话**：对本地文件和代码提问，回答会附带引用
+- **论文研读**：搜索论文、生成摘要，并进一步运行多智能体讨论
+- **技能导入与调用**：导入可复用科学技能，在 Agent 面板中触发
+- **研究执行**：审查代码、准备任务、提交到 Shell/Slurm/`rjob`，并跟踪产物
+
+### 5. 版本更新与升级
+
+版本升级不只是拉代码，还可能涉及依赖变化、环境变量新增和数据库迁移。
+
+- 生产环境建议固定 release tag，不建议直接长期跟 `main`
+- 每次升级前先看 `CHANGELOG.md`
+- 拉取新版本后，用 `.env.example` 对照检查 `.env.local` 是否需要补新变量
+- 每次版本升级后，都重新执行 `npm install` 和 `npx drizzle-kit migrate`
+
+推荐升级流程：
+
+```bash
+git fetch --tags
+git checkout vX.Y.Z
+npm install
+npx drizzle-kit migrate
+npm run build
+```
+
+如果你明确选择跟随 `main`，升级流程至少应为：
+
+```bash
+git pull
+npm install
+npx drizzle-kit migrate
+```
+
+如果新版本提高了 Node.js 主版本要求，请先切换到对应 Node 版本，再重新安装依赖后启动。
+
+需要更完整的系统依赖、部署或配置说明，可继续看 `getting-started/installation.md`、`getting-started/deployment.md` 和 `../CHANGELOG.md`。
 
 ## 🛠️ 你可以用它做什么
 

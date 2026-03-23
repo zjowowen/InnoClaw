@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listSessions, createSession, addMessage } from "@/lib/deep-research/event-store";
+import { listSessions, createSession, addMessage, getSession } from "@/lib/deep-research/event-store";
+import { ensureInterfaceShell } from "@/lib/deep-research/interface-shell";
 import {
   handleDeepResearchRouteError,
   parseOptionalString,
@@ -43,7 +44,12 @@ export async function POST(req: NextRequest) {
       await addMessage(session.id, "user", content.trim(), metadata);
     }
 
-    return NextResponse.json(session, { status: 201 });
+    if (session.config.interfaceOnly === true) {
+      await ensureInterfaceShell(session);
+    }
+    const updatedSession = await getSession(session.id);
+
+    return NextResponse.json(updatedSession ?? session, { status: 201 });
   } catch (error) {
     return handleDeepResearchRouteError(error, "Failed to create session");
   }

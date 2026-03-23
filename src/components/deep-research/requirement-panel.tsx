@@ -16,7 +16,7 @@ export function RequirementPanel({ requirementState }: RequirementPanelProps) {
   if (!requirementState) {
     return (
       <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        No requirements tracked yet. They will appear after the intake phase.
+        No requirements tracked yet. They will appear after intake context is established.
       </div>
     );
   }

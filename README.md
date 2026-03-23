@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <a href="https://SpectrAI-Initiative.github.io/InnoClaw/">Documentation</a> · <a href="#quick-start">Quick Start</a> · <a href="#community-support">Community</a>
+  <a href="https://SpectrAI-Initiative.github.io/InnoClaw/">Documentation</a> · <a href="#quick-start">Install & Use</a> · <a href="#community-support">Community</a>
 </p>
 
 <p align="center">
@@ -144,17 +144,94 @@ Instead of juggling separate tools for files, notes, literature review, and auto
 
 ## 🚀 Quick Start
 
+For a stable self-hosted deployment, prefer a tagged release over a moving `main` branch snapshot:
+
 ```bash
 git clone https://github.com/SpectrAI-Initiative/InnoClaw.git
 cd InnoClaw
+git fetch --tags
+# Optional but recommended for production:
+# git checkout vX.Y.Z
+```
+
+InnoClaw requires Node.js 20+ (`package.json` is the source of truth for runtime requirements).
+
+### 1. Install
+
+```bash
 npm install
+cp .env.example .env.local
+mkdir -p ./data /absolute/path/to/workspaces
+npx drizzle-kit migrate
+```
+
+Set `WORKSPACE_ROOTS` in `.env.local` to one or more absolute local paths, for example:
+
+```ini
+WORKSPACE_ROOTS=/absolute/path/to/workspaces
+OPENAI_API_KEY=sk-...
+```
+
+Notes:
+
+- `WORKSPACE_ROOTS` directories must already exist before startup
+- `npx drizzle-kit migrate` creates or upgrades the SQLite schema at `./data/innoclaw.db` by default
+- If the repo lives on NFS/CIFS or another network filesystem, set `DATABASE_URL` and `NEXT_BUILD_DIR` to local disk paths in `.env.local`
+
+### 2. Run
+
+```bash
 npm run dev
 ```
 
-- Open `http://localhost:3000`
-- Configure one AI provider from the Settings page
-- Open or clone a workspace, then click `Sync` to build the RAG index
-- Need OS-specific prerequisites or production setup? See `docs/getting-started/installation.md`
+Open `http://localhost:3000`.
+
+### 3. First Use
+
+After the UI opens:
+
+1. Configure at least one model provider in `Settings`
+2. Open an existing folder or create a workspace under `WORKSPACE_ROOTS`
+3. Click `Sync` so InnoClaw builds the RAG index for that workspace
+4. Start with grounded chat, then move into paper study, notes, skills, or research execution
+
+### 4. Typical Usage Flow
+
+- **Grounded chat**: ask questions over your files and code with citations
+- **Paper study**: search papers, summarize them, and run structured multi-agent discussion
+- **Skills**: import reusable scientific workflows and trigger them from the agent panel
+- **Research execution**: review code, prepare jobs, submit to Shell/Slurm/`rjob`, and track artifacts
+
+### 5. Keeping Versions Up to Date
+
+Version changes matter because upgrades can introduce new environment variables, dependency changes, and database migrations.
+
+- For production, pin to a release tag and upgrade deliberately instead of tracking `main`
+- Check `CHANGELOG.md` before every upgrade
+- Compare your `.env.local` against `.env.example` after pulling updates
+- Re-run `npm install` and `npx drizzle-kit migrate` after every version bump
+
+Recommended upgrade flow:
+
+```bash
+git fetch --tags
+git checkout vX.Y.Z
+npm install
+npx drizzle-kit migrate
+npm run build
+```
+
+If you intentionally track `main`, use:
+
+```bash
+git pull
+npm install
+npx drizzle-kit migrate
+```
+
+If the required Node.js major version changes between releases, reinstall dependencies under the new Node version before starting the app again.
+
+Need OS-specific prerequisites or production setup? See `docs/getting-started/installation.md`, `docs/getting-started/deployment.md`, and `CHANGELOG.md`.
 
 ## 🛠️ What You Can Do
 

@@ -3,6 +3,7 @@
 import type { DeepResearchArtifact } from "@/lib/deep-research/types";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getNodeDisplayLabel } from "@/lib/deep-research/role-registry";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -16,7 +17,7 @@ export function ArtifactViewer({ artifact }: ArtifactViewerProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-semibold flex-1">{artifact.title}</h4>
+        <h4 className="text-sm font-semibold flex-1">{getNodeDisplayLabel(artifact.title)}</h4>
         <Badge variant="outline" className="text-[10px]">
           {artifact.artifactType}
         </Badge>
@@ -33,6 +34,22 @@ export function ArtifactViewer({ artifact }: ArtifactViewerProps) {
 }
 
 function renderContent(type: string, content: Record<string, unknown>) {
+  if (looksLikeTaskBoard(content)) {
+    return <TaskBoardDisplay data={content} />;
+  }
+
+  if (looksLikeCollaborationPacket(content)) {
+    return <CollaborationPacketDisplay data={content} />;
+  }
+
+  if (looksLikeRoleSpecification(content)) {
+    return <RoleSpecificationDisplay data={content} />;
+  }
+
+  if (looksLikeProtocolGraph(content)) {
+    return <ProtocolGraphDisplay data={content} />;
+  }
+
   switch (type) {
     case "research_brief":
       return <KeyValueDisplay data={content} />;
@@ -47,8 +64,8 @@ function renderContent(type: string, content: Record<string, unknown>) {
     case "reviewer_packet":
       return <ReviewerPacketDisplay data={content} />;
 
-    case "reviewer_battle_result":
-      return <ReviewerBattleDisplay data={content} />;
+    case "review_assessment":
+      return <ReviewAssessmentDisplay data={content} />;
 
     case "main_brain_audit":
       return <MainBrainAuditDisplay data={content} />;
@@ -87,6 +104,254 @@ function renderContent(type: string, content: Record<string, unknown>) {
     default:
       return <pre className="text-xs bg-muted p-3 rounded overflow-auto">{JSON.stringify(content, null, 2)}</pre>;
   }
+}
+
+function looksLikeTaskBoard(content: Record<string, unknown>): boolean {
+  return typeof content.objective === "string"
+    && Array.isArray(content.assignments)
+    && typeof content.coordinatorRoleId === "string";
+}
+
+function looksLikeCollaborationPacket(content: Record<string, unknown>): boolean {
+  return typeof content.roleName === "string"
+    && typeof content.workflowSegment === "string"
+    && content.packet != null
+    && typeof content.packet === "object";
+}
+
+function looksLikeRoleSpecification(content: Record<string, unknown>): boolean {
+  return typeof content.roleName === "string"
+    && typeof content.workflowSegment === "string"
+    && Array.isArray(content.prompts)
+    && Array.isArray(content.skills);
+}
+
+function looksLikeProtocolGraph(content: Record<string, unknown>): boolean {
+  return Array.isArray(content.roles) && Array.isArray(content.protocols);
+}
+
+function RoleSpecificationDisplay({ data }: { data: Record<string, unknown> }) {
+  const prompts = Array.isArray(data.prompts) ? data.prompts as Array<Record<string, unknown>> : [];
+  const skills = Array.isArray(data.skills) ? data.skills as Array<Record<string, unknown>> : [];
+  const collaborations = Array.isArray(data.collaborations) ? data.collaborations as Array<Record<string, unknown>> : [];
+  const responsibilities = Array.isArray(data.coreResponsibilities) ? data.coreResponsibilities as string[] : [];
+  const standards = Array.isArray(data.performanceStandards) ? data.performanceStandards as string[] : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold">{String(data.roleName)}</div>
+        <div className="text-xs text-muted-foreground">{String(data.workflowSegment)}</div>
+        <p className="text-sm leading-relaxed">{String(data.corePositioning ?? "")}</p>
+      </div>
+
+      <SectionList title="Core Responsibilities" items={responsibilities} />
+      <SectionList title="Performance Standards" items={standards} />
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prompts</div>
+        <div className="space-y-2">
+          {prompts.map((item, index) => (
+            <div key={index} className="rounded border p-3 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(item.title ?? "")}</span>
+                <Badge variant="outline" className="text-[10px]">{String(item.kind ?? "")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{String(item.objective ?? "")}</p>
+              <SectionList title="Required Sections" items={Array.isArray(item.requiredSections) ? item.requiredSections as string[] : []} compact />
+              <SectionList title="Constraints" items={Array.isArray(item.constraints) ? item.constraints as string[] : []} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Skills</div>
+        <div className="space-y-2">
+          {skills.map((item, index) => (
+            <div key={index} className="rounded border p-3 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(item.name ?? "")}</span>
+                <Badge variant="secondary" className="text-[10px]">{String(item.kind ?? "")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{String(item.purpose ?? "")}</p>
+              <SectionList title="Inputs" items={Array.isArray(item.inputs) ? item.inputs as string[] : []} compact />
+              <SectionList title="Outputs" items={Array.isArray(item.outputs) ? item.outputs as string[] : []} compact />
+              <SectionList title="Quality Checks" items={Array.isArray(item.qualityChecks) ? item.qualityChecks as string[] : []} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Collaboration</div>
+        <div className="space-y-2">
+          {collaborations.map((item, index) => (
+            <div key={index} className="rounded border p-3 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(item.partnerRoleId ?? "")}</span>
+                <Badge variant="outline" className="text-[10px]">{String(item.collaborationType ?? "")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{String(item.trigger ?? "")}</p>
+              <SectionList title="Payload" items={Array.isArray(item.payload) ? item.payload as string[] : []} compact />
+              <SectionList title="Expected Response" items={Array.isArray(item.expectedResponse) ? item.expectedResponse as string[] : []} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskBoardDisplay({ data }: { data: Record<string, unknown> }) {
+  const assignments = Array.isArray(data.assignments) ? data.assignments as Array<Record<string, unknown>> : [];
+  const milestones = Array.isArray(data.milestones) ? data.milestones as string[] : [];
+  const completionCriteria = Array.isArray(data.completionCriteria) ? data.completionCriteria as string[] : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold">Research Coordination Task Board</div>
+        <p className="text-sm leading-relaxed">{String(data.objective ?? "")}</p>
+        <div className="text-xs text-muted-foreground">Coordinator: {String(data.coordinatorRoleId ?? "")}</div>
+      </div>
+
+      <SectionList title="Milestones" items={milestones} />
+      <SectionList title="Completion Criteria" items={completionCriteria} />
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assignments</div>
+        <div className="space-y-2">
+          {assignments.map((assignment, index) => (
+            <div key={index} className="rounded border p-3 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(assignment.roleName ?? "")}</span>
+                <Badge variant="outline" className="text-[10px]">{String(assignment.status ?? "")}</Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">{String(assignment.workflowSegment ?? "")}</div>
+              <p className="text-xs">{String(assignment.objective ?? "")}</p>
+              <SectionList title="Deliverables" items={Array.isArray(assignment.deliverables) ? assignment.deliverables as string[] : []} compact />
+              <SectionList title="Dependencies" items={Array.isArray(assignment.dependencies) ? assignment.dependencies as string[] : []} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CollaborationPacketDisplay({ data }: { data: Record<string, unknown> }) {
+  const packet = (data.packet && typeof data.packet === "object" ? data.packet as Record<string, unknown> : null);
+  const prompts = Array.isArray(data.roleResponseContract) ? data.roleResponseContract as Array<Record<string, unknown>> : [];
+  const skills = Array.isArray(data.roleSkills) ? data.roleSkills as Array<Record<string, unknown>> : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold">{String(data.roleName ?? "")} Collaboration Packet</div>
+        <div className="text-xs text-muted-foreground">{String(data.workflowSegment ?? "")}</div>
+      </div>
+
+      {packet && (
+        <div className="rounded border p-3 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-[10px]">{String(packet.type ?? "")}</Badge>
+            <span className="text-xs text-muted-foreground">
+              {String(packet.fromRoleId ?? "")} -&gt; {String(packet.toRoleId ?? "")}
+            </span>
+          </div>
+          <p className="text-sm">{String(packet.goal ?? "")}</p>
+          <SectionList title="Payload" items={Array.isArray(packet.payload) ? packet.payload as string[] : []} compact />
+          <SectionList title="Expected Response" items={Array.isArray(packet.expectedResponse) ? packet.expectedResponse as string[] : []} compact />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Response Contract</div>
+        <div className="space-y-2">
+          {prompts.map((item, index) => (
+            <div key={index} className="rounded border p-3 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(item.title ?? "")}</span>
+                <Badge variant="outline" className="text-[10px]">{String(item.kind ?? "")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{String(item.objective ?? "")}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Available Skills</div>
+        <div className="space-y-2">
+          {skills.map((item, index) => (
+            <div key={index} className="rounded border p-3 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium">{String(item.name ?? "")}</span>
+                <Badge variant="secondary" className="text-[10px]">{String(item.kind ?? "")}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{String(item.purpose ?? "")}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProtocolGraphDisplay({ data }: { data: Record<string, unknown> }) {
+  const roles = Array.isArray(data.roles) ? data.roles as Array<Record<string, unknown>> : [];
+  const protocols = Array.isArray(data.protocols) ? data.protocols as Array<Record<string, unknown>> : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Roles</div>
+        <div className="grid gap-2 md:grid-cols-2">
+          {roles.map((role, index) => (
+            <div key={index} className="rounded border p-3">
+              <div className="text-sm font-medium">{String(role.roleName ?? "")}</div>
+              <div className="text-xs text-muted-foreground">{String(role.workflowSegment ?? "")}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Communication Protocols</div>
+        <div className="space-y-2">
+          {protocols.map((protocol, index) => (
+            <div key={index} className="rounded border p-3 space-y-1.5">
+              <div className="text-sm font-medium">{String(protocol.id ?? "")}</div>
+              <div className="text-xs text-muted-foreground">
+                {String(protocol.fromRoleId ?? "")} -&gt; {String(protocol.toRoleId ?? "")}
+              </div>
+              <p className="text-xs">{String(protocol.goal ?? "")}</p>
+              <SectionList title="Required Payload" items={Array.isArray(protocol.requiredPayload) ? protocol.requiredPayload as string[] : []} compact />
+              <SectionList title="Response Contract" items={Array.isArray(protocol.responseContract) ? protocol.responseContract as string[] : []} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionList({ title, items, compact = false }: { title: string; items: string[]; compact?: boolean }) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div className={`font-medium text-muted-foreground ${compact ? "text-[11px] mb-1" : "text-xs mb-1.5"}`}>{title}</div>
+      <ul className={`${compact ? "text-[11px]" : "text-xs"} space-y-0.5 list-disc pl-4 text-muted-foreground`}>
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function KeyValueDisplay({ data }: { data: Record<string, unknown> }) {
@@ -242,8 +507,15 @@ function MarkdownDisplay({ text }: { text: string }) {
   );
 }
 
-function ReviewerBattleDisplay({ data }: { data: Record<string, unknown> }) {
+function ReviewAssessmentDisplay({ data }: { data: Record<string, unknown> }) {
   const verdict = data.combinedVerdict as string;
+  const reviewerSummary = (data.reviewerSummary as string) || "";
+  const reviewHighlights = Array.isArray(data.reviewHighlights)
+    ? data.reviewHighlights as string[]
+    : [];
+  const openIssues = Array.isArray(data.openIssues)
+    ? data.openIssues as string[]
+    : [];
   const verdictColors: Record<string, string> = {
     approve: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     revise: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -257,48 +529,31 @@ function ReviewerBattleDisplay({ data }: { data: Record<string, unknown> }) {
           {verdict}
         </Badge>
         <span className="text-xs text-muted-foreground">
-          Combined confidence: {((data.combinedConfidence as number) * 100).toFixed(0)}%
+          Reviewer confidence: {((data.combinedConfidence as number) * 100).toFixed(0)}%
         </span>
       </div>
 
-      {/* Reviewer positions */}
-      <div className="grid grid-cols-2 gap-2">
+      {reviewerSummary && (
         <div className="p-2 bg-blue-50 dark:bg-blue-950/50 rounded text-xs">
-          <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">Reviewer A</div>
-          <div className="text-blue-700 dark:text-blue-300">{data.reviewerAPosition as string}</div>
+          <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">Results and Evidence Analyst</div>
+          <div className="text-blue-700 dark:text-blue-300">{reviewerSummary}</div>
         </div>
-        <div className="p-2 bg-cyan-50 dark:bg-cyan-950/50 rounded text-xs">
-          <div className="font-medium text-cyan-800 dark:text-cyan-200 mb-1">Reviewer B</div>
-          <div className="text-cyan-700 dark:text-cyan-300">{data.reviewerBPosition as string}</div>
-        </div>
-      </div>
+      )}
 
-      {/* Agreements */}
-      {Array.isArray(data.agreements) && data.agreements.length > 0 && (
+      {reviewHighlights.length > 0 && (
         <div>
-          <div className="text-xs font-medium text-green-700 dark:text-green-300 mb-1">Agreements</div>
+          <div className="text-xs font-medium text-green-700 dark:text-green-300 mb-1">Review Highlights</div>
           <ul className="list-disc list-inside text-xs space-y-0.5">
-            {(data.agreements as string[]).map((a, i) => <li key={i}>{a}</li>)}
+            {reviewHighlights.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         </div>
       )}
 
-      {/* Disagreements */}
-      {Array.isArray(data.disagreements) && data.disagreements.length > 0 && (
+      {openIssues.length > 0 && (
         <div>
-          <div className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Disagreements</div>
+          <div className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Open Issues</div>
           <ul className="list-disc list-inside text-xs space-y-0.5">
-            {(data.disagreements as string[]).map((d, i) => <li key={i}>{d}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {/* Unresolved gaps */}
-      {Array.isArray(data.unresolvedGaps) && data.unresolvedGaps.length > 0 && (
-        <div className="p-2 bg-yellow-50 dark:bg-yellow-950 rounded text-xs">
-          <div className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">Unresolved Gaps</div>
-          <ul className="list-disc list-inside space-y-0.5">
-            {(data.unresolvedGaps as string[]).map((g, i) => <li key={i}>{g}</li>)}
+            {openIssues.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         </div>
       )}
@@ -435,15 +690,15 @@ function CheckpointDisplay({ data }: { data: Record<string, unknown> }) {
   const currentFindings = data.currentFindings as string || "";
   const openQuestions = Array.isArray(data.openQuestions) ? data.openQuestions as string[] : [];
   const recommended = data.recommendedNextAction as string || "";
+  const recommendedWorker = (data.recommendedWorker as Record<string, unknown> | undefined) ?? undefined;
+  const promptUsed = (data.promptUsed as Record<string, unknown> | undefined) ?? undefined;
   const alternatives = Array.isArray(data.alternativeNextActions) ? data.alternativeNextActions as string[] : [];
-  const phase = data.phase as string || "";
   const stepType = data.stepType as string || "";
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <span className="font-semibold text-sm">{title}</span>
-        {phase && <Badge variant="outline" className="text-[10px]">{phase}</Badge>}
         {stepType && <Badge variant="secondary" className="text-[10px]">{stepType}</Badge>}
       </div>
 
@@ -469,6 +724,25 @@ function CheckpointDisplay({ data }: { data: Record<string, unknown> }) {
         <div className="text-xs p-2 bg-green-50 dark:bg-green-950/50 rounded">
           <span className="font-medium text-green-800 dark:text-green-200">Recommended: </span>
           <span className="text-green-700 dark:text-green-300">{recommended}</span>
+        </div>
+      )}
+
+      {recommendedWorker && (
+        <div className="text-xs p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded">
+          <span className="font-medium text-emerald-800 dark:text-emerald-200">Next worker: </span>
+          <span className="text-emerald-700 dark:text-emerald-300">
+            {String(recommendedWorker.roleName ?? "")} ({String(recommendedWorker.nodeType ?? "")}) - {String(recommendedWorker.label ?? "")}
+          </span>
+        </div>
+      )}
+
+      {promptUsed && (
+        <div className="text-xs p-2 bg-slate-50 dark:bg-slate-900/50 rounded">
+          <span className="font-medium text-slate-800 dark:text-slate-200">Prompt used: </span>
+          <span className="text-slate-700 dark:text-slate-300">{String(promptUsed.title ?? "")}</span>
+          <div className="mt-1 text-muted-foreground">
+            {String(promptUsed.kind ?? "")} - {String(promptUsed.objective ?? "")}
+          </div>
         </div>
       )}
 

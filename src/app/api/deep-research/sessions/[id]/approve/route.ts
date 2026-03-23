@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateNode, appendEvent } from "@/lib/deep-research/event-store";
+import { appendEvent, updateNode } from "@/lib/deep-research/event-store";
+import { ensureInterfaceShell, isInterfaceOnlySession } from "@/lib/deep-research/interface-shell";
 import { runManager } from "@/lib/deep-research/run-manager";
 import {
-  conflict,
   handleDeepResearchRouteError,
   isRecord,
   parseOptionalString,
@@ -11,7 +11,6 @@ import {
   requireSession,
   type DeepResearchRouteParams,
 } from "@/lib/deep-research/api-helpers";
-import { canResumeSessionAfterApproval } from "@/lib/deep-research/session-status";
 
 export async function POST(req: NextRequest, { params }: DeepResearchRouteParams) {
   try {
@@ -24,19 +23,42 @@ export async function POST(req: NextRequest, { params }: DeepResearchRouteParams
     const feedback = parseOptionalString(body.feedback, "Invalid feedback");
 
     const session = await requireSession(sessionId);
+    if (isInterfaceOnlySession(session)) {
+      await ensureInterfaceShell(session);
 
-    // Only allow approval when session is in awaiting_approval status.
-    // Do NOT start runs if session is awaiting_user_confirmation (step-gate).
+      await appendEvent(
+        sessionId,
+        body.approved ? "approval_granted" : "approval_denied",
+        nodeId,
+        "user",
+        "user",
+        undefined,
+        {
+          feedback,
+          ignored: true,
+          interfaceOnly: true,
+        },
+      );
+
+      return NextResponse.json({
+        success: true,
+        applied: false,
+        message: "Approval was recorded, but deep-research execution is disabled in interface-only mode.",
+      });
+    }
+
     if (session.status === "awaiting_user_confirmation") {
-      conflict("Session is awaiting user confirmation. Use /confirm endpoint instead.");
+      return NextResponse.json(
+        { error: "Session is awaiting user confirmation. Use /confirm endpoint instead." },
+        { status: 409 },
+      );
     }
 
     if (body.approved) {
       await updateNode(nodeId, { status: "completed" });
       await appendEvent(sessionId, "approval_granted", nodeId, "user", undefined, undefined, { feedback });
 
-      // Resume orchestrator only if session is in an appropriate state
-      if (!runManager.isRunning(sessionId) && canResumeSessionAfterApproval(session.status)) {
+      if (!runManager.isRunning(sessionId) && ["awaiting_approval", "running", "paused"].includes(session.status)) {
         runManager.startRun(sessionId);
       }
     } else {
@@ -44,7 +66,7 @@ export async function POST(req: NextRequest, { params }: DeepResearchRouteParams
       await appendEvent(sessionId, "approval_denied", nodeId, "user", undefined, undefined, { feedback });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, applied: true });
   } catch (error) {
     return handleDeepResearchRouteError(error, "Failed to process approval");
   }

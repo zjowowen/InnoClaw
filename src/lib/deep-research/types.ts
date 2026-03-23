@@ -25,7 +25,6 @@ export type SessionStatus =
   | "planning_in_progress"
   | "literature_in_progress"
   | "literature_blocked"
-  | "reviewer_battle_in_progress"
   | "awaiting_additional_literature"
   | "validation_planning_in_progress"
   | "execution_prepared"
@@ -36,32 +35,14 @@ export type SessionStatus =
   | "failed"
   | "cancelled";
 
-export type Phase =
+export type ContextTag =
   | "intake"
   | "planning"
-  | "evidence_collection"
-  | "literature_synthesis"
-  | "reviewer_deliberation"
-  | "decision"
-  | "additional_literature"
-  | "validation_planning"
-  | "resource_acquisition"
-  | "experiment_execution"
-  | "validation_review"
   | "final_report";
 
-export const PHASE_ORDER: Phase[] = [
+export const VALID_CONTEXT_TAGS: readonly ContextTag[] = [
   "intake",
   "planning",
-  "evidence_collection",
-  "literature_synthesis",
-  "reviewer_deliberation",
-  "decision",
-  "additional_literature",
-  "validation_planning",
-  "resource_acquisition",
-  "experiment_execution",
-  "validation_review",
   "final_report",
 ];
 
@@ -73,7 +54,6 @@ export type NodeType =
   | "summarize"
   | "synthesize"
   | "review"
-  | "deliberate"
   | "audit"
   | "validation_plan"
   | "resource_request"
@@ -85,7 +65,6 @@ export type NodeType =
   | "final_report"
   | "retrieve"
   | "synthesize_claims"
-  | "scientific_review"
   | "data_download"
   | "preprocess"
   | "skill_route";
@@ -103,10 +82,117 @@ export type NodeStatus =
 
 export type ModelRole =
   | "main_brain"
-  | "reviewer_a"
-  | "reviewer_b"
+  | "researcher"
+  | "literature_intelligence_analyst"
+  | "experiment_architecture_designer"
+  | "research_software_engineer"
+  | "experiment_operations_engineer"
+  | "results_and_evidence_analyst"
+  | "research_asset_reuse_specialist"
   | "worker"
   | "synthesizer";
+
+export type StructuredRoleCategory = "main_brain" | "meta_worker";
+
+export type StructuredPromptKind =
+  | "system"
+  | "task_intake"
+  | "progress_update"
+  | "handoff"
+  | "escalation"
+  | "completion";
+
+export type StructuredSkillKind =
+  | "literature_analysis"
+  | "experiment_design"
+  | "code_implementation"
+  | "experiment_execution"
+  | "result_analysis"
+  | "artifact_packaging"
+  | "coordination";
+
+export interface StructuredRolePrompt {
+  kind: StructuredPromptKind;
+  title: string;
+  objective: string;
+  requiredSections: string[];
+  constraints: string[];
+}
+
+export interface StructuredRoleSkill {
+  id: string;
+  kind: StructuredSkillKind;
+  name: string;
+  purpose: string;
+  inputs: string[];
+  outputs: string[];
+  qualityChecks: string[];
+}
+
+export interface StructuredRoleCollaboration {
+  partnerRoleId: ModelRole;
+  collaborationType: "delegation" | "handoff" | "review" | "feedback" | "escalation" | "reuse";
+  trigger: string;
+  payload: string[];
+  expectedResponse: string[];
+}
+
+export interface StructuredRoleDefinition {
+  roleId: ModelRole;
+  category: StructuredRoleCategory;
+  roleName: string;
+  workflowSegment: string;
+  defaultNodeType: NodeType;
+  defaultContextTag: ContextTag;
+  summaryArtifactType: ArtifactType;
+  corePositioning: string;
+  coreResponsibilities: string[];
+  skillRequirements: string[];
+  collaborationRequirements: string[];
+  performanceStandards: string[];
+  prompts: StructuredRolePrompt[];
+  skills: StructuredRoleSkill[];
+  collaborations: StructuredRoleCollaboration[];
+}
+
+export interface StructuredCommunicationProtocol {
+  id: string;
+  fromRoleId: ModelRole;
+  toRoleId: ModelRole;
+  goal: string;
+  trigger: string;
+  requiredPayload: string[];
+  responseContract: string[];
+  escalationPath: string;
+}
+
+export interface StructuredTaskAssignment {
+  roleId: ModelRole;
+  roleName: string;
+  workflowSegment: string;
+  objective: string;
+  deliverables: string[];
+  dependencies: ModelRole[];
+  status: "planned" | "in_progress" | "blocked" | "completed";
+}
+
+export interface StructuredTaskBoard {
+  objective: string;
+  coordinatorRoleId: ModelRole;
+  assignments: StructuredTaskAssignment[];
+  milestones: string[];
+  completionCriteria: string[];
+}
+
+export interface StructuredHandoffPacket {
+  type: "handoff" | "progress_update" | "escalation";
+  fromRoleId: ModelRole;
+  toRoleId: ModelRole;
+  goal: string;
+  payload: string[];
+  expectedResponse: string[];
+  status: "drafted" | "shared" | "acknowledged";
+}
 
 export type ArtifactType =
   | "research_brief"
@@ -115,7 +201,7 @@ export type ArtifactType =
   | "literature_round_summary"
   | "structured_summary"
   | "reviewer_packet"
-  | "reviewer_battle_result"
+  | "review_assessment"
   | "main_brain_audit"
   | "provisional_conclusion"
   | "validation_plan"
@@ -128,13 +214,10 @@ export type ArtifactType =
   | "checkpoint"
   | "evidence_card_collection"
   | "claim_map"
-  | "scientific_review_packet"
-  | "scientific_review_result"
   | "data_manifest";
 
 export type EventType =
   | "session_created"
-  | "phase_changed"
   | "node_created"
   | "node_started"
   | "node_completed"
@@ -158,8 +241,8 @@ export type EventType =
   | "user_approved_remote_submission"
   | "literature_round_started"
   | "literature_round_completed"
-  | "reviewer_battle_started"
-  | "reviewer_battle_completed"
+  | "review_started"
+  | "review_completed"
   | "execution_submitted"
   | "execution_completed"
   | "resource_requested"
@@ -169,11 +252,8 @@ export type EventType =
   | "consistency_check"
   | "skill_routing_completed"
   | "synthesis_completed"
-  | "scientific_review_completed"
   | "execution_plan_created"
-  | "data_download_completed"
-  | "phase_jumped"
-  | "phase_skipped";
+  | "data_download_completed";
 
 export type MessageRole = "user" | "main_brain" | "system";
 
@@ -192,14 +272,14 @@ export interface DeepResearchSession {
   workspaceId: string;
   title: string;
   status: SessionStatus;
-  phase: Phase;
+  contextTag: ContextTag;
   config: DeepResearchConfig;
   budget: BudgetUsage;
   /** ID of the latest checkpoint artifact when status is awaiting_user_confirmation. */
   pendingCheckpointId: string | null;
   /** Current literature round number (0 = not started). */
   literatureRound: number;
-  /** Current reviewer battle round number (0 = not started). */
+  /** Current review round number (0 = not started). */
   reviewerRound: number;
   /** Current execution loop number (0 = not started). */
   executionLoop: number;
@@ -241,9 +321,9 @@ export interface DeepResearchNode {
   branchKey: string | null;
   retryOfId: string | null;
   retryCount: number;
-  /** Which phase spawned this node. */
-  phase: Phase;
-  /** Stage number for sequential ordering (from PHASE_STAGE_NUMBER). */
+  /** Which context tag spawned this node. */
+  contextTag: ContextTag;
+  /** Legacy compatibility field; workflow routing no longer depends on stage numbering. */
   stageNumber: number;
   /** Whether this node requires user confirmation after completion. */
   requiresConfirmation: boolean;
@@ -288,10 +368,12 @@ export interface DeepResearchConfig {
   modelOverrides?: Partial<Record<ModelRole, { provider: string; modelId: string }>>;
   /** The model resolved from settings at session creation time. */
   resolvedModel?: { provider: string; modelId: string };
+  /** Keep the UI shell but disable the current orchestration/runtime. */
+  interfaceOnly?: boolean;
   budget: BudgetLimits;
   /** Max number of worker nodes created per fan-out. */
   maxWorkerFanOut: number;
-  /** Max reviewer battle rounds before forcing advancement. */
+  /** Max review rounds before forcing advancement. */
   maxReviewerRounds: number;
   /** Max execution retry loops before forcing final report. */
   maxExecutionLoops: number;
@@ -301,8 +383,6 @@ export interface DeepResearchConfig {
   literature: LiteratureConfig;
   /** Execution controls. */
   execution: ExecutionConfig;
-  /** Optional: enable structured scientific review (dimension-based audit with anti-loop). */
-  scientificReview?: ScientificReviewConfig;
   /** Optional: enable dynamic skill routing. */
   skillRouting?: { enabled: boolean };
 }
@@ -355,7 +435,7 @@ export interface ArtifactProvenance {
 }
 
 export interface ReviewerPacket {
-  reviewerRole: "reviewer_a" | "reviewer_b";
+  reviewerRole: "results_and_evidence_analyst";
   verdict: "approve" | "revise" | "reject";
   critique: string;
   suggestions: string[];
@@ -368,14 +448,13 @@ export interface ReviewerPacket {
   suggestedExperiments?: string[];
 }
 
-/** Result of a reviewer battle — synthesized from two reviewer packets. */
-export interface ReviewerBattleResult {
-  reviewerAPosition: string;
-  reviewerBPosition: string;
-  agreements: string[];
-  disagreements: string[];
-  rebuttalHighlights: string[];
-  unresolvedGaps: string[];
+/** Final review assessment from the Results and Evidence Analyst. */
+export interface ReviewAssessment {
+  reviewerRole?: "results_and_evidence_analyst";
+  reviewerSummary?: string;
+  reviewHighlights?: string[];
+  openIssues?: string[];
+  reviewRounds?: number;
   combinedVerdict: "approve" | "revise" | "reject";
   combinedConfidence: number;
   /** What would reduce uncertainty. */
@@ -540,8 +619,8 @@ export interface ValidationStep {
 // --- Brain Decisions ---
 
 export interface BrainDecision {
-  action: "advance_phase" | "revise_plan" | "request_approval" | "complete" | "respond_to_user";
-  nextPhase?: Phase;
+  action: "advance_context" | "revise_plan" | "request_approval" | "complete" | "respond_to_user";
+  nextContextTag?: ContextTag;
   nodesToCreate?: NodeCreationSpec[];
   messageToUser?: string;
   reasoning?: string;
@@ -555,7 +634,7 @@ export interface NodeCreationSpec {
   dependsOn?: string[];
   parentId?: string;
   branchKey?: string;
-  phase?: Phase;
+  contextTag?: ContextTag;
 }
 
 // --- Checkpoint Package ---
@@ -565,7 +644,7 @@ export interface CheckpointPackage {
   sessionId: string;
   nodeId: string;
   stepType: string;
-  phase: Phase;
+  contextTag: ContextTag;
   title: string;
   humanSummary: string;
   machineSummary: string;
@@ -575,6 +654,17 @@ export interface CheckpointPackage {
   currentFindings: string;
   openQuestions: string[];
   recommendedNextAction: string;
+  recommendedWorker?: {
+    roleId: ModelRole;
+    roleName: string;
+    nodeType: NodeType;
+    label: string;
+  };
+  promptUsed?: {
+    title: string;
+    kind: StructuredPromptKind;
+    objective: string;
+  };
   /** What clicking "Continue" will actually do. */
   continueWillDo: string;
   alternativeNextActions: string[];
@@ -586,10 +676,14 @@ export interface CheckpointPackage {
   literatureRoundInfo?: {
     roundNumber: number;
     papersCollected: number;
+    retrievalTaskCount: number;
+    successfulTaskCount: number;
+    failedTaskCount: number;
+    emptyTaskCount: number;
     coverageSummary: string;
   };
-  /** Reviewer battle info if relevant. */
-  reviewerBattleInfo?: ReviewerBattleResult;
+  /** Review assessment info if relevant. */
+  reviewInfo?: ReviewAssessment;
   /** Validation/execution info if relevant. */
   executionInfo?: {
     stepsCompleted: number;
@@ -612,7 +706,7 @@ export interface ConfirmationDecision {
   action: ConfirmationAction;
   reasoning: string;
   nodesToCreate?: NodeCreationSpec[];
-  nextPhase?: Phase;
+  nextContextTag?: ContextTag;
   messageToUser?: string;
 }
 
@@ -642,6 +736,7 @@ export const DEFAULT_EXECUTION_CONFIG: ExecutionConfig = {
 };
 
 export const DEFAULT_CONFIG: DeepResearchConfig = {
+  interfaceOnly: false,
   budget: {
     maxTotalTokens: 2_000_000,
     maxOpusTokens: 500_000,
@@ -649,7 +744,7 @@ export const DEFAULT_CONFIG: DeepResearchConfig = {
   maxWorkerFanOut: 8,
   maxReviewerRounds: 2,
   maxExecutionLoops: 3,
-  maxWorkerConcurrency: 4,
+  maxWorkerConcurrency: 1,
   literature: DEFAULT_LITERATURE_CONFIG,
   execution: DEFAULT_EXECUTION_CONFIG,
 };
@@ -659,7 +754,7 @@ export function createEmptyUsage(): BudgetUsage {
 }
 
 // =============================================================
-// RequirementState & ConstraintState (Phase 1)
+// RequirementState & ConstraintState
 // =============================================================
 
 export type RequirementStatus = "active" | "satisfied" | "dropped";
@@ -673,7 +768,7 @@ export interface Requirement {
   priority: "critical" | "high" | "medium" | "low";
   status: RequirementStatus;
   satisfiedByNodeIds: string[];
-  addedAtPhase: Phase;
+  addedAtContextTag: ContextTag;
 }
 
 export interface Constraint {
@@ -682,7 +777,7 @@ export interface Constraint {
   type: ConstraintType;
   value: string;
   status: ConstraintStatus;
-  addedAtPhase: Phase;
+  addedAtContextTag: ContextTag;
 }
 
 export interface RequirementState {
@@ -717,35 +812,33 @@ export interface RequirementDiff {
 }
 
 // =============================================================
-// TransitionAction (Phase 3)
+// TransitionAction
 // =============================================================
 
 export interface TransitionAction {
-  nextPhase: Phase;
+  nextContextTag: ContextTag;
   nodesToCreate: NodeCreationSpec[];
   nodesToSupersede: string[];
   description: string;
 }
 
 // =============================================================
-// Multi-Round Reviewer Battle (Phase 4)
+// Review History
 // =============================================================
 
-export interface ReviewerRound {
+export interface ReviewRound {
   round: number;
-  reviewerAPacket: ReviewerPacket;
-  reviewerBPacket: ReviewerPacket;
+  reviewerPacket: ReviewerPacket;
 }
 
-// Extend ReviewerBattleResult with multi-round fields
-export interface ReviewerBattleResultExtended extends ReviewerBattleResult {
-  rounds: ReviewerRound[];
-  convergedAtRound: number | null;
-  agreementScore: number;
+// Extend review assessment results with optional history fields.
+export interface ReviewAssessmentExtended extends ReviewAssessment {
+  rounds: ReviewRound[];
+  reviewHistory?: ReviewRound[];
 }
 
 // =============================================================
-// Execution Records (Phase 5)
+// Execution Records
 // =============================================================
 
 export type ExecutionRecordType = "rlaunch" | "rjob" | "local";
@@ -769,7 +862,7 @@ export interface PersistedExecutionRecord {
 }
 
 // =============================================================
-// DAG Validation (Phase 7)
+// DAG Validation
 // =============================================================
 
 export type DAGErrorType = "cycle" | "orphan" | "dangling" | "duplicate";
@@ -786,35 +879,13 @@ export interface DAGValidationResult {
 }
 
 // =============================================================
-// Consistency Check (Phase 8)
+// Consistency Check
 // =============================================================
 
 export interface ConsistencyReport {
   valid: boolean;
   warnings: string[];
   errors: string[];
-}
-
-// =============================================================
-// Phase Handler Types (Phase 12)
-// =============================================================
-
-export interface PhaseContext {
-  session: DeepResearchSession;
-  nodes: DeepResearchNode[];
-  artifacts: DeepResearchArtifact[];
-  messages: DeepResearchMessage[];
-  requirementState: RequirementState | null;
-  languageState: LanguageState | null;
-  config: DeepResearchConfig;
-  abortSignal?: AbortSignal;
-}
-
-export interface PhaseResult {
-  nextPhase?: Phase;
-  nodesCreated: DeepResearchNode[];
-  artifactsCreated: DeepResearchArtifact[];
-  checkpoint?: CheckpointPackage;
 }
 
 // =============================================================
@@ -888,21 +959,6 @@ export interface EvidenceSufficiencyReport {
   canSynthesize: boolean;
   /** Missing topics that need re-retrieval. */
   missingTopics: string[];
-}
-
-// =============================================================
-// Scientific Review Config
-// =============================================================
-
-export interface ScientificReviewConfig {
-  /** Max review rounds before forced decision (default 3). */
-  maxRounds: number;
-  /** Convergence threshold: early stop if all dimension diffs ≤ this (default 1). */
-  convergenceThreshold: number;
-  /** Minimum passing score per dimension (default 3). */
-  minimumDimensionScore: number;
-  /** Early stop if both reviewers pass all dimensions with no critical blockers. */
-  earlyStopOnAllPassing: boolean;
 }
 
 // =============================================================
@@ -994,151 +1050,16 @@ export interface ClaimMap {
 }
 
 // =============================================================
-// Scientific Review — Dimension-based audit
-// =============================================================
-
-export type ReviewDimension =
-  | "problem_definition"
-  | "literature_grounding"
-  | "mechanism_validity"
-  | "baseline_coverage"
-  | "falsifiability"
-  | "metric_design"
-  | "compute_feasibility"
-  | "data_feasibility"
-  | "engineering_readiness"
-  | "domain_mismatch_risk"
-  | "novelty_positioning"
-  | "reproducibility"
-  | "overclaiming_risk";
-
-export interface DimensionScore {
-  dimension: ReviewDimension;
-  score: number; // 1-5
-  justification: string;
-  suggestedImprovement?: string;
-}
-
-export type ScientificVerdict = "pass" | "revise" | "experimental_pivot" | "reject";
-
-export interface ScientificBlocker {
-  issue: string;
-  severity: "critical" | "major" | "minor";
-  whyItMatters: string;
-  evidenceForIssue: string;
-  repairAction: string;
-  passCondition: string;
-}
-
-export interface RepairPath {
-  blockerId: string;
-  action: string;
-  estimatedEffort: "low" | "medium" | "high";
-  prerequisite?: string;
-}
-
-export interface ScientificReviewPacket {
-  reviewerRole: "reviewer_a" | "reviewer_b";
-  round: number;
-  dimensions: DimensionScore[];
-  overallScore: number;
-  verdict: ScientificVerdict;
-  criticalBlockers: ScientificBlocker[];
-  majorIssues: ScientificBlocker[];
-  minorSuggestions: string[];
-  repairPaths: RepairPath[];
-  passConditions: string[];
-  /** Tracked issues with persistent IDs across rounds. */
-  trackedIssues?: ReviewIssue[];
-  /** Anti-pattern flags detected in the synthesis. */
-  antiPatternFlags?: AntiPatternFlag[];
-}
-
-export interface ScientificReviewResult {
-  canProceed: boolean;
-  proceedConditions: string[];
-  actionableRepairs: RepairPath[];
-  dimensionAggregates: Record<ReviewDimension, { avgScore: number; trend: "improving" | "stable" | "declining" }>;
-  rounds: Array<{
-    round: number;
-    reviewerAPacket: ScientificReviewPacket;
-    reviewerBPacket: ScientificReviewPacket;
-  }>;
-  convergedAtRound: number | null;
-  finalVerdict: ScientificVerdict;
-  /** Consolidated issue ledger across all rounds. */
-  issueLedger?: ReviewIssue[];
-  /** Whether progression was acceptance-gated (vs max-rounds-reached). */
-  acceptanceGated: boolean;
-}
-
-// =============================================================
-// Issue Tracking — Persistent across review rounds
-// =============================================================
-
-export type ReviewIssueStatus =
-  | "open"
-  | "partially_resolved"
-  | "resolved"
-  | "deferred"
-  | "blocked";
-
-export interface ReviewIssue {
-  /** Persistent ID across rounds (e.g., "ISS-001"). */
-  issueId: string;
-  /** Round this issue was first raised. */
-  raisedInRound: number;
-  /** Which reviewer raised it. */
-  raisedBy: "reviewer_a" | "reviewer_b";
-  /** Current status. */
-  status: ReviewIssueStatus;
-  severity: "critical" | "major" | "minor";
-  /** Short summary of the issue. */
-  title: string;
-  /** Detailed description. */
-  description: string;
-  /** What needs to happen to resolve this issue. */
-  resolutionCriteria: string;
-  /** History of status changes across rounds. */
-  statusHistory: Array<{
-    round: number;
-    status: ReviewIssueStatus;
-    note: string;
-  }>;
-  /** Linked blocker IDs if this issue maps to a ScientificBlocker. */
-  linkedBlockerIds?: string[];
-}
-
-// =============================================================
-// Anti-Pattern Detection
-// =============================================================
-
-export type AntiPatternType =
-  | "citation_hallucination"
-  | "benchmark_mismatch"
-  | "metric_cherry_picking"
-  | "unfounded_generalization"
-  | "missing_ablation"
-  | "dataset_contamination_risk"
-  | "p_hacking_risk"
-  | "survivorship_bias"
-  | "scope_creep"
-  | "circular_reasoning";
-
-export interface AntiPatternFlag {
-  pattern: AntiPatternType;
-  /** Where in the synthesis this was detected. */
-  location: string;
-  /** Description of the specific instance. */
-  description: string;
-  severity: "critical" | "major" | "minor";
-  /** Suggested fix. */
-  suggestedFix: string;
-}
-
-// =============================================================
 // Synthesizer-Facing Revision Request
 // =============================================================
+
+export interface ReviewPatternFlag {
+  pattern: string;
+  location: string;
+  description: string;
+  severity: "critical" | "major" | "minor";
+  suggestedFix: string;
+}
 
 export interface ReviewRevisionRequest {
   /** ID of the review round that produced this request. */
@@ -1150,7 +1071,7 @@ export interface ReviewRevisionRequest {
   /** The ClaimMap artifact ID being revised. */
   targetClaimMapId: string;
   /** Anti-patterns to fix. */
-  antiPatternsToFix: AntiPatternFlag[];
+  antiPatternsToFix: ReviewPatternFlag[];
 }
 
 export interface RevisionPoint {
@@ -1230,26 +1151,6 @@ export interface SkillRoutingDecision {
   reasoning: string;
   nodeSpecs: NodeCreationSpec[];
 }
-
-// =============================================================
-// Stage numbering helpers
-// =============================================================
-
-/** Map phase to its canonical stage number. */
-export const PHASE_STAGE_NUMBER: Record<Phase, number> = {
-  intake: 0,
-  planning: 1,
-  evidence_collection: 2,
-  literature_synthesis: 3,
-  reviewer_deliberation: 4,
-  decision: 5,
-  additional_literature: 6,
-  validation_planning: 7,
-  resource_acquisition: 8,
-  experiment_execution: 9,
-  validation_review: 10,
-  final_report: 11,
-};
 
 // =============================================================
 // Execution Pipeline — Full experiment lifecycle
@@ -1959,7 +1860,7 @@ export interface WorkerFanoutPlan {
   }>;
   /** Total number of workers to create. */
   totalWorkers: number;
-  /** How many can run in parallel. */
+  /** Maximum serialized worker slots. Deep research currently runs one at a time. */
   maxParallel: number;
   /** Whether to run a pilot worker first. */
   pilotFirst: boolean;

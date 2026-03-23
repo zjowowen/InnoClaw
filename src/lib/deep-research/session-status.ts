@@ -10,7 +10,6 @@ export const ACTIVE_SESSION_STATUSES = createStatusSet<SessionStatus>([
   "awaiting_resource",
   "literature_in_progress",
   "planning_in_progress",
-  "reviewer_battle_in_progress",
   "execution_in_progress",
   "validation_planning_in_progress",
 ]);

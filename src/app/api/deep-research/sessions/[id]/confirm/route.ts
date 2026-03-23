@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runManager } from "@/lib/deep-research/run-manager";
 import type { ConfirmationOutcome } from "@/lib/deep-research/types";
+import { appendEvent, updateSession } from "@/lib/deep-research/event-store";
+import { ensureInterfaceShell, isInterfaceOnlySession } from "@/lib/deep-research/interface-shell";
+import { runManager } from "@/lib/deep-research/run-manager";
 import {
-  conflict,
   handleDeepResearchRouteError,
   isRecord,
   parseOptionalString,
@@ -19,6 +20,14 @@ const VALID_OUTCOMES: ConfirmationOutcome[] = [
   "rejected",
   "stopped",
 ];
+
+const EVENT_BY_OUTCOME: Record<ConfirmationOutcome, "user_confirmed" | "user_requested_revision" | "user_requested_branch" | "user_rejected_result" | "user_requested_stop"> = {
+  confirmed: "user_confirmed",
+  revision_requested: "user_requested_revision",
+  branch_requested: "user_requested_branch",
+  rejected: "user_rejected_result",
+  stopped: "user_requested_stop",
+};
 
 /**
  * POST /api/deep-research/sessions/[id]/confirm
@@ -46,22 +55,46 @@ export async function POST(req: NextRequest, { params }: DeepResearchRouteParams
     }
 
     const session = await requireSession(sessionId);
+    if (isInterfaceOnlySession(session)) {
+      await ensureInterfaceShell(session);
+      await updateSession(sessionId, {
+        status: "paused",
+        contextTag: "planning",
+        error: null,
+      });
+      await appendEvent(sessionId, EVENT_BY_OUTCOME[outcome as ConfirmationOutcome], nodeId, "user", "user", undefined, {
+        outcome,
+        feedback,
+        ignored: true,
+        interfaceOnly: true,
+      });
 
-    if (session.status !== "awaiting_user_confirmation") {
-      conflict(`Session is not awaiting confirmation (status: ${session.status})`);
+      return NextResponse.json({
+        started: false,
+        running: false,
+        applied: false,
+        message: "Confirmation was recorded, but deep-research execution is disabled in interface-only mode.",
+      });
     }
 
-    // Start the resume-after-confirmation flow (runs as detached promise)
+    if (session.status !== "awaiting_user_confirmation") {
+      return NextResponse.json(
+        { error: `Session is not awaiting confirmation (status: ${session.status})` },
+        { status: 409 },
+      );
+    }
+
     const started = runManager.resumeAfterConfirmation(
       sessionId,
       nodeId,
       outcome as ConfirmationOutcome,
-      feedback
+      feedback,
     );
 
     return NextResponse.json({
       started,
       running: runManager.isRunning(sessionId),
+      applied: true,
     });
   } catch (error) {
     return handleDeepResearchRouteError(error, "Failed to process confirmation");

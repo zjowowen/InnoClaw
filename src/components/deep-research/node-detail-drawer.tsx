@@ -21,6 +21,7 @@ import {
   serializeTranscriptPayload,
   type NodeTranscriptKind,
 } from "@/lib/deep-research/node-transcript";
+import { getNodeDisplayLabel, getStructuredRoleDisplayName } from "@/lib/deep-research/role-registry";
 import type {
   DeepResearchMessage,
   DeepResearchNode,
@@ -256,7 +257,7 @@ export function NodeDetailDrawer({
   if (!node) return null;
 
   const statusInfo = STATUS_BADGES[node.status] || STATUS_BADGES.pending;
-  const actorLabel = node.assignedRole.replace(/_/g, " ");
+  const actorLabel = getStructuredRoleDisplayName(node.assignedRole, node.nodeType);
   const canSendMessage = Boolean(onSendMessage);
 
   const handleSendTranscriptMessage = async () => {
@@ -291,19 +292,13 @@ export function NodeDetailDrawer({
       <SheetContent side="right" className="w-[500px] sm:w-[620px] border-l-2 p-0 shadow-[-18px_0_48px_rgba(15,23,42,0.14)]">
         <SheetHeader className="px-4 py-3 border-b">
           <div className="flex items-center gap-2">
-            <SheetTitle className="text-sm flex-1 truncate">{node.label}</SheetTitle>
+            <SheetTitle className="text-sm flex-1 truncate">{getNodeDisplayLabel(node.label)}</SheetTitle>
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{node.nodeType}</span>
             <span>&middot;</span>
-            <span>{node.assignedRole}</span>
-            {node.phase && (
-              <>
-                <span>&middot;</span>
-                <Badge variant="outline" className="text-[9px]">{node.phase}</Badge>
-              </>
-            )}
+            <span>{getStructuredRoleDisplayName(node.assignedRole, node.nodeType)}</span>
             {node.assignedModel && (
               <>
                 <span>&middot;</span>
@@ -494,7 +489,7 @@ export function NodeDetailDrawer({
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={handleDraftKeyDown}
-              placeholder={`Message ${node.label}...`}
+              placeholder={`Message ${getNodeDisplayLabel(node.label)}...`}
               className="min-h-[84px] resize-none text-xs"
               disabled={!canSendMessage || sending}
             />

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CheckCircle,
   XCircle,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import type { DeepResearchArtifact } from "@/lib/deep-research/types";
 import type { ConfirmationOutcome } from "@/lib/deep-research/types";
-import { PHASE_STAGE_NUMBER, type Phase } from "@/lib/deep-research/types";
 
 interface MainBrainAuditData {
   whatWasCompleted: string;
@@ -34,14 +32,17 @@ interface MainBrainAuditData {
 interface LiteratureRoundInfo {
   roundNumber: number;
   papersCollected: number;
+  retrievalTaskCount: number;
+  successfulTaskCount: number;
+  failedTaskCount: number;
+  emptyTaskCount: number;
   coverageSummary: string;
 }
 
-interface ReviewerBattleInfo {
+interface ReviewInfo {
   combinedVerdict: string;
   combinedConfidence: number;
-  agreements: string[];
-  disagreements: string[];
+  reviewerSummary?: string;
   needsMoreLiterature: boolean;
   needsExperimentalValidation: boolean;
 }
@@ -52,22 +53,37 @@ interface ExecutionInfo {
   currentStatus: string;
 }
 
+interface RecommendedWorkerInfo {
+  roleId: string;
+  roleName: string;
+  nodeType: string;
+  label: string;
+}
+
+interface PromptUsedInfo {
+  title: string;
+  kind: string;
+  objective: string;
+}
+
 interface CheckpointData {
   title: string;
   humanSummary: string;
   currentFindings: string;
   openQuestions: string[];
   recommendedNextAction: string;
+  recommendedWorker?: RecommendedWorkerInfo;
+  promptUsed?: PromptUsedInfo;
   continueWillDo?: string;
   alternativeNextActions: string[];
   artifactsToReview: string[];
-  phase: string;
+  contextTag: string;
   stepType: string;
   mainBrainAudit?: MainBrainAuditData;
   literatureRoundInfo?: LiteratureRoundInfo;
-  reviewerBattleInfo?: ReviewerBattleInfo;
+  reviewInfo?: ReviewInfo;
   executionInfo?: ExecutionInfo;
-  transitionAction?: { nextPhase: string; description: string };
+  transitionAction?: { nextContextTag: string; description: string };
   evidenceStatusNote?: string;
   emptyStreams?: string[];
   successStreams?: string[];
@@ -109,9 +125,6 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
         <span className="text-sm font-semibold flex-1 text-amber-900 dark:text-amber-100">
           {checkpoint.title}
         </span>
-        <Badge variant="outline" className="text-[10px] shrink-0">
-          Stage {PHASE_STAGE_NUMBER[checkpoint.phase as Phase] ?? "?"} — {checkpoint.phase}
-        </Badge>
         {expanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -160,11 +173,11 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
             </div>
           )}
 
-          {/* Main Brain Audit */}
+          {/* Researcher Audit */}
           {checkpoint.mainBrainAudit && (
             <div className="p-2 border rounded space-y-2">
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold">Main Brain Assessment:</span>
+                <span className="font-semibold">Researcher Assessment:</span>
                 <Badge
                   variant="outline"
                   className={`text-[10px] ${
@@ -198,17 +211,32 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
               <Badge variant="secondary" className="text-[10px]">
                 Lit. Round {checkpoint.literatureRoundInfo.roundNumber}
               </Badge>
-              <span>{checkpoint.literatureRoundInfo.papersCollected} papers collected</span>
+              <span>
+                {checkpoint.literatureRoundInfo.papersCollected} papers across {checkpoint.literatureRoundInfo.retrievalTaskCount} retrieval task(s)
+              </span>
+              <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                {checkpoint.literatureRoundInfo.successfulTaskCount} with evidence
+              </Badge>
+              {checkpoint.literatureRoundInfo.emptyTaskCount > 0 && (
+                <Badge variant="outline" className="text-[10px] text-orange-600 border-orange-300">
+                  {checkpoint.literatureRoundInfo.emptyTaskCount} empty
+                </Badge>
+              )}
+              {checkpoint.literatureRoundInfo.failedTaskCount > 0 && (
+                <Badge variant="outline" className="text-[10px] text-red-600 border-red-300">
+                  {checkpoint.literatureRoundInfo.failedTaskCount} failed
+                </Badge>
+              )}
             </div>
           )}
 
-          {checkpoint.reviewerBattleInfo && (
+          {checkpoint.reviewInfo && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary" className="text-[10px]">
-                Reviewers: {checkpoint.reviewerBattleInfo.combinedVerdict}
+                Reviewer: {checkpoint.reviewInfo.combinedVerdict}
               </Badge>
-              <span>Confidence: {((checkpoint.reviewerBattleInfo.combinedConfidence) * 100).toFixed(0)}%</span>
-              {checkpoint.reviewerBattleInfo.needsMoreLiterature && (
+              <span>Confidence: {((checkpoint.reviewInfo.combinedConfidence) * 100).toFixed(0)}%</span>
+              {checkpoint.reviewInfo.needsMoreLiterature && (
                 <Badge variant="outline" className="text-[10px] text-amber-600">Need more lit.</Badge>
               )}
             </div>
@@ -260,6 +288,31 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
               <span className="text-green-700 dark:text-green-300">{checkpoint.recommendedNextAction}</span>
             </div>
           </div>
+
+          {checkpoint.recommendedWorker && (
+            <div className="flex items-start gap-2 p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded text-xs">
+              <ArrowRight className="h-3 w-3 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+              <div>
+                <span className="font-medium text-emerald-800 dark:text-emerald-200">Next worker: </span>
+                <span className="text-emerald-700 dark:text-emerald-300">
+                  {checkpoint.recommendedWorker.roleName} ({checkpoint.recommendedWorker.nodeType}) - {checkpoint.recommendedWorker.label}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {checkpoint.promptUsed && (
+            <div className="flex items-start gap-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded text-xs">
+              <FileText className="h-3 w-3 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+              <div>
+                <span className="font-medium text-slate-800 dark:text-slate-200">Prompt used: </span>
+                <span className="text-slate-700 dark:text-slate-300">{checkpoint.promptUsed.title}</span>
+                <div className="mt-1 text-muted-foreground">
+                  {checkpoint.promptUsed.kind} - {checkpoint.promptUsed.objective}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Alternative actions */}
           {checkpoint.alternativeNextActions.length > 0 && (

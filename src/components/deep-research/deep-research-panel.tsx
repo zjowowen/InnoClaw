@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -29,14 +29,15 @@ import { SessionList } from "./session-list";
 import { IntakeScreen } from "./intake-screen";
 import { ResearchChat } from "./research-chat";
 import { FinalReportView } from "./final-report-view";
-import { PhaseProgress } from "./phase-progress";
 import { WorkflowGraph } from "./workflow-graph";
 import { NodeDetailDrawer } from "./node-detail-drawer";
 import { DeleteSessionDialog } from "./delete-session-dialog";
 import { RequirementPanel } from "./requirement-panel";
-import { ReviewerBattlePanel } from "./reviewer-battle-panel";
+import { ReviewPanel } from "./review-panel";
 import { ExecutionStatusPanel } from "./execution-status-panel";
-import type { ConfirmationOutcome, ReviewerBattleResultExtended, RequirementState, Phase } from "@/lib/deep-research/types";
+import { WorkbenchPanel } from "./workbench-panel";
+import { RoleStudioPanel } from "./role-studio-panel";
+import type { ConfirmationOutcome, ReviewAssessmentExtended, RequirementState } from "@/lib/deep-research/types";
 import {
   canStartSession,
   isActiveSessionStatus,
@@ -45,7 +46,7 @@ import {
 } from "@/lib/deep-research/session-status";
 
 type PanelView = "list" | "intake" | "session";
-type TabView = "chat" | "requirements" | "reviewers" | "execution";
+type TabView = "chat" | "roles" | "requirements" | "reviewers" | "execution" | "workbench";
 type SessionMessageOptions = {
   relatedNodeId?: string;
   metadata?: Record<string, unknown>;
@@ -54,13 +55,19 @@ type SessionMessageOptions = {
 
 interface DeepResearchPanelProps {
   workspaceId: string;
+  onOpenAgent?: () => void;
+  onOpenPaperStudy?: () => void;
+  onOpenCluster?: () => void;
+  onOpenResearchExec?: () => void;
 }
 
 const TAB_LABELS: Record<TabView, string> = {
   chat: "Chat",
+  roles: "Roles",
   requirements: "Requirements",
   reviewers: "Reviewers",
   execution: "Execution",
+  workbench: "Workbench",
 };
 
 async function readErrorMessage(response: Response, fallback: string): Promise<string> {
@@ -68,7 +75,13 @@ async function readErrorMessage(response: Response, fallback: string): Promise<s
   return (data && typeof data.error === "string" && data.error) || fallback;
 }
 
-export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
+export function DeepResearchPanel({
+  workspaceId,
+  onOpenAgent,
+  onOpenPaperStudy,
+  onOpenCluster,
+  onOpenResearchExec,
+}: DeepResearchPanelProps) {
   const [view, setView] = useState<PanelView>("list");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -86,6 +99,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
   const activeSessionPath = activeSessionId ? `/api/deep-research/sessions/${activeSessionId}` : null;
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const isInterfaceOnly = session?.config.interfaceOnly === true;
 
   const requirementState = useMemo(() => {
     const artifact = artifacts.find((candidate) => {
@@ -98,19 +112,12 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
     return (artifact?.content as { requirementState?: RequirementState } | undefined)?.requirementState ?? null;
   }, [artifacts]);
 
-  const battleResult = useMemo(() => {
-    const latestBattleArtifact = [...artifacts]
+  const reviewResult = useMemo(() => {
+    const latestReviewArtifact = [...artifacts]
       .reverse()
-      .find((artifact) => artifact.artifactType === "reviewer_battle_result");
-    return latestBattleArtifact?.content as ReviewerBattleResultExtended | null | undefined ?? null;
+      .find((artifact) => artifact.artifactType === "review_assessment");
+    return latestReviewArtifact?.content as ReviewAssessmentExtended | null | undefined ?? null;
   }, [artifacts]);
-
-  // Auto-switch tab based on phase
-  const autoTabForPhase = useCallback((phase: string) => {
-    if (phase === "reviewer_deliberation" || phase === "validation_review") return "reviewers";
-    if (phase === "experiment_execution" || phase === "resource_acquisition") return "execution";
-    return null;
-  }, []);
 
   const runSessionRequest = useCallback(
     async <T,>(
@@ -223,7 +230,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
   const handleApprove = useCallback(
     async (nodeId: string, approved: boolean, feedback?: string) => {
-      const response = await runSessionRequest<{ success: boolean }>(
+      const response = await runSessionRequest<{ success: boolean; message?: string; applied?: boolean }>(
         "/approve",
         {
           method: "POST",
@@ -234,6 +241,9 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
       );
       if (response) {
         await mutateSession();
+        if (response.message) {
+          toast(response.message);
+        }
       }
     },
     [mutateSession, runSessionRequest],
@@ -241,7 +251,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
   const handleConfirm = useCallback(
     async (nodeId: string, outcome: ConfirmationOutcome, feedback?: string) => {
-      const response = await runSessionRequest<{ started: boolean; running: boolean }>(
+      const response = await runSessionRequest<{ started: boolean; running: boolean; message?: string; applied?: boolean }>(
         "/confirm",
         {
           method: "POST",
@@ -252,6 +262,10 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
       );
       if (response) {
         await mutateSession();
+        if (response.message) {
+          toast(response.message);
+          return;
+        }
         toast.success(
           outcome === "confirmed"
             ? "Confirmed — continuing research"
@@ -265,47 +279,28 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
   );
 
   const handleStartRun = useCallback(async () => {
-    const response = await runSessionRequest<{ started: boolean; running: boolean }>(
+    const response = await runSessionRequest<{ started: boolean; running: boolean; disabled?: boolean; message?: string }>(
       "/run",
       { method: "POST" },
       "Failed to start research",
     );
     if (response) {
       await mutateSession();
+      if (response.disabled) {
+        toast(response.message ?? "Deep Research is running in interface-only mode.");
+        return;
+      }
       toast.success("Research started");
     }
   }, [mutateSession, runSessionRequest]);
 
-  const handlePhaseAction = useCallback(
-    async (phase: Phase, action: "run" | "skip", successLabel: string, fallbackError: string) => {
-      const response = await runSessionRequest<{ phase: Phase; started?: boolean; skipped?: Phase }>(
-        "/run",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ targetPhase: phase, action }),
-        },
-        fallbackError,
-      );
-      if (response) {
-        await mutateSession();
-        toast.success(`${successLabel}: ${phase}`);
-      }
-    },
-    [mutateSession, runSessionRequest],
-  );
-
-  const handleRunPhase = useCallback(async (phase: Phase) => {
-    await handlePhaseAction(phase, "run", "Running phase", "Failed to run phase");
-  }, [handlePhaseAction]);
-
-  const handleSkipPhase = useCallback(async (phase: Phase) => {
-    await handlePhaseAction(phase, "skip", "Skipped phase", "Failed to skip phase");
-  }, [handlePhaseAction]);
-
   const handleNodeSelect = useCallback((nodeId: string) => {
     setSelectedNodeId(nodeId);
     setDrawerOpen(true);
+  }, []);
+
+  const handleRoleNodeSelect = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
   }, []);
 
   const handleBindProfile = useCallback(
@@ -342,21 +337,6 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
     };
   }, [session]);
 
-  const completedPhases = useMemo(
-    () => new Set(nodes.filter((node) => node.status === "completed").map((node) => node.phase)),
-    [nodes],
-  );
-
-  useEffect(() => {
-    if (!session) {
-      return;
-    }
-    const nextTab = autoTabForPhase(session.phase);
-    if (nextTab && nextTab !== activeTab) {
-      setActiveTab(nextTab);
-    }
-  }, [activeTab, autoTabForPhase, session]);
-
   if (view === "intake") {
     return (
       <IntakeScreen
@@ -379,7 +359,6 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
   }
 
   const {
-    isRunning,
     isAwaitingConfirmation,
     isCompleted,
     isFailed,
@@ -410,7 +389,14 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
         <div className="flex-1" />
 
-        {canStart && !isFailed && (
+        {isInterfaceOnly && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
+            Interface shell only
+          </div>
+        )}
+
+        {!isInterfaceOnly && canStart && !isFailed && (
           <Button size="sm" className="h-7 px-2 gap-1" onClick={handleStartRun}>
             <Play className="h-3 w-3" />
             <span className="text-xs">{session.status === "intake" ? "Start" : "Resume"}</span>
@@ -431,7 +417,7 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
           </div>
         )}
 
-        {isFailed && (
+        {!isInterfaceOnly && isFailed && (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
               <div className="h-2 w-2 rounded-full bg-red-500" />
@@ -480,25 +466,14 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
       {/* Main content */}
       <div className="flex-1 min-h-0">
-        <ResizablePanelGroup orientation="horizontal">
-          {/* Left: Tabs + Content */}
-          <ResizablePanel defaultSize={45} minSize={25}>
+        <ResizablePanelGroup orientation="vertical">
+          {/* Top: Tabs + Content */}
+          <ResizablePanel defaultSize={58} minSize={30}>
             <div className="flex flex-col h-full">
               {isCompleted ? (
                 <FinalReportView session={session} artifacts={artifacts} />
               ) : (
                 <>
-                  <PhaseProgress
-                    currentPhase={session.phase}
-                    sessionStatus={session.status}
-                    budget={session.budget}
-                    budgetLimits={session.config.budget}
-                    completedPhases={completedPhases}
-                    onRunPhase={handleRunPhase}
-                    onSkipPhase={handleSkipPhase}
-                    isRunning={isRunning}
-                    resolvedModel={session.config.resolvedModel ?? null}
-                  />
                   {/* Tab bar */}
                   <div className="flex gap-0.5 px-2 py-1 border-b border-border/50 bg-muted/20 shrink-0">
                     {(Object.keys(TAB_LABELS) as TabView[]).map((tab) => (
@@ -528,19 +503,37 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
                         onConfirm={handleConfirm}
                       />
                     )}
+                    {activeTab === "roles" && (
+                      <RoleStudioPanel
+                        nodes={nodes}
+                        artifacts={artifacts}
+                        selectedNode={selectedNode}
+                        resolvedModel={session.config.resolvedModel ?? null}
+                        onSelectRoleNode={handleRoleNodeSelect}
+                        onSendMessage={handleSendMessage}
+                      />
+                    )}
                     {activeTab === "requirements" && (
                       <RequirementPanel requirementState={requirementState} />
                     )}
                     {activeTab === "reviewers" && (
-                      <ReviewerBattlePanel battleResult={battleResult} />
+                      <ReviewPanel reviewResult={reviewResult} />
                     )}
                     {activeTab === "execution" && (
                       <ExecutionStatusPanel
                         executions={executions}
                         workspaceId={workspaceId}
-                        sessionId={activeSessionId}
                         remoteProfileId={session.remoteProfileId}
                         onBindProfile={handleBindProfile}
+                      />
+                    )}
+                    {activeTab === "workbench" && (
+                      <WorkbenchPanel
+                        selectedNode={selectedNode}
+                        onOpenAgent={onOpenAgent}
+                        onOpenPaperStudy={onOpenPaperStudy}
+                        onOpenCluster={onOpenCluster}
+                        onOpenResearchExec={onOpenResearchExec}
                       />
                     )}
                   </div>
@@ -551,8 +544,8 @@ export function DeepResearchPanel({ workspaceId }: DeepResearchPanelProps) {
 
           <ResizableHandle withHandle />
 
-          {/* Right: Workflow graph */}
-          <ResizablePanel defaultSize={55} minSize={25}>
+          {/* Bottom: Workflow graph */}
+          <ResizablePanel defaultSize={42} minSize={20}>
             <WorkflowGraph nodes={nodes} onNodeSelect={handleNodeSelect} />
           </ResizablePanel>
         </ResizablePanelGroup>
