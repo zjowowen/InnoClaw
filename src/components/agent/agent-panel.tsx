@@ -25,8 +25,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useSkills } from "@/lib/hooks/use-skills";
-import { getOverflowThresholdChars, getMessageTextLength, getContextWindowChars, PROVIDERS, DEFAULT_PROVIDER, DEFAULT_MODEL, DEFAULT_CONTEXT_MODE } from "@/lib/ai/models";
+import { getOverflowThresholdChars, getMessageTextLength, getContextWindowChars, modelSupportsVision, PROVIDERS, DEFAULT_PROVIDER, DEFAULT_MODEL, DEFAULT_CONTEXT_MODE } from "@/lib/ai/models";
 import type { ProviderId } from "@/lib/ai/models";
 import { SkillAutocomplete } from "@/components/skills/skill-autocomplete";
 import { SkillParameterDialog } from "@/components/skills/skill-parameter-dialog";
@@ -335,6 +336,11 @@ export function AgentPanel({
     const model = provider?.models.find((m) => m.id === selectedModel);
     return model?.name ?? selectedModel;
   }, [selectedProvider, selectedModel, t]);
+
+  const selectedSupportsVision = useMemo(() => {
+    if (!selectedProvider || !selectedModel) return null;
+    return modelSupportsVision(selectedProvider, selectedModel);
+  }, [selectedProvider, selectedModel]);
 
   const availableProviders = useMemo(() => {
     const configured = settings?.configuredProviders as string[] | undefined;
@@ -1189,12 +1195,24 @@ export function AgentPanel({
           {/* Model selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-agent-accent hover:bg-agent-card-hover transition-colors mt-1.5 max-w-[120px]">
+              <button className="flex items-center gap-1.5 shrink-0 rounded px-1.5 py-0.5 text-xs text-agent-accent hover:bg-agent-card-hover transition-colors mt-1.5 max-w-[220px]">
                 <span className="truncate">{modelDisplayName}</span>
+                {typeof selectedSupportsVision === "boolean" && (
+                  <Badge
+                    variant="outline"
+                    className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                      selectedSupportsVision
+                        ? "border-emerald-500/40 text-emerald-300"
+                        : "border-amber-500/40 text-amber-300"
+                    }`}
+                  >
+                    {selectedSupportsVision ? tCommon("multimodal") : tCommon("textOnly")}
+                  </Badge>
+                )}
                 <ChevronDown className="h-3 w-3 shrink-0" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+            <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto">
               <DropdownMenuLabel className="text-xs">{t("modelLabel")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {availableProviders.map((provider) => (
@@ -1207,7 +1225,19 @@ export function AgentPanel({
                   >
                     {provider.models.map((model: { id: string; name: string }) => (
                       <DropdownMenuRadioItem key={model.id} value={model.id}>
-                        {model.name}
+                        <div className="flex w-full items-center justify-between gap-2">
+                          <span className="truncate">{model.name}</span>
+                          <Badge
+                            variant="outline"
+                            className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                              modelSupportsVision(provider.id, model.id)
+                                ? "border-emerald-500/40 text-emerald-300"
+                                : "border-amber-500/40 text-amber-300"
+                            }`}
+                          >
+                            {modelSupportsVision(provider.id, model.id) ? tCommon("multimodal") : tCommon("textOnly")}
+                          </Badge>
+                        </div>
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>

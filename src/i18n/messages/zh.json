@@ -21,7 +21,9 @@
     "workspace": "工作区",
     "datasets": "数据集",
     "minimalMode": "极简模式",
-    "exitMinimalMode": "退出极简模式"
+    "exitMinimalMode": "退出极简模式",
+    "multimodal": "多模态",
+    "textOnly": "文本"
   },
   "home": {
     "title": "我的工作空间",

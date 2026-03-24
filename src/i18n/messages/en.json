@@ -21,7 +21,9 @@
     "workspace": "Workspace",
     "datasets": "Datasets",
     "minimalMode": "Minimal Mode",
-    "exitMinimalMode": "Exit Minimal Mode"
+    "exitMinimalMode": "Exit Minimal Mode",
+    "multimodal": "Multimodal",
+    "textOnly": "Text"
   },
   "home": {
     "title": "My Workspaces",

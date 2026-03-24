@@ -133,6 +133,7 @@ function buildLanguageModel(provider: string, modelId: string): LanguageModel {
  */
 export async function getConfiguredModelWithProvider(): Promise<{
   providerId: string;
+  modelId: string;
   model: LanguageModel;
 }> {
   const settings = await db
@@ -146,7 +147,7 @@ export async function getConfiguredModelWithProvider(): Promise<{
   const provider = providerRow?.value || DEFAULT_PROVIDER;
   const modelId = modelRow?.value || DEFAULT_MODEL;
 
-  return { providerId: provider, model: buildLanguageModel(provider, modelId) };
+  return { providerId: provider, modelId, model: buildLanguageModel(provider, modelId) };
 }
 
 /**

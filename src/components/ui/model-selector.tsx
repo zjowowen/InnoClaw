@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,9 +12,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import useSWR from "swr";
 import { swrFetcher } from "@/lib/fetcher";
-import { PROVIDERS, type ProviderId } from "@/lib/ai/models";
+import { modelSupportsVision, PROVIDERS, type ProviderId } from "@/lib/ai/models";
 
 interface ModelSelectorProps {
   storageKey: string;
@@ -105,6 +107,7 @@ export function ModelSelector({
   className,
   onModelChange,
 }: ModelSelectorProps) {
+  const tCommon = useTranslations("common");
   const {
     selectedProvider,
     selectedModel,
@@ -121,17 +124,34 @@ export function ModelSelector({
     [handleModelChange, onModelChange]
   );
 
+  const selectedSupportsVision = useMemo(() => {
+    if (!selectedProvider || !selectedModel) return null;
+    return modelSupportsVision(selectedProvider, selectedModel);
+  }, [selectedProvider, selectedModel]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors max-w-[140px] ${className ?? ""}`}
+          className={`flex items-center gap-1.5 shrink-0 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors max-w-[220px] ${className ?? ""}`}
         >
           <span className="truncate">{modelDisplayName || label}</span>
+          {typeof selectedSupportsVision === "boolean" && (
+            <Badge
+              variant="outline"
+              className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                selectedSupportsVision
+                  ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                  : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+              }`}
+            >
+              {selectedSupportsVision ? tCommon("multimodal") : tCommon("textOnly")}
+            </Badge>
+          )}
           <ChevronDown className="h-3 w-3 shrink-0" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+      <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto">
         <DropdownMenuLabel className="text-xs">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {availableProviders.map((provider) => (
@@ -145,7 +165,19 @@ export function ModelSelector({
             >
               {provider.models.map((model: { id: string; name: string }) => (
                 <DropdownMenuRadioItem key={model.id} value={model.id}>
-                  {model.name}
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span className="truncate">{model.name}</span>
+                    <Badge
+                      variant="outline"
+                      className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                        modelSupportsVision(provider.id, model.id)
+                          ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                          : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                      }`}
+                    >
+                      {modelSupportsVision(provider.id, model.id) ? tCommon("multimodal") : tCommon("textOnly")}
+                    </Badge>
+                  </div>
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
