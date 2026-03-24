@@ -47,9 +47,17 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 
 <!-- whats-new-start -->
 
+#### 2026-03-24
+- **Support LLM multimodal**: Les flux de recherche de documents et d'agents prennent desormais en charge les LLM standard et multimodaux (mLLM), selectionnables par contexte dans les parametres et le selecteur de modele.
+
+
 #### 2026-03-23
 - **Apercu d'importation de competences GitHub**: Nouveau flux de previsualisation avant importation permettant de parcourir, examiner et importer selectivement des competences depuis des depots GitHub
 
+
+
+<details>
+<summary>Afficher les mises a jour precedentes</summary>
 
 #### 2026-03-22
 - **Export de notes Obsidian**: Generez des notes structurees compatibles Obsidian avec frontmatter YAML enrichi, figures et wikilinks directement depuis le panneau d'etude de l'article
@@ -58,8 +66,6 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 
 
 
-<details>
-<summary>Afficher les mises a jour precedentes</summary>
 
 #### 2026-03-21
 - **Execution HPC/SLURM distante**: Les sessions de recherche approfondie peuvent desormais s'executer sur des clusters distants via SSH, avec prise en charge de rjob, rlaunch et SLURM, ainsi que la gestion du cycle de vie des taches
@@ -70,9 +76,11 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 
 
 
+
 #### 2026-03-20
 - **Module de recherche approfondie**: Pipeline de recherche scientifique entierement pilote par IA avec orchestration multi-phases, deliberation des evaluateurs, planification d'execution et interface graphique de flux de travail
 - **Pipeline d'execution**: Systeme d'execution d'experiences automatise avec soumission de jobs Slurm, gestion de jeux de donnees, preprocessement et support d'executeurs distants
+
 
 
 
@@ -90,9 +98,11 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 
 
 
+
 #### 2026-03-18
 - **Vision Multimodale pour l'Analyse d'Articles**: Les images PDF sont desormais extraites et analysees visuellement lors des sessions de discussion et d'ideation de recherche
 - **Integration des Competences Claude Code**: Importez des competences directement depuis des dossiers locaux ou des projets Claude Code via un nouveau flux d'importation dedie
+
 
 
 
@@ -113,10 +123,12 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 
 
 
+
 #### 2026-03-17
 - **Gestion des profils de jobs distants et durcissement SSH** : prise en charge de la creation, de l'edition et de l'envoi securise de jobs de recherche via SSH
 - **Rendu Markdown riche dans le panneau Agent** : les messages Agent affichent maintenant tableaux, formules LaTeX et blocs de code avec coloration syntaxique
 - **UI de configuration des fournisseurs API** : configuration directe des cles API et endpoints des fournisseurs IA depuis la page Settings
+
 
 
 
@@ -130,17 +142,6 @@ Il s'adresse aux chercheurs, developpeurs, laboratoires et adeptes du self-hosti
 - **Edition des profils** : le bouton d'edition dans l'onglet Remotes recharge le profil existant dans le formulaire, y compris tous les champs rjob.
 - **Raccourci de soumission directe** : en mode Agent-Long, les soumissions simples peuvent sauter inspect/patch/sync et suivre `listRemoteProfiles -> prepareJobSubmission -> approval -> submitRemoteJob`.
 
-
-
-
-
-
-
-
-#### 2026-03-16
-- **Robustesse des discussions d'articles et de l'ideation** : budget de tokens par role augmente de 2 a 2.5x, reessai automatique sur reponses vides ou trop courtes, et erreurs visibles dans l'UI
-- **Contexte article complet** : les agents de discussion et d'ideation recoivent jusqu'a 30k caracteres du texte complet local de l'article, et pas seulement le resume
-- **Correction de l'extraction d'abstract** : extraction heuristique via regex et meilleur prompt IA pour eviter de prendre les noms d'auteurs pour le resume
 
 
 
