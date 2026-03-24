@@ -1,4 +1,4 @@
-import path from "path";
+import type { ArticleSource } from "@/lib/article-search/types";
 import { validatePath } from "@/lib/files/filesystem";
 import { extractText, isSupportedFile, normalizeText } from "@/lib/files/text-extractor";
 import { resolvePaperPdfBuffer } from "@/lib/article-search/paper-content";
@@ -13,7 +13,7 @@ export type { PaperContentPart } from "@/lib/files/pdf-image-extractor";
 
 interface ArticleRef {
   url: string;
-  source: "arxiv" | "huggingface" | "semantic-scholar" | "local";
+  source: ArticleSource;
   pdfUrl?: string;
 }
 

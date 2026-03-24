@@ -5,8 +5,10 @@ import { extractText, isSupportedFile, normalizeText } from "@/lib/files/text-ex
 import { extractPdfText } from "@/lib/files/pdf-parser";
 import {
   buildArxivPdfUrl,
+  buildBioRxivPdfUrl,
   extractArxivIdFromUrl,
   normalizeArxivUrl,
+  normalizeBioRxivUrl,
 } from "./url-utils";
 
 export interface PaperRef {
@@ -30,6 +32,9 @@ function normalizeUrlForSource(url: string, source: ArticleSource): string {
   if (source === "arxiv") {
     return normalizeArxivUrl(url);
   }
+  if (source === "biorxiv") {
+    return normalizeBioRxivUrl(url);
+  }
   return url;
 }
 
@@ -43,6 +48,10 @@ export function resolvePaperPdfUrl(paper: PaperRef): string | undefined {
     if (arxivId) {
       return buildArxivPdfUrl(arxivId);
     }
+  }
+
+  if (paper.source === "biorxiv") {
+    return buildBioRxivPdfUrl(paper.url);
   }
 
   return undefined;

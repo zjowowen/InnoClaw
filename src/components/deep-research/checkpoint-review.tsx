@@ -87,6 +87,7 @@ interface CheckpointData {
   evidenceStatusNote?: string;
   emptyStreams?: string[];
   successStreams?: string[];
+  interactionMode?: "confirmation" | "answer_required";
 }
 
 interface CheckpointReviewProps {
@@ -100,6 +101,7 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [showFindings, setShowFindings] = useState(false);
+  const isAnswerRequired = checkpoint.interactionMode === "answer_required";
 
   const relatedArtifacts = artifacts.filter((a) =>
     checkpoint.artifactsToReview.includes(a.id)
@@ -272,7 +274,9 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
             <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950/50 rounded text-xs">
               <ArrowRight className="h-3 w-3 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
               <div>
-                <span className="font-medium text-blue-800 dark:text-blue-200">Continue will: </span>
+                <span className="font-medium text-blue-800 dark:text-blue-200">
+                  {isAnswerRequired ? "Next step after your reply: " : "Continue will: "}
+                </span>
                 <span className="text-blue-700 dark:text-blue-300">
                   {checkpoint.transitionAction?.description || checkpoint.continueWillDo || checkpoint.mainBrainAudit?.continueWillDo}
                 </span>
@@ -333,67 +337,73 @@ export function CheckpointReview({ checkpoint, artifacts, onConfirm }: Checkpoin
             </div>
           )}
 
-          {/* Feedback input */}
-          <Textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Optional: Add feedback, instructions, or corrections..."
-            className="text-sm min-h-[60px] max-h-[120px] resize-none bg-background"
-            rows={2}
-          />
+          {isAnswerRequired ? (
+            <div className="rounded border border-amber-300 bg-amber-100/60 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+              This checkpoint is waiting for your reply in chat. Once you answer the clarification questions below, the Researcher will resume automatically.
+            </div>
+          ) : (
+            <>
+              <Textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Optional: Add feedback, instructions, or corrections..."
+                className="text-sm min-h-[60px] max-h-[120px] resize-none bg-background"
+                rows={2}
+              />
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="h-7 px-3 text-xs gap-1.5"
-              onClick={() => handleAction("confirmed")}
-              disabled={submitting}
-            >
-              <CheckCircle className="h-3.5 w-3.5" />
-              Continue
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-3 text-xs gap-1.5"
-              onClick={() => handleAction("revision_requested")}
-              disabled={submitting}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Revise
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-3 text-xs gap-1.5"
-              onClick={() => handleAction("branch_requested")}
-              disabled={submitting}
-            >
-              <GitBranch className="h-3.5 w-3.5" />
-              Branch
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-3 text-xs gap-1.5 text-red-600"
-              onClick={() => handleAction("rejected")}
-              disabled={submitting}
-            >
-              <XCircle className="h-3.5 w-3.5" />
-              Reject
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-3 text-xs gap-1.5 text-red-600"
-              onClick={() => handleAction("stopped")}
-              disabled={submitting}
-            >
-              <Square className="h-3.5 w-3.5" />
-              Stop
-            </Button>
-          </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs gap-1.5"
+                  onClick={() => handleAction("confirmed")}
+                  disabled={submitting}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Continue
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-3 text-xs gap-1.5"
+                  onClick={() => handleAction("revision_requested")}
+                  disabled={submitting}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Revise
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-3 text-xs gap-1.5"
+                  onClick={() => handleAction("branch_requested")}
+                  disabled={submitting}
+                >
+                  <GitBranch className="h-3.5 w-3.5" />
+                  Branch
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-3 text-xs gap-1.5 text-red-600"
+                  onClick={() => handleAction("rejected")}
+                  disabled={submitting}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Reject
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-3 text-xs gap-1.5 text-red-600"
+                  onClick={() => handleAction("stopped")}
+                  disabled={submitting}
+                >
+                  <Square className="h-3.5 w-3.5" />
+                  Stop
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

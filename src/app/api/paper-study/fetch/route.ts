@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Article } from "@/lib/article-search/types";
+import { buildBioRxivPdfUrl } from "@/lib/article-search/url-utils";
 
 const ARXIV_API_URL = "https://export.arxiv.org/api/query";
 const SEMANTIC_SCHOLAR_API = "https://api.semanticscholar.org/graph/v1/paper/search";
@@ -94,6 +95,25 @@ interface S2Paper {
   openAccessPdf: { url: string } | null;
 }
 
+function detectSourceFromPaper(paper: S2Paper): Article["source"] {
+  if (paper.externalIds?.ArXiv) {
+    return "arxiv";
+  }
+
+  const url = paper.url || "";
+  const pdfUrl = paper.openAccessPdf?.url || "";
+
+  if (/biorxiv\.org/i.test(url) || /biorxiv\.org/i.test(pdfUrl)) {
+    return "biorxiv";
+  }
+
+  if (/pubmed\.ncbi\.nlm\.nih\.gov/i.test(url) || paper.externalIds?.PubMed) {
+    return "pubmed";
+  }
+
+  return "semantic-scholar";
+}
+
 /**
  * Search for papers using the Semantic Scholar Academic Graph API.
  * Free, no API key required. Covers arXiv, ACL, IEEE, PubMed, etc.
@@ -129,13 +149,18 @@ async function searchByTitle(title: string): Promise<Article[]> {
       .filter((p) => p.title)
       .map((p) => {
         const arxivId = p.externalIds?.ArXiv;
-        const pdfUrl =
-          p.openAccessPdf?.url ||
-          (arxivId ? `https://arxiv.org/pdf/${arxivId}` : undefined);
+        const source = detectSourceFromPaper(p);
         const articleUrl =
           arxivId
             ? `https://arxiv.org/abs/${arxivId}`
             : p.url || `https://www.semanticscholar.org/paper/${p.paperId}`;
+        const pdfUrl =
+          p.openAccessPdf?.url ||
+          (arxivId
+            ? `https://arxiv.org/pdf/${arxivId}`
+            : source === "biorxiv" && articleUrl
+              ? buildBioRxivPdfUrl(articleUrl)
+              : undefined);
 
         return {
           id: arxivId || p.paperId,
@@ -145,7 +170,7 @@ async function searchByTitle(title: string): Promise<Article[]> {
           url: articleUrl,
           pdfUrl,
           publishedDate: p.publicationDate || (p.year ? `${p.year}` : ""),
-          source: "arxiv" as const, // display as arxiv if has arxiv id
+          source,
         };
       });
   } catch (err) {

@@ -40,6 +40,8 @@ import type {
   ReviewAssessment,
   LanguageState,
   RequirementState,
+  BrainDecision,
+  CheckpointInteractionMode,
 } from "./types";
 import { VALID_CONTEXT_TAGS } from "./types";
 
@@ -475,6 +477,7 @@ async function routeNextAction(session: DeepResearchSession, abortSignal?: Abort
       languageState,
       abortSignal,
       executed.isFinalStep,
+      "confirmation",
     );
     return;
   }
@@ -495,6 +498,7 @@ async function routeNextAction(session: DeepResearchSession, abortSignal?: Abort
     languageState,
     abortSignal,
     researcherStep.isFinalStep,
+    researcherStep.interactionMode,
   );
 }
 
@@ -602,6 +606,7 @@ async function createResearcherDispatchStep(
   completedNode: DeepResearchNode;
   suggestedNextContextTag: ContextTag;
   isFinalStep: boolean;
+  interactionMode: CheckpointInteractionMode;
 }> {
   const workstationContext = await buildWorkstationPlanningContext(session, messages);
   const decision = await callMainBrain(
@@ -616,6 +621,7 @@ async function createResearcherDispatchStep(
     decision.nodesToCreate ?? [],
     session.contextTag,
   );
+  const interactionMode = resolveCheckpointInteractionMode(decision, plannedNodesToCreate);
 
   if (droppedSpecs.length > 0) {
     await store.addMessage(
@@ -647,6 +653,7 @@ async function createResearcherDispatchStep(
         completedNode: blockedNode,
         suggestedNextContextTag: resolveLegacyContextFromNodes(nodes, session.contextTag),
         isFinalStep: false,
+        interactionMode: "confirmation",
       };
     }
 
@@ -660,7 +667,7 @@ async function createResearcherDispatchStep(
       },
       contextTag: "final_report",
     });
-    return executeApprovedNode(
+    const executed = await executeApprovedNode(
       session,
       finalReportNode,
       [...nodes, finalReportNode],
@@ -669,6 +676,10 @@ async function createResearcherDispatchStep(
       languageState,
       abortSignal,
     );
+    return {
+      ...executed,
+      interactionMode: "confirmation",
+    };
   }
 
   const suggestedNextContextTag = resolveContextTagFromSpecs(
@@ -681,13 +692,16 @@ async function createResearcherDispatchStep(
     "audit",
     plannedNodesToCreate.length > 0
       ? "Researcher coordination proposal"
-      : "Researcher coordination audit",
+      : interactionMode === "answer_required"
+        ? "Researcher clarification request"
+        : "Researcher coordination audit",
     {
       decision,
       workstationContext,
       proposedNodeSpecs: plannedNodesToCreate,
       suggestedNextContextTag,
       requiresUserConfirmation: true,
+      interactionMode,
     },
     suggestedNextContextTag,
   );
@@ -705,6 +719,7 @@ async function createResearcherDispatchStep(
         proposedNodeSpecs: plannedNodesToCreate,
         suggestedNextContextTag,
         requiresUserConfirmation: true,
+        interactionMode,
         decision,
       },
     );
@@ -716,6 +731,7 @@ async function createResearcherDispatchStep(
     completedNode,
     suggestedNextContextTag,
     isFinalStep: false,
+    interactionMode,
   };
 }
 
@@ -874,7 +890,8 @@ async function generateCheckpointAndHalt(
   suggestedNextContextTag: ContextTag,
   languageState: LanguageState,
   abortSignal?: AbortSignal,
-  isFinalStep = false
+  isFinalStep = false,
+  interactionMode: CheckpointInteractionMode = "confirmation",
 ): Promise<void> {
   const freshNodes = await store.getNodes(session.id);
   const freshNode = freshNodes.find(n => n.id === completedNode.id) ?? completedNode;
@@ -897,9 +914,11 @@ async function generateCheckpointAndHalt(
     nextContextTag: suggestedNextContextTag,
     nodesToCreate: [],
     nodesToSupersede: [],
-    description: plannedNodeCount > 0
-      ? `If you confirm this Researcher proposal, ${plannedNodeCount} task(s) will be authorized and the Researcher will continue coordination from ${suggestedNextContextTag}.`
-      : `Resume the session and let the Researcher choose the next work dynamically. Current recommendation: ${suggestedNextContextTag}.`,
+    description: interactionMode === "answer_required"
+      ? "Wait for the user to answer the Researcher's clarification questions in chat before any further work."
+      : plannedNodeCount > 0
+        ? `If you confirm this Researcher proposal, ${plannedNodeCount} task(s) will be authorized and the Researcher will continue coordination from ${suggestedNextContextTag}.`
+        : `Resume the session and let the Researcher choose the next work dynamically. Current recommendation: ${suggestedNextContextTag}.`,
   };
 
   // If this is flagged as final step, verify completion is actually allowed
@@ -963,6 +982,7 @@ async function generateCheckpointAndHalt(
     continueWillDo: transitionAction.description,
     alternativeNextActions: checkpointContent.alternativeNextActions || [],
     requiresUserConfirmation: true,
+    interactionMode,
     isFinalStep,
     transitionAction,
     literatureRoundInfo: session.literatureRound > 0 && literatureSummary ? {
@@ -989,7 +1009,9 @@ async function generateCheckpointAndHalt(
 
   const audit = checkpointPkg.mainBrainAudit;
   const auditSuffix = audit
-    ? `\n\n**Assessment:** ${audit.resultAssessment}\n**Recommended:** ${audit.recommendedNextAction}\n**"Continue" will:** ${checkpointPkg.continueWillDo}`
+    ? interactionMode === "answer_required"
+      ? `\n\n**Assessment:** ${audit.resultAssessment}\n**Recommended:** ${audit.recommendedNextAction}\n**Reply required:** Answer the Researcher's clarification questions in chat before any task will continue.`
+      : `\n\n**Assessment:** ${audit.resultAssessment}\n**Recommended:** ${audit.recommendedNextAction}\n**"Continue" will:** ${checkpointPkg.continueWillDo}`
     : "";
   await store.addMessage(
     session.id,
@@ -999,6 +1021,16 @@ async function generateCheckpointAndHalt(
     freshNode.id,
     checkpointPkg.artifactsToReview
   );
+}
+
+function resolveCheckpointInteractionMode(
+  decision: BrainDecision,
+  plannedNodesToCreate: NodeCreationSpec[],
+): CheckpointInteractionMode {
+  if (decision.action === "respond_to_user" && plannedNodesToCreate.length === 0) {
+    return "answer_required";
+  }
+  return "confirmation";
 }
 
 async function generateCheckpointContent(

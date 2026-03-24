@@ -233,6 +233,7 @@ export function ResearchChat({
                 reviewInfo?: { combinedVerdict: string; combinedConfidence: number; needsMoreLiterature: boolean; needsExperimentalValidation: boolean };
                 executionInfo?: { stepsCompleted: number; stepsTotal: number; currentStatus: string };
                 transitionAction?: { nextContextTag: string; description: string };
+                interactionMode?: "confirmation" | "answer_required";
               }}
               artifacts={artifacts}
               onConfirm={handleCheckpointConfirm}

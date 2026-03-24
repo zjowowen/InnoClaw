@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addMessage, createArtifact, getNode } from "@/lib/deep-research/event-store";
+import { addMessage, createArtifact, getArtifact, getNode, updateSession } from "@/lib/deep-research/event-store";
 import { ensureInterfaceShell, isInterfaceOnlySession } from "@/lib/deep-research/interface-shell";
+import { runManager } from "@/lib/deep-research/run-manager";
 import {
   buildHandoffMessage,
   buildHandoffPacket,
@@ -25,7 +26,7 @@ import {
   requireSession,
   type DeepResearchRouteParams,
 } from "@/lib/deep-research/api-helpers";
-import type { ModelRole } from "@/lib/deep-research/types";
+import type { CheckpointPackage, ModelRole } from "@/lib/deep-research/types";
 
 type NodeMessageRequest = {
   content: string;
@@ -98,12 +99,27 @@ async function createStructuredArtifacts(
   return [artifact.id];
 }
 
+async function shouldResumeAfterUserReply(session: Awaited<ReturnType<typeof requireSession>>): Promise<boolean> {
+  if (session.status !== "awaiting_user_confirmation" || !session.pendingCheckpointId) {
+    return false;
+  }
+
+  const checkpointArtifact = await getArtifact(session.pendingCheckpointId);
+  if (!checkpointArtifact || checkpointArtifact.artifactType !== "checkpoint") {
+    return false;
+  }
+
+  const checkpoint = checkpointArtifact.content as Partial<CheckpointPackage>;
+  return checkpoint.interactionMode === "answer_required";
+}
+
 export async function POST(req: NextRequest, { params }: DeepResearchRouteParams) {
   try {
     const sessionId = await readSessionId(params);
     const session = await requireSession(sessionId);
     const { content, relatedNodeId, metadata, relatedArtifactIds } = await parseNodeMessageRequest(req);
     if (!isInterfaceOnlySession(session)) {
+      const resumeAfterReply = await shouldResumeAfterUserReply(session);
       const message = await addMessage(
         sessionId,
         "user",
@@ -113,7 +129,22 @@ export async function POST(req: NextRequest, { params }: DeepResearchRouteParams
         relatedArtifactIds && relatedArtifactIds.length > 0 ? relatedArtifactIds : undefined,
       );
 
-      return NextResponse.json({ message }, { status: 201 });
+      let started = false;
+      if (resumeAfterReply) {
+        await updateSession(sessionId, {
+          status: "running",
+          pendingCheckpointId: null,
+        });
+        started = runManager.isRunning(sessionId) ? false : runManager.startRun(sessionId);
+      }
+
+      return NextResponse.json({
+        message,
+        autoAction: {
+          mode: resumeAfterReply ? "resume_after_reply" : "none",
+          started,
+        },
+      }, { status: 201 });
     }
 
     const shell = await ensureInterfaceShell(session);

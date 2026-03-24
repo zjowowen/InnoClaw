@@ -626,6 +626,8 @@ export interface BrainDecision {
   reasoning?: string;
 }
 
+export type CheckpointInteractionMode = "confirmation" | "answer_required";
+
 export interface NodeCreationSpec {
   nodeType: NodeType;
   label: string;
@@ -669,6 +671,7 @@ export interface CheckpointPackage {
   continueWillDo: string;
   alternativeNextActions: string[];
   requiresUserConfirmation: boolean;
+  interactionMode?: CheckpointInteractionMode;
   isFinalStep?: boolean;
   /** Computed transition action from TransitionResolver. */
   transitionAction?: TransitionAction;

@@ -1,6 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 import {
+  ALL_ARTICLE_SOURCES,
+  SEARCHABLE_ARTICLE_SOURCES,
   searchArticles as doSearchArticles,
   findRelatedArticles,
 } from "@/lib/article-search";
@@ -26,7 +28,7 @@ export function createSearchTools() {
   return {
     searchArticles: tool({
       description:
-        "Search for academic articles from arXiv, Semantic Scholar, and Hugging Face Daily Papers. " +
+        "Search for academic articles from arXiv, Semantic Scholar, Hugging Face Daily Papers, bioRxiv, PubMed, and PubChem-linked literature. " +
         "Returns matching articles with title, authors, abstract, link, and date. " +
         "Supports keyword search with optional date filtering. " +
         "After displaying results, users can ask for a detailed summary of specific articles and related article recommendations.",
@@ -58,16 +60,16 @@ export function createSearchTools() {
               "Only return articles published before this date (ISO 8601, e.g. '2025-12-31')"
             ),
           sources: z
-            .array(z.enum(["arxiv", "huggingface", "semantic-scholar"]))
+            .array(z.enum(SEARCHABLE_ARTICLE_SOURCES))
             .optional()
             .describe(
-              "Data sources to search (default: all three — 'arxiv', 'huggingface', and 'semantic-scholar')"
+              "Data sources to search (default: all supported paper sources)"
             ),
           findRelatedTo: z
             .object({
               id: z.string(),
               title: z.string(),
-              source: z.enum(["arxiv", "huggingface", "semantic-scholar"]),
+              source: z.enum(SEARCHABLE_ARTICLE_SOURCES),
             })
             .optional()
             .describe(
@@ -145,7 +147,7 @@ export function createSearchTools() {
             .optional()
             .describe("Direct PDF URL when available; arXiv links will be normalized to HTTPS"),
           source: z
-            .enum(["arxiv", "huggingface", "semantic-scholar", "local"])
+            .enum(ALL_ARTICLE_SOURCES)
             .describe("Source of the paper"),
           maxChars: z
             .number()

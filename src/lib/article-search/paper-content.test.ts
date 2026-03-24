@@ -26,6 +26,13 @@ describe("paper-content", () => {
         source: "arxiv",
       }),
     ).toBe("https://arxiv.org/pdf/1706.03762");
+
+    expect(
+      resolvePaperPdfUrl({
+        url: "http://www.biorxiv.org/content/10.1101/2025.01.01.123456v1",
+        source: "biorxiv",
+      }),
+    ).toBe("https://www.biorxiv.org/content/10.1101/2025.01.01.123456v1.full.pdf");
   });
 
   it("downloads and reads an arxiv paper over https", async () => {

@@ -8,7 +8,10 @@ import {
   buildMainBrainSystemPrompt,
 } from "./prompts";
 import { createSearchTools } from "@/lib/ai/tools/search-tools";
-import { searchArticles as searchArticlesDirect } from "@/lib/article-search";
+import {
+  SEARCHABLE_ARTICLE_SOURCES,
+  searchArticles as searchArticlesDirect,
+} from "@/lib/article-search";
 import { buildEvidenceCardFromToolResults } from "./evidence-cards";
 import type {
   DeepResearchNode,
@@ -555,7 +558,7 @@ async function maybeRunDeterministicSearchFallback(
     const searchResult = await searchArticlesDirect({
       keywords,
       maxResults: Math.min(Math.max(maxSources, 1), 10),
-      sources: ["arxiv", "huggingface", "semantic-scholar"],
+      sources: [...SEARCHABLE_ARTICLE_SOURCES],
     });
     return [{
       output: {
