@@ -3,9 +3,13 @@ name: Sync to private repo
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Daily Change Summary"]
+    types: [completed]
 
 jobs:
   sync:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
