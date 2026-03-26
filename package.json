@@ -23,7 +23,7 @@
     "url": "https://github.com/SpectrAI-Initiative/InnoClaw/issues"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "predev": "node scripts/check-deps.js",

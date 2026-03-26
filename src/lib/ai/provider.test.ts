@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 /**
  * Unit tests for getPerModelProvider base-URL resolution in provider.ts.
@@ -30,14 +33,20 @@ vi.mock("@/lib/db/schema", () => ({ appSettings: {} }));
 
 describe("getPerModelProvider – base URL resolution", () => {
   const originalEnv = { ...process.env };
+  let tmpDir: string;
 
   beforeEach(() => {
     process.env = { ...originalEnv };
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "innoclaw-provider-test-"));
+    vi.spyOn(process, "cwd").mockReturnValue(tmpDir);
     createOpenAISpy.mockClear();
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    if (tmpDir) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   /**
@@ -61,6 +70,7 @@ describe("getPerModelProvider – base URL resolution", () => {
     vi.doMock("@/lib/db/schema", () => ({ appSettings: {} }));
 
     const mod = await import("./provider");
+    createOpenAISpy.mockClear();
     return mod.getModelFromOverride(provider, model);
   }
 
@@ -87,6 +97,19 @@ describe("getPerModelProvider – base URL resolution", () => {
     expect(createOpenAISpy).toHaveBeenCalledWith(
       expect.objectContaining({
         baseURL: "https://vendor.example.com/v1",
+      }),
+    );
+  });
+
+  it("supports dynamic per-model env keys for models not listed in PROVIDERS", async () => {
+    process.env.QWEN_API_KEY = "sk-test";
+    process.env.QWEN_QWEN3_5_35B_BASE_URL = "https://35b.example.com/v1";
+
+    await callGetModelFromOverride("qwen", "qwen3.5-35b");
+
+    expect(createOpenAISpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseURL: "https://35b.example.com/v1",
       }),
     );
   });

@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 /**
  * Unit tests for the /api/models route helper functions.
@@ -20,15 +23,20 @@ let GET: (req: unknown) => Promise<Response>;
 describe("/api/models", () => {
   const originalEnv = { ...process.env };
   const fetchSpy = vi.fn();
+  let tmpDir: string;
 
   beforeEach(async () => {
     // Reset env
     process.env = { ...originalEnv };
+    fetchSpy.mockReset();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "innoclaw-models-route-"));
+    vi.spyOn(process, "cwd").mockReturnValue(tmpDir);
 
     // Mock global fetch used inside the route handler
     vi.stubGlobal("fetch", fetchSpy);
 
     // Dynamically import so env vars are read at import time
+    vi.resetModules();
     const mod = await import("@/app/api/models/route");
     GET = mod.GET as (req: unknown) => Promise<Response>;
   });
@@ -36,6 +44,9 @@ describe("/api/models", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     process.env = originalEnv;
+    if (tmpDir) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("returns 400 when OPENAI_API_KEY is missing (openai provider)", async () => {
@@ -196,5 +207,55 @@ describe("/api/models", () => {
         headers: { Authorization: "Bearer sk-test" },
       }),
     );
+  });
+
+  it("aggregates models across per-model Qwen base URLs from .env.local", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, ".env.local"),
+      [
+        "QWEN_API_KEY=none",
+        "QWEN_QWEN3_5_35B_BASE_URL=http://106.75.244.215:8000/v1",
+        "QWEN_QWEN3_5_122B_BASE_URL=http://106.75.244.215:8001/v1",
+        "",
+      ].join("\n"),
+    );
+
+    fetchSpy
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: "qwen3.5-35b", owned_by: "qwen" }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: "qwen3.5-122b", owned_by: "qwen" }],
+        }),
+      });
+
+    const req = new FakeNextRequest("http://localhost/api/models?provider=qwen");
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.models).toEqual([
+      { id: "qwen3.5-122b", name: "qwen3.5-122b" },
+      { id: "qwen3.5-35b", name: "qwen3.5-35b" },
+    ]);
+    const requestedUrls = fetchSpy.mock.calls.map(([url]) => url);
+    expect(requestedUrls).toEqual(
+      expect.arrayContaining([
+        "http://106.75.244.215:8000/v1/models",
+        "http://106.75.244.215:8001/v1/models",
+      ]),
+    );
+    for (const [, options] of fetchSpy.mock.calls) {
+      expect(options).toEqual(
+        expect.objectContaining({
+          headers: { Authorization: "Bearer none" },
+        }),
+      );
+    }
   });
 });

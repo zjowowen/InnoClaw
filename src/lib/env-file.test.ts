@@ -105,3 +105,20 @@ describe("updateEnvLocal", () => {
     expect(content).not.toContain("LLM_MODEL=current");
   });
 });
+
+describe("readEnvLocal", () => {
+  it("reads uncommented keys and strips surrounding quotes", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, ".env.local"),
+      '# comment\nFOO="bar"\nBAZ=\'qux\'\nEMPTY=\n',
+    );
+
+    const { readEnvLocal } = await import("./env-file");
+
+    expect(readEnvLocal()).toEqual({
+      FOO: "bar",
+      BAZ: "qux",
+      EMPTY: "",
+    });
+  });
+});

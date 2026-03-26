@@ -8,7 +8,7 @@ Before you begin, ensure you have the following installed:
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| **Node.js** | 18+ (20+ recommended) | Runtime environment |
+| **Node.js** | 24+ LTS recommended, 25 Current supported | Runtime environment |
 | **npm** | Included with Node.js | Package manager |
 | **Git** | Any recent version | Required for GitHub clone/pull features |
 

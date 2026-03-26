@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { PROVIDERS, CONTEXT_MODES } from "@/lib/ai/models";
+import { modelSupportsVision, PROVIDERS, CONTEXT_MODES } from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 import { ScheduledTasksCard } from "@/components/scheduled-tasks/scheduled-tasks-card";
 import { useStyleTheme } from "@/lib/hooks/use-style-theme";
@@ -273,6 +273,10 @@ export default function SettingsPage() {
 
   const providerModels =
     PROVIDERS[provider as keyof typeof PROVIDERS]?.models || [];
+  const selectedKnownModel = providerModels.find((m) => m.id === model);
+  const selectedKnownModelSupportsVision = selectedKnownModel
+    ? modelSupportsVision(provider, selectedKnownModel.id)
+    : null;
 
   // Merge hardcoded models with remote models, avoiding duplicates
   const hardcodedIds = new Set<string>(providerModels.map((m) => m.id));
@@ -448,12 +452,36 @@ export default function SettingsPage() {
                     <SelectContent>
                       {providerModels.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
-                          {m.name}
+                          <div className="flex w-full items-center justify-between gap-2">
+                            <span>{m.name}</span>
+                            <Badge
+                              variant="outline"
+                              className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                                modelSupportsVision(provider, m.id)
+                                  ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                                  : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                              }`}
+                            >
+                              {modelSupportsVision(provider, m.id) ? tCommon("multimodal") : tCommon("textOnly")}
+                            </Badge>
+                          </div>
                         </SelectItem>
                       ))}
                       {extraRemote.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
-                          {m.name}
+                          <div className="flex w-full items-center justify-between gap-2">
+                            <span>{m.name}</span>
+                            <Badge
+                              variant="outline"
+                              className={`shrink-0 px-1 py-0 text-[10px] leading-4 ${
+                                modelSupportsVision(provider, m.id)
+                                  ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                                  : "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                              }`}
+                            >
+                              {modelSupportsVision(provider, m.id) ? tCommon("multimodal") : tCommon("textOnly")}
+                            </Badge>
+                          </div>
                         </SelectItem>
                       ))}
                       <SelectItem value="__custom__">
@@ -461,6 +489,11 @@ export default function SettingsPage() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  {typeof selectedKnownModelSupportsVision === "boolean" && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedKnownModelSupportsVision ? tCommon("multimodal") : tCommon("textOnly")}
+                    </p>
+                  )}
                   {model === "__custom__" && (
                     <Input
                       value={customModel}

@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
-  <a href="package.json"><img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white" alt="Node.js 20+"></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/Node.js-24%2B%20(LTS)%20%7C%2025%20Current-339933?logo=node.js&logoColor=white" alt="Node.js 24+ LTS or 25 Current"></a>
   <a href="https://github.com/SpectrAI-Initiative/InnoClaw/actions/workflows/ci.yml"><img src="https://github.com/SpectrAI-Initiative/InnoClaw/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
   <a href="https://SpectrAI-Initiative.github.io/InnoClaw/"><img src="https://img.shields.io/badge/Docs-Online-blue?logo=gitbook&logoColor=white" alt="Online Docs"></a>
   <a href="https://github.com/SpectrAI-Initiative/InnoClaw/stargazers"><img src="https://img.shields.io/github/stars/SpectrAI-Initiative/InnoClaw?style=flat&logo=github" alt="GitHub Stars"></a>
@@ -55,10 +55,28 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 <!-- whats-new-start -->
 
+#### 2026-03-26
+- **Node.js Runtime Update**: InnoClaw now targets Node.js 24+ and is verified against both Node.js 24 LTS and the latest Node.js 25 current release. CI and local version hints have been updated accordingly.
+
+
+#### 2026-03-24
+- **Multimodal LLM Support**: Paper Study and agent workflows now support both standard LLMs and multimodal LLMs (mLLM), selectable per-context in settings and the model selector
+
+
+#### 2026-03-23
+- **GitHub Skills Import Preview**: New pre-import preview workflow lets users browse, review, and selectively import skills from GitHub repositories before committing changes
+
+
+
+<details>
+<summary>Show earlier updates</summary>
+
 #### 2026-03-22
 - **Obsidian Note Export**: Generate structured, Obsidian-compatible paper notes with rich YAML frontmatter, figures, and wikilinks directly from the paper study panel
 - **Per-Task Model Selector**: New model selector UI component lets users override the default AI model for individual paper study tasks (summary, roast, notes, etc.)
 - **Note Discussion View**: New full-page discussion view for paper notes, enabling threaded AI-assisted conversations around generated note content
+
+
 
 
 #### 2026-03-21
@@ -69,8 +87,7 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
-<details>
-<summary>Show earlier updates</summary>
+
 
 #### 2026-03-20
 - **Deep Research Module**: Full AI-driven scientific research pipeline with multi-phase orchestration, reviewer deliberation, execution planning, and workflow graph UI
@@ -80,10 +97,14 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
 #### 2026-03-19
 - **ClawHub Skill Import**: New integration to import skills directly from ClawHub via a dedicated API endpoint and import dialog
 - **Code Preview Panel**: New in-editor code preview component supporting syntax highlighting and save-status tracking
 - **Paper Study Cache**: Persistent caching layer for paper study sessions, improving reload performance and state continuity
+
+
 
 
 
@@ -100,10 +121,14 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
 #### 2026-03-18
 - **Multimodal Vision for Paper Discussion & Ideation**: Vision-capable providers can now receive extracted PDF page images alongside text so discussion and ideation agents can analyze figures, tables, and diagrams.
 - **Paper Pages Gallery UI**: Discussion and ideation panels now show a collapsible thumbnail gallery for extracted paper pages with full-size preview dialogs.
 - **Provider Vision Capability Detection**: Provider configs now expose vision support so routes can switch between multimodal and text-only paper context automatically.
+
+
 
 
 
@@ -123,6 +148,8 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
+
+
 #### 2026-03-17
 - **rjob Profile Config & Submission Hardening**: Remote profiles now store full rjob defaults (image, GPU, CPU, memory, mounts, charged-group, private-machine, env vars, host-network, example commands). `submitRemoteJob` builds the rjob command internally from stored config - the agent can no longer modify flags like `--charged-group` or `--image`. SSH transport fixed with `-o StrictHostKeyChecking=no -tt`, init script sourcing, and double-quote wrapping for correct quoting.
 - **Profile Editing**: Edit button (pencil icon) on remote profiles in the Remotes tab. Click to load profile into the form for updating, including all rjob config fields.
@@ -133,25 +160,6 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 
 
 
-
-
-#### 2026-03-16
-- **Paper Discussion & Ideation Robustness**: Per-role token budgets (2-2.5x increase), automatic retry on empty/short responses, and error visibility in the UI. Fixes agents returning empty or truncated output with reasoning-capable models (SH-Lab, Qwen, etc.)
-- **Full Paper Context**: Discussion and ideation agents now receive up to 30k chars of the full paper text (local files) instead of just the abstract, enabling deeper analysis of methodology, experiments, and results
-- **Abstract Extraction Fix**: Heuristic regex-based abstract extraction with improved AI prompt to prevent extracting author names instead of the actual abstract
-
-
-
-
-
-
-
-
-#### 2026-03-14
-- **Research Execution Engine**: New AI-driven research orchestration system with remote profiles, capability toggles, run history, and agent tools
-- **Auto-updating README "What's New"**: GitHub Actions workflow that automatically generates and commits a What's New section daily
-
-*No entries yet. This section is auto-updated when significant new features are detected by CI.*
 
 
 
@@ -181,6 +189,18 @@ Instead of juggling separate tools for files, notes, literature review, and auto
 <a id="quick-start"></a>
 
 ## 🚀 Quick Start
+
+Runtime requirement:
+- Node.js `24+` required
+- Node.js `24 LTS` recommended for stable deployments
+- Node.js `25 Current` is also supported
+
+If you use `nvm`, you can follow the repo default:
+
+```bash
+nvm install
+nvm use
+```
 
 ```bash
 git clone https://github.com/SpectrAI-Initiative/InnoClaw.git

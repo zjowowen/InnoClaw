@@ -1,18 +1,25 @@
+type ModelDefinition = {
+  id: string;
+  name: string;
+  contextWindow: number;
+  supportsVision?: boolean;
+};
+
 export const PROVIDERS = {
   openai: {
     id: "openai",
     name: "OpenAI",
     models: [
-      { id: "gpt-5.2-chat-latest", name: "GPT-5.2", contextWindow: 256000 },
-      { id: "gpt-4.1", name: "GPT-4.1", contextWindow: 1047576 },
-      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", contextWindow: 1047576 },
-      { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", contextWindow: 1047576 },
-      { id: "gpt-4o", name: "GPT-4o", contextWindow: 128000 },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", contextWindow: 128000 },
-      { id: "o3", name: "o3", contextWindow: 200000 },
-      { id: "o3-mini", name: "o3 Mini", contextWindow: 200000 },
-      { id: "o4-mini", name: "o4 Mini", contextWindow: 200000 },
-    ],
+      { id: "gpt-5.2-chat-latest", name: "GPT-5.2", contextWindow: 256000, supportsVision: true },
+      { id: "gpt-4.1", name: "GPT-4.1", contextWindow: 1047576, supportsVision: true },
+      { id: "gpt-4.1-mini", name: "GPT-4.1 Mini", contextWindow: 1047576, supportsVision: true },
+      { id: "gpt-4.1-nano", name: "GPT-4.1 Nano", contextWindow: 1047576, supportsVision: true },
+      { id: "gpt-4o", name: "GPT-4o", contextWindow: 128000, supportsVision: true },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", contextWindow: 128000, supportsVision: true },
+      { id: "o3", name: "o3", contextWindow: 200000, supportsVision: true },
+      { id: "o3-mini", name: "o3 Mini", contextWindow: 200000, supportsVision: false },
+      { id: "o4-mini", name: "o4 Mini", contextWindow: 200000, supportsVision: true },
+    ] satisfies ModelDefinition[],
     envKey: "OPENAI_API_KEY",
     supportsVision: true,
   },
@@ -24,23 +31,27 @@ export const PROVIDERS = {
         id: "claude-opus-4-6",
         name: "Claude Opus 4.6",
         contextWindow: 200000,
+        supportsVision: true,
       },
       {
         id: "claude-sonnet-4-20250514",
         name: "Claude Sonnet 4",
         contextWindow: 200000,
+        supportsVision: true,
       },
       {
         id: "claude-3-7-sonnet-20250219",
         name: "Claude 3.7 Sonnet",
         contextWindow: 200000,
+        supportsVision: true,
       },
       {
         id: "claude-3-5-haiku-20241022",
         name: "Claude 3.5 Haiku",
         contextWindow: 200000,
+        supportsVision: true,
       },
-    ],
+    ] satisfies ModelDefinition[],
     envKey: "ANTHROPIC_API_KEY",
     supportsVision: true,
   },
@@ -52,28 +63,33 @@ export const PROVIDERS = {
         id: "gemini-2.5-flash",
         name: "Gemini 2.5 Flash",
         contextWindow: 1048576,
+        supportsVision: true,
       },
       {
         id: "gemini-2.5-pro",
         name: "Gemini 2.5 Pro",
         contextWindow: 1048576,
+        supportsVision: true,
       },
       {
         id: "gemini-3-flash-preview",
         name: "Gemini 3 Flash",
         contextWindow: 1048576,
+        supportsVision: true,
       },
       {
         id: "gemini-3-pro-preview",
         name: "Gemini 3 Pro",
         contextWindow: 1048576,
+        supportsVision: true,
       },
       {
         id: "gemini-3.1-pro-preview-thinking",
         name: "Gemini 3.1 Pro (Thinking)",
         contextWindow: 1048576,
+        supportsVision: true,
       },
-    ],
+    ] satisfies ModelDefinition[],
     envKey: "GEMINI_API_KEY",
     supportsVision: true,
   },
@@ -81,9 +97,9 @@ export const PROVIDERS = {
     id: "shlab",
     name: "SH-Lab",
     models: [
-      { id: "intern-s1-pro", name: "Intern S1 Pro", contextWindow: 200000 },
-      { id: "intern-s1", name: "Intern S1", contextWindow: 200000 },
-    ],
+      { id: "intern-s1-pro", name: "Intern S1 Pro", contextWindow: 200000, supportsVision: true },
+      { id: "intern-s1", name: "Intern S1", contextWindow: 200000, supportsVision: true },
+    ] satisfies ModelDefinition[],
     envKey: "SHLAB_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -92,9 +108,9 @@ export const PROVIDERS = {
     id: "qwen",
     name: "Qwen",
     models: [
-      { id: "Qwen3-235B", name: "Qwen3 235B", contextWindow: 200000 },
-      { id: "qwen3.5-397b", name: "Qwen 3.5 397B", contextWindow: 200000 },
-    ],
+      { id: "Qwen3-235B", name: "Qwen3 235B", contextWindow: 200000, supportsVision: false },
+      { id: "qwen3.5-397b", name: "Qwen 3.5 397B", contextWindow: 200000, supportsVision: true },
+    ] satisfies ModelDefinition[],
     envKey: "QWEN_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -103,8 +119,8 @@ export const PROVIDERS = {
     id: "moonshot",
     name: "Moonshot",
     models: [
-      { id: "kimi-k2.5", name: "Kimi K2.5", contextWindow: 200000 },
-    ],
+      { id: "kimi-k2.5", name: "Kimi K2.5", contextWindow: 200000, supportsVision: true },
+    ] satisfies ModelDefinition[],
     envKey: "MOONSHOT_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -113,8 +129,8 @@ export const PROVIDERS = {
     id: "deepseek",
     name: "DeepSeek",
     models: [
-      { id: "deepseek-v3.2", name: "DeepSeek V3.2", contextWindow: 200000 },
-    ],
+      { id: "deepseek-v3.2", name: "DeepSeek V3.2", contextWindow: 200000, supportsVision: false },
+    ] satisfies ModelDefinition[],
     envKey: "DEEPSEEK_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -123,8 +139,8 @@ export const PROVIDERS = {
     id: "minimax",
     name: "MiniMax",
     models: [
-      { id: "minimax2.5", name: "MiniMax 2.5", contextWindow: 200000 },
-    ],
+      { id: "minimax2.5", name: "MiniMax 2.5", contextWindow: 200000, supportsVision: false },
+    ] satisfies ModelDefinition[],
     envKey: "MINIMAX_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -133,8 +149,8 @@ export const PROVIDERS = {
     id: "zhipu",
     name: "Zhipu",
     models: [
-      { id: "glm-5", name: "GLM-5", contextWindow: 200000 },
-    ],
+      { id: "glm-5", name: "GLM-5", contextWindow: 200000, supportsVision: false },
+    ] satisfies ModelDefinition[],
     envKey: "ZHIPU_API_KEY",
     supportsTools: true,
     supportsVision: true,
@@ -162,6 +178,33 @@ export function providerSupportsVision(providerId: string): boolean {
   const p = PROVIDERS[providerId as ProviderId];
   if (!p) return false;
   return (p as { supportsVision?: boolean }).supportsVision === true;
+}
+
+/**
+ * Check whether a specific provider/model pair supports vision (image) inputs.
+ * Falls back to provider-level capability when model metadata is absent.
+ */
+export function modelSupportsVision(
+  providerId: string,
+  modelId?: string | null,
+): boolean {
+  const provider = PROVIDERS[providerId as ProviderId];
+  if (!provider) return false;
+
+  if (!modelId) {
+    return providerSupportsVision(providerId);
+  }
+
+  const model = provider.models.find((entry) => entry.id === modelId);
+  if (!model) {
+    return providerSupportsVision(providerId);
+  }
+
+  if (typeof model.supportsVision === "boolean") {
+    return model.supportsVision;
+  }
+
+  return providerSupportsVision(providerId);
 }
 
 /**

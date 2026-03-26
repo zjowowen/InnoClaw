@@ -46,7 +46,7 @@ jobs:
         if: steps.check.outputs.commit_count != '0'
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '25'
 
       - name: Install Copilot CLI
         if: steps.check.outputs.commit_count != '0'

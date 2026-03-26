@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { getConfiguredModelWithProvider, getModelFromOverride, isAIAvailable } from "@/lib/ai/provider";
-import { providerSupportsVision } from "@/lib/ai/models";
+import { modelSupportsVision } from "@/lib/ai/models";
 import { runFullPaperDiscussion } from "@/lib/paper-discussion/orchestrator";
-import { extractPaperContent, extractPaperFullText } from "../extract-paper-content";
+import { buildPaperModelContext } from "../paper-model-context";
 import type { PaperDiscussionSharedContext, DiscussionTurn } from "@/lib/paper-discussion/types";
 
 export async function POST(req: NextRequest) {
@@ -25,17 +25,20 @@ export async function POST(req: NextRequest) {
     }
 
     let providerId: string;
+    let modelId: string | undefined;
     let model;
     if (llmProvider && llmModel) {
       const override = getModelFromOverride(llmProvider, llmModel);
       model = override.model;
       providerId = llmProvider;
+      modelId = llmModel;
     } else {
       const configured = await getConfiguredModelWithProvider();
       model = configured.model;
       providerId = configured.providerId;
+      modelId = configured.modelId;
     }
-    const visionCapable = providerSupportsVision(providerId);
+    const visionCapable = modelSupportsVision(providerId, modelId);
 
     const context: PaperDiscussionSharedContext = {
       article: {
@@ -51,26 +54,9 @@ export async function POST(req: NextRequest) {
       mode,
     };
 
-    // Extract paper content — with images for vision-capable providers
-    if (visionCapable) {
-      const paperContent = await extractPaperContent(article, true, 20);
-      if (paperContent) {
-        context.paperContent = paperContent;
-        // Also set text-only fallback for system prompt / continuation
-        const textOnly = paperContent
-          .filter((p) => p.type === "text")
-          .map((p) => p.text)
-          .join("\n\n");
-        if (textOnly.length > 0) {
-          context.retrievedEvidence = textOnly.slice(0, 30_000);
-        }
-      }
-    } else {
-      const paperText = await extractPaperFullText(article, 30_000);
-      if (paperText) {
-        context.retrievedEvidence = paperText;
-      }
-    }
+    const paperContext = await buildPaperModelContext(article, visionCapable);
+    context.paperContent = paperContext.paperContent;
+    context.retrievedEvidence = paperContext.retrievedEvidence;
 
     // Stream each completed turn as a JSON line
     const encoder = new TextEncoder();
