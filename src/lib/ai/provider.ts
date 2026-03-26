@@ -7,13 +7,20 @@ import { inArray } from "drizzle-orm";
 import { DEFAULT_PROVIDER, DEFAULT_MODEL, PROVIDERS } from "./models";
 import type { ProviderId } from "./models";
 import type { LanguageModel } from "ai";
+import {
+  getApiKeyEnvKey,
+  getCurrentEnv,
+  getPerModelBaseUrlEnvKey,
+  getVendorBaseUrlEnvKey,
+} from "./provider-env";
 
 /**
  * Check if any AI API key is configured.
  * Derived from PROVIDERS so new providers are automatically included.
  */
 export function isAIAvailable(): boolean {
-  return Object.values(PROVIDERS).some((p) => !!process.env[p.envKey]);
+  const env = getCurrentEnv();
+  return Object.values(PROVIDERS).some((p) => !!env[p.envKey]);
 }
 
 /**
@@ -62,23 +69,11 @@ function getPerModelProvider(
   providerId: string,
   modelId: string
 ): LanguageModel {
-  const prefix = providerId.toUpperCase();
+  const env = getCurrentEnv();
   const providerDef = PROVIDERS[providerId as ProviderId];
-  const model = providerDef?.models.find((m) => m.id === modelId);
-  if (!model) {
-    throw new Error(
-      `Configured ${providerDef?.name ?? providerId} model "${modelId}" is unknown. ` +
-        `Please update your llm_model setting or PROVIDERS configuration.`
-    );
-  }
-
-  const perModelEnvVar =
-    prefix +
-    "_" +
-    modelId.toUpperCase().replace(/[^A-Z0-9]/g, "_") +
-    "_BASE_URL";
-  const vendorEnvVar = prefix + "_BASE_URL";
-  const baseURL = process.env[perModelEnvVar] || process.env[vendorEnvVar];
+  const perModelEnvVar = getPerModelBaseUrlEnvKey(providerId, modelId);
+  const vendorEnvVar = getVendorBaseUrlEnvKey(providerId);
+  const baseURL = env[perModelEnvVar] || env[vendorEnvVar];
   if (!baseURL) {
     throw new Error(
       `No base URL configured for ${providerDef?.name ?? providerId} model "${modelId}". ` +
@@ -90,7 +85,7 @@ function getPerModelProvider(
   let cached = perModelProviderCache.get(cacheKey);
   if (!cached) {
     cached = createOpenAI({
-      apiKey: process.env[`${prefix}_API_KEY`] || "",
+      apiKey: env[providerDef?.envKey || getApiKeyEnvKey(providerId)] || "",
       baseURL,
     });
     perModelProviderCache.set(cacheKey, cached);

@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { streamText, convertToModelMessages, UIMessage } from "ai";
 import { getConfiguredModelWithProvider, getModelFromOverride, isAIAvailable } from "@/lib/ai/provider";
-import { modelSupportsVision, providerSupportsTools } from "@/lib/ai/models";
+import { modelSupportsVision } from "@/lib/ai/models";
+import { runtimeProviderSupportsTools } from "@/lib/ai/runtime-capabilities";
 import { buildPaperChatPrompt, buildPaperChatWithNotesPrompt } from "@/lib/ai/prompts";
 import { createPaperChatTools } from "@/lib/ai/tools/paper-chat-tools";
 import { buildPaperChatContextMessage, buildPaperModelContext } from "../paper-model-context";
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
       source: article.source || "",
     });
 
-    const useTools = providerSupportsTools(providerId);
+    const useTools = runtimeProviderSupportsTools(providerId);
 
     const result = streamText({
       model,

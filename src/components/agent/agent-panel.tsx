@@ -50,6 +50,17 @@ import { swrFetcher as fetcher } from "@/lib/fetcher";
 import { AgentMessage } from "./agent-message";
 
 type AgentMode = "long-agent" | "agent" | "plan" | "ask";
+type ModelSelection = { provider: string; model: string };
+type ModelOption = { id: string; name: string };
+type ProviderOption = {
+  id: string;
+  name: string;
+  models: ModelOption[];
+};
+
+function normalizeModelKey(modelId: string): string {
+  return modelId.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+}
 
 /** Pixel threshold for considering the user "at the bottom" of the scroll area */
 const BOTTOM_THRESHOLD_PX = 80;
@@ -84,6 +95,30 @@ const MODE_PLACEHOLDER_KEYS: Record<AgentMode, "placeholder" | "placeholderLongA
   ask: "placeholderAsk",
 };
 
+function readStoredModelSelection(storageKey: string): ModelSelection | null {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return null;
+    }
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) {
+      return null;
+    }
+    const parsed = JSON.parse(stored);
+    if (
+      typeof parsed?.provider === "string" &&
+      parsed.provider &&
+      typeof parsed?.model === "string" &&
+      parsed.model
+    ) {
+      return { provider: parsed.provider, model: parsed.model };
+    }
+  } catch {
+    // Ignore storage access and parse errors.
+  }
+  return null;
+}
+
 // --- Main Panel ---
 
 interface AgentPanelProps {
@@ -112,8 +147,9 @@ export function AgentPanel({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<AgentMode>("agent");
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [userSelection, setUserSelection] = useState<ModelSelection | null>(
+    () => readStoredModelSelection("innoclaw-agent-model-selection")
+  );
 
   const MODEL_SELECTION_STORAGE_KEY = "innoclaw-agent-model-selection";
 
@@ -253,71 +289,145 @@ export function AgentPanel({
   const { data: settings } = useSWR("/api/settings", fetcher);
   const aiEnabled = settings?.hasAIKey ?? false;
 
-  // Initialize model selection from localStorage, then fall back to global settings
-  useEffect(() => {
-    if (selectedProvider !== null) return; // already initialized
+  const configuredProviderIds = useMemo(() => {
+    const configured = settings?.configuredProviders as string[] | undefined;
+    if (!configured) return [];
+    return configured.filter((id): id is ProviderId => Boolean(PROVIDERS[id as ProviderId]));
+  }, [settings?.configuredProviders]);
 
-    // Try to read a stored selection from localStorage
-    let storedSelection: { provider: string; model: string } | null = null;
+  const { data: discoveredModelsByProvider, mutate: refreshDiscoveredModels } = useSWR<
+    Record<string, ModelOption[]>
+  >(
+    configuredProviderIds.length > 0
+      ? (["agent-model-options", ...configuredProviderIds] as const)
+      : null,
+    async ([, ...providerIds]) => {
+      const entries = await Promise.all(
+        providerIds.map(async (providerId) => {
+          try {
+            const response = await fetch(`/api/models?provider=${encodeURIComponent(providerId)}`);
+            const data = await response.json().catch(() => ({}));
+            return [providerId, Array.isArray(data.models) ? data.models : []] as const;
+          } catch {
+            return [providerId, []] as const;
+          }
+        }),
+      );
+      return Object.fromEntries(entries);
+    },
+  );
+
+  const availableProviders = useMemo<ProviderOption[]>(() => {
+    return configuredProviderIds
+      .map((id) => {
+        const provider = PROVIDERS[id];
+        if (!provider) return null;
+
+        const knownIds = new Set(provider.models.map((model) => model.id));
+        const extraModels = (discoveredModelsByProvider?.[id] ?? []).filter(
+          (model) => !knownIds.has(model.id),
+        );
+
+        return {
+          id: provider.id,
+          name: provider.name,
+          models: [...provider.models, ...extraModels],
+        };
+      })
+      .filter((provider): provider is ProviderOption => provider !== null);
+  }, [configuredProviderIds, discoveredModelsByProvider]);
+
+  const settingsFallback = useMemo<ModelSelection | null>(() => {
+    if (!settings?.llmProvider || !settings?.llmModel) return null;
+    if (
+      configuredProviderIds.length > 0 &&
+      !configuredProviderIds.includes(settings.llmProvider as ProviderId)
+    ) {
+      return null;
+    }
+    return {
+      provider: settings.llmProvider as string,
+      model: settings.llmModel as string,
+    };
+  }, [configuredProviderIds, settings?.llmModel, settings?.llmProvider]);
+
+  const canonicalSelection = useMemo<ModelSelection | null>(() => {
+    const selection = userSelection ?? settingsFallback;
+    if (!selection) return null;
+
+    const provider = availableProviders.find((entry) => entry.id === selection.provider);
+    if (!provider) {
+      return selection;
+    }
+
+    const matchedModel = provider.models.find((entry) => entry.id === selection.model)
+      ?? provider.models.find(
+        (entry) => normalizeModelKey(entry.id) === normalizeModelKey(selection.model),
+      );
+
+    if (!matchedModel) {
+      return selection;
+    }
+
+    if (matchedModel.id === selection.model) {
+      return selection;
+    }
+
+    return {
+      provider: selection.provider,
+      model: matchedModel.id,
+    };
+  }, [availableProviders, settingsFallback, userSelection]);
+
+  useEffect(() => {
+    if (!userSelection) return;
+
+    const providerStillConfigured =
+      configuredProviderIds.length === 0 ||
+      configuredProviderIds.includes(userSelection.provider as ProviderId);
+    const providerExists = Boolean(PROVIDERS[userSelection.provider as ProviderId]);
+
+    if (providerExists && providerStillConfigured) {
+      return;
+    }
+
+    setUserSelection(null);
     try {
       if (typeof window !== "undefined" && window.localStorage) {
-        const stored = window.localStorage.getItem(MODEL_SELECTION_STORAGE_KEY);
-        if (stored) {
-          try {
-            storedSelection = JSON.parse(stored);
-          } catch {
-            // Ignore parse errors and treat as no stored selection
-          }
-        }
+        window.localStorage.removeItem(MODEL_SELECTION_STORAGE_KEY);
       }
     } catch {
-      // Ignore storage access errors and fall back to settings
+      // Ignore storage access errors.
     }
+  }, [configuredProviderIds, userSelection]);
 
-    const configuredProviders = settings?.configuredProviders as string[] | undefined;
-
-    const isValidSelection = (selection: { provider: string; model: string } | null) => {
-      if (!selection) return false;
-      const { provider, model } = selection;
-      if (!provider || !model) return false;
-      const providerDef = PROVIDERS[provider as ProviderId];
-      if (!providerDef) return false;
-      if (configuredProviders && !configuredProviders.includes(provider)) return false;
-      const hasModel = providerDef.models.some((m) => m.id === model);
-      return hasModel;
-    };
-
-    if (isValidSelection(storedSelection)) {
-      setSelectedProvider(storedSelection!.provider);
-      setSelectedModel(storedSelection!.model);
+  useEffect(() => {
+    if (!userSelection || !canonicalSelection) return;
+    if (
+      canonicalSelection.provider === userSelection.provider &&
+      canonicalSelection.model === userSelection.model
+    ) {
       return;
-    } else if (storedSelection) {
-      // Clear invalid stored value
-      try {
-        if (typeof window !== "undefined" && window.localStorage) {
-          window.localStorage.removeItem(MODEL_SELECTION_STORAGE_KEY);
-        }
-      } catch {
-        // Ignore storage access errors
-      }
     }
 
-    // Fall back to global settings if available and valid
-    if (settings?.llmProvider && settings?.llmModel) {
-      const fallbackSelection = {
-        provider: settings.llmProvider as string,
-        model: settings.llmModel as string,
-      };
-      if (isValidSelection(fallbackSelection)) {
-        setSelectedProvider(fallbackSelection.provider);
-        setSelectedModel(fallbackSelection.model);
+    setUserSelection(canonicalSelection);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(
+          MODEL_SELECTION_STORAGE_KEY,
+          JSON.stringify(canonicalSelection),
+        );
       }
+    } catch {
+      // Ignore storage access errors.
     }
-  }, [settings?.llmProvider, settings?.llmModel, settings?.configuredProviders, selectedProvider]);
+  }, [MODEL_SELECTION_STORAGE_KEY, canonicalSelection, userSelection]);
+
+  const selectedProvider = canonicalSelection?.provider ?? null;
+  const selectedModel = canonicalSelection?.model ?? null;
 
   const handleModelChange = useCallback((providerId: string, modelId: string) => {
-    setSelectedProvider(providerId);
-    setSelectedModel(modelId);
+    setUserSelection({ provider: providerId, model: modelId });
     try {
       if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.setItem(
@@ -332,23 +442,15 @@ export function AgentPanel({
 
   const modelDisplayName = useMemo(() => {
     if (!selectedProvider || !selectedModel) return t("modelLabel");
-    const provider = PROVIDERS[selectedProvider as ProviderId];
-    const model = provider?.models.find((m) => m.id === selectedModel);
+    const provider = availableProviders.find((entry) => entry.id === selectedProvider);
+    const model = provider?.models.find((entry) => entry.id === selectedModel);
     return model?.name ?? selectedModel;
-  }, [selectedProvider, selectedModel, t]);
+  }, [availableProviders, selectedProvider, selectedModel, t]);
 
   const selectedSupportsVision = useMemo(() => {
     if (!selectedProvider || !selectedModel) return null;
     return modelSupportsVision(selectedProvider, selectedModel);
   }, [selectedProvider, selectedModel]);
-
-  const availableProviders = useMemo(() => {
-    const configured = settings?.configuredProviders as string[] | undefined;
-    if (!configured) return [];
-    return configured
-      .map((id: string) => PROVIDERS[id as ProviderId])
-      .filter(Boolean);
-  }, [settings?.configuredProviders]);
 
   // Mutable body object — allows injecting skillId/paramValues before each send
   const agentBody = useMemo(
@@ -1193,7 +1295,13 @@ export function AgentPanel({
 
         <div className="flex items-start gap-2 px-3 py-2 h-full">
           {/* Model selector */}
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open) {
+                void refreshDiscoveredModels();
+              }
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-1.5 shrink-0 rounded px-1.5 py-0.5 text-xs text-agent-accent hover:bg-agent-card-hover transition-colors mt-1.5 max-w-[220px]">
                 <span className="truncate">{modelDisplayName}</span>

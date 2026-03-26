@@ -196,8 +196,8 @@ msgid "The development server won't start"
 msgstr "开发服务器无法启动"
 
 #: ../../troubleshooting/faq.md:77 f10279b7075e415ca232c7f880c59e7b
-msgid "Ensure Node.js 18+ is installed: `node --version`"
-msgstr "确保已安装 Node.js 18+：`node --version`"
+msgid "Ensure Node.js 24+ is installed (Node.js 25 is also supported): `node --version`"
+msgstr "确保已安装 Node.js 24+（也支持 Node.js 25）：`node --version`"
 
 #: ../../troubleshooting/faq.md:78 272be70528fb41aba0a0a3a5fd0362ea
 msgid "Ensure dependencies are installed: `npm install`"

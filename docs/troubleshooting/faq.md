@@ -166,7 +166,7 @@ Back up the following:
 
 ### The development server won't start
 
-1. Ensure Node.js 18+ is installed: `node --version`
+1. Ensure Node.js 24+ is installed (Node.js 25 is also supported): `node --version`
 2. Ensure dependencies are installed: `npm install`
 3. Ensure the database is initialized: `npx drizzle-kit migrate`
 4. Ensure `WORKSPACE_ROOTS` directories exist on disk

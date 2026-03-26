@@ -14,6 +14,39 @@ function envExamplePath(): string {
 }
 
 /**
+ * Read key=value pairs from `.env.local`.
+ *
+ * - Preserves the last uncommented assignment for duplicate keys.
+ * - Strips matching surrounding quotes.
+ * - Returns an empty object when the file does not exist.
+ */
+export function readEnvLocal(): Record<string, string> {
+  const filePath = envLocalPath();
+  if (!fs.existsSync(filePath)) {
+    return {};
+  }
+
+  const parsed: Record<string, string> = {};
+  const content = fs.readFileSync(filePath, "utf-8");
+
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const idx = line.indexOf("=");
+    if (idx === -1) continue;
+
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+    if (!key) continue;
+
+    parsed[key] = value;
+  }
+
+  return parsed;
+}
+
+/**
  * Ensure `.env.local` exists.
  * If it does not, copy `.env.example` as a starting point.
  * If `.env.example` does not exist either, create a minimal file.

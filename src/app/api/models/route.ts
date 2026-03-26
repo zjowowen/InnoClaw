@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PROVIDERS } from "@/lib/ai/models";
+import {
+  getCurrentEnv,
+  getDiscoveredPerModelBaseUrls,
+  getVendorBaseUrlEnvKey,
+  isPerModelBaseUrlProvider,
+} from "@/lib/ai/provider-env";
 
 /**
  * Fetch available models from the configured provider's API.
@@ -18,8 +25,24 @@ export async function GET(request: NextRequest) {
     if (provider === "anthropic") {
       return await fetchAnthropicModels();
     }
-    // Default: OpenAI-compatible
-    return await fetchOpenAIModels();
+    if (provider === "openai") {
+      return await fetchOpenAICompatibleProviderModels("openai", {
+        defaultBaseUrl: "https://api.openai.com/v1",
+        requireApiKey: true,
+      });
+    }
+    if (provider === "gemini") {
+      return await fetchOpenAICompatibleProviderModels("gemini", {
+        requireApiKey: true,
+      });
+    }
+    if (provider in PROVIDERS && isPerModelBaseUrlProvider(provider)) {
+      return await fetchOpenAICompatiblePerModelProviderModels(provider);
+    }
+    return NextResponse.json(
+      { error: `Unsupported provider "${provider}"` },
+      { status: 400 },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch models";
@@ -31,38 +54,118 @@ export async function GET(request: NextRequest) {
 /*  OpenAI-compatible                                                  */
 /* ------------------------------------------------------------------ */
 
-async function fetchOpenAIModels() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured" },
-      { status: 400 },
-    );
-  }
+function buildOpenAIModelsUrl(baseUrl: string) {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/v1")
+    ? `${trimmed}/models`
+    : `${trimmed}/v1/models`;
+}
 
-  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1")
-    .replace(/\/+$/, "");
-
-  // Ensure the URL ends with /models
-  const modelsUrl = baseUrl.endsWith("/v1")
-    ? `${baseUrl}/models`
-    : `${baseUrl}/v1/models`;
+async function fetchModelsFromOpenAICompatibleBaseUrl(
+  baseUrl: string,
+  apiKey?: string,
+) {
+  const modelsUrl = buildOpenAIModelsUrl(baseUrl);
+  const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
 
   const res = await fetch(modelsUrl, {
-    headers: { Authorization: `Bearer ${apiKey}` },
+    ...(headers ? { headers } : {}),
     signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {
-    return NextResponse.json(
-      { error: `Provider returned ${res.status}` },
-      { status: 502 },
-    );
+    throw new Error(`Provider returned ${res.status}`);
   }
 
   const json = await res.json();
-  const models = formatOpenAIModels(json);
+  return formatOpenAIModels(json);
+}
 
+async function fetchOpenAICompatibleProviderModels(
+  providerId: "openai" | "gemini",
+  options: {
+    defaultBaseUrl?: string;
+    requireApiKey: boolean;
+  },
+) {
+  const env = getCurrentEnv();
+  const apiKey = env[PROVIDERS[providerId].envKey];
+  if (options.requireApiKey && !apiKey) {
+    return NextResponse.json(
+      { error: `${PROVIDERS[providerId].envKey} is not configured` },
+      { status: 400 },
+    );
+  }
+
+  const baseUrl =
+    env[getVendorBaseUrlEnvKey(providerId)] || options.defaultBaseUrl;
+  if (!baseUrl) {
+    return NextResponse.json(
+      { error: `${getVendorBaseUrlEnvKey(providerId)} is not configured` },
+      { status: 400 },
+    );
+  }
+
+  const models = await fetchModelsFromOpenAICompatibleBaseUrl(baseUrl, apiKey);
+  return NextResponse.json({ models });
+}
+
+async function fetchOpenAICompatiblePerModelProviderModels(providerId: string) {
+  const env = getCurrentEnv();
+  const apiKey = env[PROVIDERS[providerId as keyof typeof PROVIDERS].envKey];
+  const vendorBaseUrl = env[getVendorBaseUrlEnvKey(providerId)]?.trim();
+  const discovered = getDiscoveredPerModelBaseUrls(providerId, env);
+
+  const baseUrls = Array.from(
+    new Set(
+      [
+        ...(vendorBaseUrl ? [vendorBaseUrl] : []),
+        ...discovered.map((entry) => entry.baseUrl),
+      ].filter(Boolean),
+    ),
+  );
+
+  if (baseUrls.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          `${getVendorBaseUrlEnvKey(providerId)} or ` +
+          `${providerId.toUpperCase()}_*_BASE_URL is not configured`,
+      },
+      { status: 400 },
+    );
+  }
+
+  const settled = await Promise.allSettled(
+    baseUrls.map((baseUrl) =>
+      fetchModelsFromOpenAICompatibleBaseUrl(baseUrl, apiKey),
+    ),
+  );
+
+  const merged = new Map<string, { id: string; name: string }>();
+  const errors: string[] = [];
+
+  for (const result of settled) {
+    if (result.status === "fulfilled") {
+      for (const model of result.value) {
+        merged.set(model.id, model);
+      }
+      continue;
+    }
+    errors.push(
+      result.reason instanceof Error
+        ? result.reason.message
+        : "Failed to fetch models",
+    );
+  }
+
+  if (merged.size === 0 && errors.length > 0) {
+    return NextResponse.json({ error: errors[0] }, { status: 502 });
+  }
+
+  const models = Array.from(merged.values()).sort((a, b) =>
+    a.id.localeCompare(b.id),
+  );
   return NextResponse.json({ models });
 }
 
@@ -83,7 +186,8 @@ function formatOpenAIModels(json: {
 /* ------------------------------------------------------------------ */
 
 async function fetchAnthropicModels() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const env = getCurrentEnv();
+  const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY is not configured" },
@@ -91,7 +195,7 @@ async function fetchAnthropicModels() {
     );
   }
 
-  const rawBase = process.env.ANTHROPIC_BASE_URL;
+  const rawBase = env.ANTHROPIC_BASE_URL;
   let baseUrl = rawBase
     ? rawBase.replace(/\/+$/, "")
     : "https://api.anthropic.com";

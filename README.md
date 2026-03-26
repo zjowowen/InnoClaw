@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
-  <a href="package.json"><img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white" alt="Node.js 20+"></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/Node.js-24%2B%20(LTS)%20%7C%2025%20Current-339933?logo=node.js&logoColor=white" alt="Node.js 24+ LTS or 25 Current"></a>
   <a href="https://github.com/SpectrAI-Initiative/InnoClaw/actions/workflows/ci.yml"><img src="https://github.com/SpectrAI-Initiative/InnoClaw/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
   <a href="https://SpectrAI-Initiative.github.io/InnoClaw/"><img src="https://img.shields.io/badge/Docs-Online-blue?logo=gitbook&logoColor=white" alt="Online Docs"></a>
   <a href="https://github.com/SpectrAI-Initiative/InnoClaw/stargazers"><img src="https://img.shields.io/github/stars/SpectrAI-Initiative/InnoClaw?style=flat&logo=github" alt="GitHub Stars"></a>
@@ -54,6 +54,10 @@ It is built for researchers, developers, labs, and self-hosters who want more th
 ## 🔥 What's New
 
 <!-- whats-new-start -->
+
+#### 2026-03-26
+- **Node.js Runtime Update**: InnoClaw now targets Node.js 24+ and is verified against both Node.js 24 LTS and the latest Node.js 25 current release. CI and local version hints have been updated accordingly.
+
 
 #### 2026-03-24
 - **Multimodal LLM Support**: Paper Study and agent workflows now support both standard LLMs and multimodal LLMs (mLLM), selectable per-context in settings and the model selector
@@ -185,6 +189,18 @@ Instead of juggling separate tools for files, notes, literature review, and auto
 <a id="quick-start"></a>
 
 ## 🚀 Quick Start
+
+Runtime requirement:
+- Node.js `24+` required
+- Node.js `24 LTS` recommended for stable deployments
+- Node.js `25 Current` is also supported
+
+If you use `nvm`, you can follow the repo default:
+
+```bash
+nvm install
+nvm use
+```
 
 ```bash
 git clone https://github.com/SpectrAI-Initiative/InnoClaw.git

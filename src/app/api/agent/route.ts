@@ -4,8 +4,7 @@ import { getConfiguredModelWithProvider, getModelFromOverride, isAIAvailable } f
 import { createAgentTools } from "@/lib/ai/agent-tools";
 import { buildAgentSystemPrompt, buildAgentLongSystemPrompt, buildPlanSystemPrompt, buildAskSystemPrompt } from "@/lib/ai/prompts";
 import { buildSkillSystemPrompt } from "@/lib/ai/skill-prompt";
-import { providerSupportsTools, PROVIDERS } from "@/lib/ai/models";
-import type { ProviderId } from "@/lib/ai/models";
+import { runtimeProviderSupportsTools } from "@/lib/ai/runtime-capabilities";
 import { db } from "@/lib/db";
 import { skills } from "@/lib/db/schema";
 import { and, eq, or, isNull } from "drizzle-orm";
@@ -34,19 +33,6 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      // If the provider is a known built-in provider, validate the model is allowed
-      const knownProviderIds = Object.keys(PROVIDERS) as ProviderId[];
-      const matchedProvider = knownProviderIds.find((id) => id === llmProvider);
-      if (matchedProvider) {
-        const knownModels: string[] = PROVIDERS[matchedProvider].models.map((m) => m.id);
-        if (!knownModels.includes(llmModel)) {
-          return new Response(
-            `Invalid llmModel "${llmModel}" for provider "${llmProvider}". ` +
-              `Allowed models: ${knownModels.join(", ")}`,
-            { status: 400 }
-          );
-        }
-      }
     } else if (llmProvider !== undefined || llmModel !== undefined) {
       return new Response(
         "Both llmProvider and llmModel must be provided together for model override",
@@ -65,7 +51,7 @@ export async function POST(req: NextRequest) {
       ? getModelFromOverride(llmProvider, llmModel)
       : await getConfiguredModelWithProvider();
     console.log(`[agent] provider=${providerId} model=${typeof model === 'string' ? model : model.modelId} override=${!!(llmProvider && llmModel)}`);
-    const useTools = providerSupportsTools(providerId);
+    const useTools = runtimeProviderSupportsTools(providerId);
     let systemPrompt: string;
     let tools;
 

@@ -56,8 +56,8 @@ msgid "**Node.js**"
 msgstr "**Node.js**"
 
 #: ../../getting-started/installation.md 6c2a136eaba9488b9028d72a372682ed
-msgid "18+ (20+ recommended)"
-msgstr "18+（推荐 20+）"
+msgid "24+ LTS recommended, 25 Current supported"
+msgstr "推荐使用 24+ LTS，也支持 25 Current"
 
 #: ../../getting-started/installation.md 2cd03196b1a3452b8cb37aa519ff54e7
 msgid "Runtime environment"

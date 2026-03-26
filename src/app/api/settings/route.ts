@@ -7,6 +7,7 @@ import path from "path";
 import { getWorkspaceRoots } from "@/lib/files/filesystem";
 import { updateEnvLocal } from "@/lib/env-file";
 import { PROVIDERS } from "@/lib/ai/models";
+import { getCurrentEnv } from "@/lib/ai/provider-env";
 import { getK8sConfig, SETTINGS_TO_ENV, invalidateK8sConfigCache } from "@/lib/cluster/config";
 
 /**
@@ -22,11 +23,12 @@ function baseUrlEnvKey(providerId: string): string {
  *   providerBaseUrls: { [providerId]: string } — the base URL env var value (or "")
  */
 function getProviderEnvInfo() {
+  const env = getCurrentEnv();
   const providerKeys: Record<string, boolean> = {};
   const providerBaseUrls: Record<string, string> = {};
   for (const p of Object.values(PROVIDERS)) {
-    providerKeys[p.id] = !!process.env[p.envKey];
-    providerBaseUrls[p.id] = process.env[baseUrlEnvKey(p.id)] || "";
+    providerKeys[p.id] = !!env[p.envKey];
+    providerBaseUrls[p.id] = env[baseUrlEnvKey(p.id)] || "";
   }
   return { providerKeys, providerBaseUrls };
 }
@@ -40,7 +42,8 @@ export async function GET() {
       settingsMap[s.key] = s.value;
     }
 
-    const hasHfToken = !!settingsMap["hf_token"] || !!process.env.HF_TOKEN;
+    const env = getCurrentEnv();
+    const hasHfToken = !!settingsMap["hf_token"] || !!env.HF_TOKEN;
     const { providerKeys, providerBaseUrls } = getProviderEnvInfo();
 
     return NextResponse.json({
@@ -53,9 +56,9 @@ export async function GET() {
       hasOpenAIKey: providerKeys["openai"] ?? false,
       hasAnthropicKey: providerKeys["anthropic"] ?? false,
       hasGeminiKey: providerKeys["gemini"] ?? false,
-      hasGithubToken: !!process.env.GITHUB_TOKEN,
+      hasGithubToken: !!env.GITHUB_TOKEN,
       hasHfToken,
-      hfTokenSource: settingsMap["hf_token"] ? "db" : (process.env.HF_TOKEN ? "env" : null),
+      hfTokenSource: settingsMap["hf_token"] ? "db" : (env.HF_TOKEN ? "env" : null),
       hasAIKey: Object.values(providerKeys).some(Boolean),
       configuredProviders: Object.entries(providerKeys)
         .filter(([, has]) => has)
@@ -63,17 +66,17 @@ export async function GET() {
       providerKeys,
       providerBaseUrls,
       feishuBotEnabled:
-        process.env.FEISHU_BOT_ENABLED === "true" &&
-        !!process.env.FEISHU_APP_ID &&
-        !!process.env.FEISHU_APP_SECRET &&
-        !!process.env.FEISHU_VERIFICATION_TOKEN,
+        env.FEISHU_BOT_ENABLED === "true" &&
+        !!env.FEISHU_APP_ID &&
+        !!env.FEISHU_APP_SECRET &&
+        !!env.FEISHU_VERIFICATION_TOKEN,
       wechatBotEnabled:
-        process.env.WECHAT_BOT_ENABLED === "true" &&
-        !!process.env.WECHAT_CORP_ID &&
-        !!process.env.WECHAT_CORP_SECRET &&
-        !!process.env.WECHAT_TOKEN &&
-        !!process.env.WECHAT_ENCODING_AES_KEY &&
-        !!process.env.WECHAT_AGENT_ID,
+        env.WECHAT_BOT_ENABLED === "true" &&
+        !!env.WECHAT_CORP_ID &&
+        !!env.WECHAT_CORP_SECRET &&
+        !!env.WECHAT_TOKEN &&
+        !!env.WECHAT_ENCODING_AES_KEY &&
+        !!env.WECHAT_AGENT_ID,
       styleTheme: settingsMap["style_theme"] || "default",
       k8sConfig: await getK8sConfig(),
     });
