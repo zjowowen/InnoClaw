@@ -214,6 +214,37 @@ npm run dev
 - Open or clone a workspace, then click `Sync` to build the RAG index
 - Need OS-specific prerequisites or production setup? See `docs/getting-started/installation.md`
 
+### Optional: PDF Image Extraction (canvas)
+
+Paper Study's multimodal vision feature renders PDF pages as images for vision-capable LLMs.
+This requires the native `canvas` npm package, which depends on system-level libraries.
+**Without these, `npm install` will still succeed** — image extraction falls back to text-only mode automatically.
+
+To enable PDF image extraction, install the prerequisites first:
+
+**macOS**
+```bash
+brew install pkg-config cairo pango libpng jpeg giflib librsvg
+```
+
+**Ubuntu / Debian**
+```bash
+sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+```
+
+**Fedora / RHEL**
+```bash
+sudo dnf install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-devel librsvg2-devel
+```
+
+**Windows**
+See the [node-canvas wiki](https://github.com/Automattic/node-canvas/wiki/Installation:-Windows) for Windows-specific instructions.
+
+After installing the system dependencies, run:
+```bash
+npm install canvas
+```
+
 ## 🛠️ What You Can Do
 
 - Chat with local files and code using grounded citations
