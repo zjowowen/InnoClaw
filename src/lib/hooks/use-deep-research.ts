@@ -185,3 +185,43 @@ export function useDeepResearchExecutions(sessionId: string | undefined) {
     mutate,
   };
 }
+
+// --- Consolidated hook: fetches everything in one request ---
+
+interface FullSessionData {
+  session: DeepResearchSession;
+  messages: DeepResearchMessage[];
+  nodes: DeepResearchNode[];
+  artifacts: DeepResearchArtifact[];
+  events: DeepResearchEvent[];
+  executions: PersistedExecutionRecord[];
+}
+
+const TERMINAL_STATUSES = new Set(["completed", "stopped_by_user", "failed", "cancelled"]);
+const AWAITING_STATUSES = new Set(["awaiting_user_confirmation", "execution_prepared", "awaiting_additional_literature"]);
+
+export function useDeepResearchSessionFull(sessionId: string | undefined) {
+  const url = sessionId ? `/api/deep-research/sessions/${sessionId}/full` : null;
+
+  const { data, error, isLoading, mutate } = useSWR<FullSessionData>(url, fetcher, {
+    refreshInterval: (latestData) => {
+      if (!latestData?.session) return 5000;
+      const status = latestData.session.status;
+      if (TERMINAL_STATUSES.has(status)) return 60000;
+      if (AWAITING_STATUSES.has(status)) return 15000;
+      return 5000;
+    },
+  });
+
+  return {
+    session: data?.session ?? null,
+    messages: data?.messages ?? [],
+    nodes: data?.nodes ?? [],
+    artifacts: data?.artifacts ?? [],
+    events: data?.events ?? [],
+    executions: data?.executions ?? [],
+    isLoading,
+    error,
+    mutate,
+  };
+}

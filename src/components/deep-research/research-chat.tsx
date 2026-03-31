@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +36,7 @@ interface ResearchChatProps {
   onConfirm: (nodeId: string, outcome: ConfirmationOutcome, feedback?: string) => Promise<void>;
 }
 
-export function ResearchChat({
+export const ResearchChat = memo(function ResearchChat({
   session,
   messages,
   nodes,
@@ -370,4 +370,4 @@ export function ResearchChat({
       )}
     </div>
   );
-}
+});

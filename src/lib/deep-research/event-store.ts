@@ -531,20 +531,21 @@ export async function getArtifacts(
   sessionId: string,
   filters?: { nodeId?: string; type?: ArtifactType }
 ): Promise<DeepResearchArtifact[]> {
+  const conditions = [eq(deepResearchArtifacts.sessionId, sessionId)];
+  if (filters?.nodeId) {
+    conditions.push(eq(deepResearchArtifacts.nodeId, filters.nodeId));
+  }
+  if (filters?.type) {
+    conditions.push(eq(deepResearchArtifacts.artifactType, filters.type));
+  }
+
   const rows = await db
     .select()
     .from(deepResearchArtifacts)
-    .where(eq(deepResearchArtifacts.sessionId, sessionId))
+    .where(and(...conditions))
     .orderBy(deepResearchArtifacts.createdAt);
 
-  let result = rows.map(parseArtifact);
-  if (filters?.nodeId) {
-    result = result.filter((a) => a.nodeId === filters.nodeId);
-  }
-  if (filters?.type) {
-    result = result.filter((a) => a.artifactType === filters.type);
-  }
-  return result;
+  return rows.map(parseArtifact);
 }
 
 export async function getArtifact(artifactId: string): Promise<DeepResearchArtifact | null> {
