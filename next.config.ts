@@ -10,9 +10,16 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+const serverExternalPackages = [
+  "better-sqlite3",
+  "pdf-parse",
+  // Turbopack on Windows can panic while creating the junction for this scoped package.
+  ...(process.platform === "win32" ? [] : ["@larksuiteoapi/node-sdk"]),
+];
+
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["better-sqlite3", "pdf-parse", "@larksuiteoapi/node-sdk"],
+  serverExternalPackages,
   // Allow overriding the .next build directory via env var.
   // Useful on network/shared filesystems where Turbopack cache persistence fails.
   ...(process.env.NEXT_BUILD_DIR ? { distDir: process.env.NEXT_BUILD_DIR } : {}),
