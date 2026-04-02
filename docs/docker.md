@@ -50,7 +50,7 @@ volumes:
   - /home/user/papers:/papers
   - /home/user/code:/code
 ```
-```env
+```ini
 WORKSPACE_ROOTS=/papers,/code
 ```
 

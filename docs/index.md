@@ -12,6 +12,7 @@ getting-started/overview
 getting-started/installation
 getting-started/deployment
 getting-started/environment-variables
+docker
 ```
 
 ```{toctree}
