@@ -68,8 +68,9 @@ export function BuddyHatchDialog({ open, onOpenChange, onHatched }: BuddyHatchDi
       setBones(null);
       setRolled(false);
       setSeed("");
-    } catch {
-      // retry without
+    } catch (error) {
+      console.error("Failed to hatch buddy", error);
+      window.alert("Unable to hatch your buddy right now. Please try again.");
     } finally {
       setHatching(false);
     }
