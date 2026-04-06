@@ -12,12 +12,24 @@ interface CostDisplayProps {
 export function CostDisplay({ snapshot }: CostDisplayProps) {
   const [expanded, setExpanded] = useState(false);
 
-  if (!snapshot || snapshot.totalCostUsd === 0) return null;
+  if (!snapshot) return null;
 
-  const costStr = snapshot.totalCostUsd < 0.01
-    ? "<$0.01"
-    : `$${snapshot.totalCostUsd.toFixed(2)}`;
+  const hasTokenUsage =
+    snapshot.totalInputTokens > 0 || snapshot.totalOutputTokens > 0;
+  const hasUnknownPricing = Object.values(snapshot.modelUsage).some(
+    (usage) => !usage.pricingKnown
+  );
 
+  if (snapshot.totalCostUsd === 0 && !hasTokenUsage) return null;
+
+  const costStr =
+    snapshot.totalCostUsd === 0
+      ? hasUnknownPricing && hasTokenUsage
+        ? "~est"
+        : "$0.00"
+      : snapshot.totalCostUsd < 0.01
+        ? "<$0.01"
+        : `$${snapshot.totalCostUsd.toFixed(2)}`;
   return (
     <div className="relative">
       <button
