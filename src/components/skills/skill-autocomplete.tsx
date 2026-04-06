@@ -47,6 +47,15 @@ export function SkillAutocomplete({
     setSelectedIndex(0);
   }
 
+  // Clamp selectedIndex when items list shrinks
+  useEffect(() => {
+    if (items.length === 0) {
+      setSelectedIndex(0);
+    } else {
+      setSelectedIndex((i) => Math.min(i, items.length - 1));
+    }
+  }, [items.length]);
+
   // Scroll selected item into view
   useEffect(() => {
     if (listRef.current) {
@@ -66,6 +75,7 @@ export function SkillAutocomplete({
       } else if (e.key === "Enter" && items.length > 0) {
         e.preventDefault();
         const item = items[selectedIndex];
+        if (!item) return;
         if (item.kind === "skill") {
           onSelect(item.skill);
         } else if (item.kind === "builtin" && onBuiltinSelect) {
