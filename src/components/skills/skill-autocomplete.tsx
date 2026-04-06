@@ -49,11 +49,7 @@ export function SkillAutocomplete({
 
   // Clamp selectedIndex when items list shrinks
   useEffect(() => {
-    if (items.length === 0) {
-      setSelectedIndex(0);
-    } else {
-      setSelectedIndex((i) => Math.min(i, items.length - 1));
-    }
+    setSelectedIndex((i) => Math.min(i, Math.max(0, items.length - 1)));
   }, [items.length]);
 
   // Scroll selected item into view
