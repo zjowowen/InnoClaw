@@ -300,12 +300,4 @@ Go from code inspection to job submission and result analysis. Review repositori
 - **Repository** — https://github.com/SpectrAI-Initiative/InnoClaw
 - **Docs** — https://SpectrAI-Initiative.github.io/InnoClaw/
 
-## Star History
 
-<a href="https://www.star-history.com/?repos=SpectrAI-Initiative%2FInnoClaw&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=SpectrAI-Initiative/InnoClaw&type=date&legend=top-left" />
- </picture>
-</a>
